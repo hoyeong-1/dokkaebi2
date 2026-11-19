@@ -9610,9 +9610,9 @@
                     });
 
                     if (activeUltSchool === 'jeogyeok') {
-                        resourceHistory.push({ time: startTime + motion, value: jeogyeokArrows, max: 3, label: '화살촉' });
+                        resourceHistory.push({ time: startTime, value: jeogyeokArrows, max: 3, label: '화살촉' });
                     } else if (activeUltSchool === 'jeolmyeong') {
-                        resourceHistory.push({ time: startTime + motion, value: jeolmyeongSwords, max: 5, label: '검의 형상' });
+                        resourceHistory.push({ time: startTime, value: jeolmyeongSwords, max: 5, label: '검의 형상' });
                     }
                 }
 
@@ -9791,8 +9791,9 @@
                 }
             }
 
-            // 시뮬레이션 종료 시점까지 남은 모든 장판 틱 / 도트 틱 최종 정산
+            // 시뮬레이션 종료 시점까지 남은 모든 장판 틱 / 도트 틱 / 영력 회복 최종 정산
             processScheduledEventsUpTo(simDuration);
+            updateTimedResources(simDuration);
 
             if (summaryMap[basicAttackKey].casts === 0) {
                 delete summaryMap[basicAttackKey];
@@ -10186,7 +10187,20 @@
             // 4) 영력 자원 스텝 그래프 (저격 화살촉 / 절명 검의 형상)
             let resourceRowHtml = '';
             if (res.resourceHistory && res.resourceHistory.length > 1) {
-                const pts = res.resourceHistory.filter(p => p.time <= viewSec);
+                const rawPts = res.resourceHistory
+                    .map((p, idx) => ({ ...p, _idx: idx }))
+                    .filter(p => p.time <= viewSec + 1e-6)
+                    .sort((a, b) => (a.time - b.time) || (a._idx - b._idx));
+                const pts = [];
+                for (const p of rawPts) {
+                    const clampedTime = Math.max(0, Math.min(viewSec, p.time));
+                    const last = pts[pts.length - 1];
+                    if (last && Math.abs(last.time - clampedTime) < 1e-6) {
+                        last.value = p.value;
+                    } else if (!last || last.value !== p.value) {
+                        pts.push({ time: clampedTime, value: p.value, max: p.max, label: p.label });
+                    }
+                }
                 if (pts.length > 0) {
                     const maxV = pts[0].max || 3;
                     const ultSk = getEquippedDosulSkill();
