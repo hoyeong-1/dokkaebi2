@@ -325,7 +325,7 @@
             <div class="bg-panelBg border border-borderCol rounded-2xl p-5 shadow-xl flex-1 flex flex-col min-h-0">
                 <div class="flex justify-between items-center mb-2.5">
                     <h2 class="text-sm font-bold text-violet-400 flex items-center gap-2">
-                        <i class="fa-solid fa-book-open"></i> 도술 도감 (101종)
+                        <i class="fa-solid fa-book-open"></i> 도술 도감 (102종)
                     </h2>
                     <span class="text-[11px] text-gray-400">클릭하여 배치 · 우측 돌파 입력 (0~10)</span>
                 </div>
@@ -333,7 +333,7 @@
                 <!-- Category Filter Bar (전체 / 일반 / 특별 / 도술) -->
                 <div class="flex items-center justify-between gap-2 mb-2.5 pb-2 border-b border-borderCol">
                     <div class="flex items-center gap-1.5" id="categoryFilterBar">
-                        <button type="button" onclick="setCategoryFilter('all')" id="catBtn_all" class="px-2.5 py-1 rounded-lg text-xs font-bold tab-active border border-borderCol">전체 (101)</button>
+                        <button type="button" onclick="setCategoryFilter('all')" id="catBtn_all" class="px-2.5 py-1 rounded-lg text-xs font-bold tab-active border border-borderCol">전체 (102)</button>
                         <button type="button" onclick="setCategoryFilter('일반')" id="catBtn_일반" class="px-2.5 py-1 rounded-lg text-xs font-bold cat-normal">일반</button>
                         <button type="button" onclick="setCategoryFilter('특별')" id="catBtn_특별" class="px-2.5 py-1 rounded-lg text-xs font-bold cat-special">특별 (6돌파)</button>
                         <button type="button" onclick="setCategoryFilter('도술')" id="catBtn_도술" class="px-2.5 py-1 rounded-lg text-xs font-bold cat-dosul">도술 (궁극기)</button>
@@ -1127,6 +1127,45 @@
     "maxCharges": 1
   },
   {
+    "id": "skill_102",
+    "name": "은신",
+    "category": "특별",
+    "tags": [
+      "절명",
+      "근거리",
+      "최대 1인",
+      "6돌파 효과",
+      "연계 도술"
+    ],
+    "description": "은신 상태에 돌입한 뒤 연계 공격으로 대상에게 피해를 1회 입힙니다.",
+    "imageFile": "jeolmyeong-09-eunsin.webp",
+    "iconPath": "skills/jeolmyeong-09-eunsin.webp",
+    "cooldown": 25,
+    "motion": 0.0,
+    "coeff": 666.9,
+    "hitInfo": "1타 0% + 2타 666.90%×1 (2연계)",
+    "stepEffects": [],
+    "breakthrough6": {
+      "dmgBonus": 0,
+      "extraCoeff": 0,
+      "cdr": 0,
+      "desc": "6✦ 이동 속도 10% 증가 · 연계 시 3초간 확정 치명타"
+    },
+    "buffsDebuffs": [],
+    "options": [],
+    "optionsText": "",
+    "baseMotion": 0.0,
+    "castTime": 0.0,
+    "chargeStages": 0,
+    "chargeTime": 0.0,
+    "maxCharges": 1,
+    "chainCasts": 2,
+    "chainCoeffs": [
+      0.0,
+      666.9
+    ]
+  },
+  {
     "id": "skill_9",
     "name": "암습",
     "category": "도술",
@@ -1321,8 +1360,8 @@
     "iconPath": "skills/yeonta-03-mukjikhan-jumeok.webp",
     "cooldown": 9,
     "motion": 0.25,
-    "coeff": 157.92,
-    "hitInfo": "78.96% · 2회",
+    "coeff": 315.84,
+    "hitInfo": "78.96%×2 + 78.96%×2 (2연계)",
     "stepEffects": [
       "묵직한 주먹 돌파 단계별 효과",
       "단계\t대기시간",
@@ -1363,7 +1402,12 @@
     "castTime": 0.0,
     "chargeStages": 0,
     "chargeTime": 0.0,
-    "maxCharges": 1
+    "maxCharges": 1,
+    "chainCasts": 2,
+    "chainCoeffs": [
+      157.92,
+      157.92
+    ]
   },
   {
     "id": "skill_13",
@@ -5137,7 +5181,7 @@
     "cooldown": 10,
     "motion": 0.45,
     "coeff": 257.4,
-    "hitInfo": "128.70% · 2회",
+    "hitInfo": "128.70%×1 + 128.70%×1 (2연계)",
     "stepEffects": [
       "쌍검 가르기 돌파 단계별 효과",
       "단계\t대기시간",
@@ -5180,7 +5224,12 @@
     "castTime": 0.0,
     "chargeStages": 0,
     "chargeTime": 0.0,
-    "maxCharges": 1
+    "maxCharges": 1,
+    "chainCasts": 2,
+    "chainCoeffs": [
+      128.7,
+      128.7
+    ]
   },
   {
     "id": "skill_76",
@@ -5312,8 +5361,8 @@
     "iconPath": "skills/gidong-06-wolsik.webp",
     "cooldown": 12,
     "motion": 0.7,
-    "coeff": 177.2,
-    "hitInfo": "44.30% · 4회",
+    "coeff": 265.9,
+    "hitInfo": "44.30%×3 + 133.00%×1 (2연계)",
     "stepEffects": [
       "월식 돌파 단계별 효과",
       "단계\t대기시간",
@@ -5332,7 +5381,7 @@
       "dmgBonus": 50,
       "extraCoeff": 0,
       "cdr": 0,
-      "desc": "6✦ 피해량 50% 증가 · 복귀 시 이동 속도 50% 증가"
+      "desc": "6✦ 피해량 50% 증가 (1타 78.4%×3 / 2타 23.5%×10) · 복귀 시 이동 속도 50% 증가"
     },
     "buffsDebuffs": [],
     "options": [],
@@ -5341,7 +5390,12 @@
     "castTime": 0.0,
     "chargeStages": 0,
     "chargeTime": 0.0,
-    "maxCharges": 1
+    "maxCharges": 1,
+    "chainCasts": 2,
+    "chainCoeffs": [
+      132.9,
+      133.0
+    ]
   },
   {
     "id": "skill_79",
@@ -5417,7 +5471,7 @@
     "cooldown": 30,
     "motion": 0.45,
     "coeff": 1190.0,
-    "hitInfo": "238.00%×3 + 238.00%×2",
+    "hitInfo": "238.00%×3 + 238.00%×2 (4연계)",
     "stepEffects": [],
     "breakthrough6": {
       "dmgBonus": 0,
@@ -5445,7 +5499,14 @@
     "castTime": 0.0,
     "chargeStages": 0,
     "chargeTime": 0.0,
-    "maxCharges": 1
+    "maxCharges": 1,
+    "chainCasts": 4,
+    "chainCoeffs": [
+      238.0,
+      238.0,
+      238.0,
+      476.0
+    ]
   },
   {
     "id": "skill_81",
@@ -6585,7 +6646,7 @@
     "cooldown": 30,
     "motion": 0.5,
     "coeff": 957.6,
-    "hitInfo": "106.40% · 9회",
+    "hitInfo": "106.40%×3 · 3연계",
     "stepEffects": [],
     "breakthrough6": {
       "dmgBonus": 0,
@@ -6613,7 +6674,13 @@
     "castTime": 0.0,
     "chargeStages": 0,
     "chargeTime": 0.0,
-    "maxCharges": 1
+    "maxCharges": 1,
+    "chainCasts": 3,
+    "chainCoeffs": [
+      319.2,
+      319.2,
+      319.2
+    ]
   },
   {
     "id": "skill_101",
@@ -6953,12 +7020,14 @@
                     imageFile: item.imageFile,
                     iconPath: item.iconPath || `skills/${item.imageFile}`,
                     cooldown: Number(item.cooldown) || 5,
-                    baseMotion: Number(item.baseMotion ?? item.motion) || 0.3,
+                    baseMotion: (item.baseMotion !== undefined && item.baseMotion !== null) ? Number(item.baseMotion) : ((item.motion !== undefined && item.motion !== null) ? Number(item.motion) : 0.3),
                     castTime: Number(item.castTime) || 0,
                     chargeStages: Number(item.chargeStages) || 0,
                     chargeTime: Number(item.chargeTime) || 0,
-                    motion: Number(item.motion) || 0.3,
+                    motion: (item.motion !== undefined && item.motion !== null) ? Number(item.motion) : 0.3,
                     maxCharges: Number(item.maxCharges) || 1,
+                    chainCasts: Number(item.chainCasts) || 1,
+                    chainCoeffs: Array.isArray(item.chainCoeffs) ? item.chainCoeffs.map(Number) : null,
                     coeff: Number(item.coeff) || 0,
                     hitInfo: item.hitInfo || '',
                     rawOption: item.optionsText || (item.options || []).join(' / '),
@@ -8374,14 +8443,15 @@
                 return { motion };
             }
 
-            function executeSkillCast(skillName, startTime, stackBadgeText = '') {
+            function executeSkillCast(skillName, startTime, stackBadgeText = '', chainMeta = null) {
                 processScheduledEventsUpTo(startTime);
                 updateTimedResources(startTime);
                 const sk = skillDb[skillName];
                 if (!sk) return { motion: 0.1, effectiveCd: 1.0 };
 
-                const motion = Math.max(0.05, Number(sk.motion) || 0.2);
-                let rawBaseCoeff = Number(sk.coeff) || 0;
+                const motion = (sk.motion === 0) ? 0 : Math.max(0.05, Number(sk.motion) || 0.2);
+                let rawBaseCoeff = chainMeta ? Number(chainMeta.stepCoeff) : (Number(sk.coeff) || 0);
+                const isNonDamageStep = (chainMeta && rawBaseCoeff <= 0);
                 const hitTime = startTime + motion * 0.5;
                 processScheduledEventsUpTo(hitTime);
 
@@ -8441,6 +8511,16 @@
                             isDebuff: false
                         };
                         recordStateInterval('면역 및 피해 감소', startTime, newExpire, false, 0, false, '전투의 함성 6✦ (받피감 50%)');
+                    } else if (skillName === '은신' && (!chainMeta || chainMeta.step === 2)) {
+                        const prev = activeStates['확정 치명타'];
+                        const newExpire = startTime + 3.0;
+                        activeStates['확정 치명타'] = {
+                            expireAt: prev ? Math.max(prev.expireAt, newExpire) : newExpire,
+                            ampPct: 0,
+                            cdrPct: 0,
+                            isDebuff: false
+                        };
+                        recordStateInterval('확정 치명타', startTime, newExpire, false, 0, false, '은신 6✦ (연계 시 3초 · 이속 +10%)');
                     }
                 }
 
@@ -8451,7 +8531,7 @@
                     }
                 });
 
-                let bonusCoeff = Number(bt6.extraCoeff) || 0;
+                let bonusCoeff = isNonDamageStep ? 0 : (chainMeta ? ((Number(bt6.extraCoeff) || 0) / chainMeta.total) : (Number(bt6.extraCoeff) || 0));
                 let noSchoolEnhBonusCoeff = 0; // 계열 강화 미적용 추가 계수 (절명 신식 검의 형상 등)
                 let multFactor = 1.0;         // 곱연산 팩터 (계열강화, 돌파스펙, 신식기본증뎀, 화살촉소모, 6돌특수)
                 let buffAdditivePct = 0.0;    // 버프/디버프 피해 증가류 및 연속조준 합연산 누적
@@ -8575,8 +8655,11 @@
                     }
                     if (activeStates[cond.reqState]) {
                         if (cond.type === 'bonus_coeff') {
-                            bonusCoeff += Number(cond.value);
-                            triggeredBadges.push(`[${cond.reqState}] 추뎀 +${cond.value}%`);
+                            if (!isNonDamageStep) {
+                                const stepCondVal = chainMeta ? Number((Number(cond.value) / chainMeta.total).toFixed(2)) : Number(cond.value);
+                                bonusCoeff += stepCondVal;
+                                triggeredBadges.push(`[${cond.reqState}] 추뎀 +${stepCondVal}%`);
+                            }
                         } else if (cond.type === 'dmg_amp') {
                             buffAdditivePct += Number(cond.value);
                             consumedAmpStates.add(cond.reqState);
@@ -8672,7 +8755,9 @@
                     totalBaseCoeff += rawBaseCoeff;
                     totalFinalCoeff += finalCoeff;
                     if (summaryMap[skillName]) {
-                        summaryMap[skillName].casts++;
+                        if (!chainMeta || chainMeta.step === 1) {
+                            summaryMap[skillName].casts++;
+                        }
                         summaryMap[skillName].baseSum += rawBaseCoeff;
                         summaryMap[skillName].finalSum += finalCoeff;
                     }
@@ -8751,7 +8836,9 @@
                         finalCoeff: logFinalCoeff,
                         synergyGain: logFinalCoeff - logBaseCoeff,
                         triggeredBadges,
-                        activeSnapshot
+                        activeSnapshot,
+                        chainStep: chainMeta ? chainMeta.step : 0,
+                        chainTotal: chainMeta ? chainMeta.total : 0
                     });
                 }
 
@@ -8789,6 +8876,37 @@
                 const wasFull = (slot.charges === slot.maxCharges);
                 slot.charges = Math.max(0, slot.charges - 1);
                 const stackBadge = slot.maxCharges > 1 ? `[스택 ${slot.charges}/${slot.maxCharges}]` : '';
+                const sk = skillDb[slot.name];
+                const chainCount = (sk && Number(sk.chainCasts) > 1) ? Number(sk.chainCasts) : 1;
+
+                if (chainCount > 1) {
+                    let stepTime = castTime;
+                    let totalChainMotion = 0;
+                    let firstEffectiveCd = slot.lastEffectiveCd;
+
+                    for (let step = 1; step <= chainCount; step++) {
+                        if (stepTime >= simDuration) break;
+                        const stepCoeff = (sk.chainCoeffs && sk.chainCoeffs[step - 1] !== undefined)
+                            ? Number(sk.chainCoeffs[step - 1])
+                            : ((Number(sk.coeff) || 0) / chainCount);
+                        const stepBadge = (step === 1) ? stackBadge : '';
+                        const res = executeSkillCast(slot.name, stepTime, stepBadge, {
+                            step,
+                            total: chainCount,
+                            stepCoeff
+                        });
+                        stepTime += res.motion;
+                        totalChainMotion += res.motion;
+                        if (step === 1) firstEffectiveCd = res.effectiveCd;
+                    }
+
+                    slot.lastEffectiveCd = firstEffectiveCd;
+                    if (wasFull || slot.nextRechargeAt === null) {
+                        slot.nextRechargeAt = castTime + firstEffectiveCd;
+                    }
+                    return { motion: totalChainMotion, effectiveCd: firstEffectiveCd };
+                }
+
                 const { motion, effectiveCd } = executeSkillCast(slot.name, castTime, stackBadge);
                 slot.lastEffectiveCd = effectiveCd;
                 if (wasFull || slot.nextRechargeAt === null) {
@@ -8951,7 +9069,9 @@
                         </div>`;
                 }
 
-                const barGrad = isDot ? 'from-orange-500 to-rose-500' : 'from-violet-500 to-fuchsia-500';
+                const barStyleGrad = isDot
+                    ? 'linear-gradient(90deg, #f97316, #f43f5e)'
+                    : 'linear-gradient(90deg, #8b5cf6, #d946ef)';
                 const unitLabel = isDot ? '틱' : '회';
 
                 const tr = document.createElement('tr');
@@ -8972,10 +9092,10 @@
                     <td class="py-3 px-3 text-right num-clean text-[15px] font-extrabold text-emerald-400 whitespace-nowrap">${Math.round(item.finalSum).toLocaleString()}%</td>
                     <td class="py-3 px-3.5">
                         <div class="flex items-center gap-2.5">
-                            <div class="flex-1 h-2.5 bg-darkBg rounded-full overflow-hidden border border-borderCol">
-                                <div class="h-full bg-gradient-to-r ${barGrad} rounded-full" style="width:${Math.min(100, sharePct).toFixed(1)}%"></div>
+                            <div class="flex-1 bg-darkBg rounded-full overflow-hidden border border-borderCol" style="height:10px; min-width:80px;">
+                                <div style="width:${Math.min(100, sharePct).toFixed(1)}%; height:100%; background:${barStyleGrad}; border-radius:9999px; display:block;"></div>
                             </div>
-                            <span class="num-clean text-sm font-extrabold ${isDot ? 'text-orange-300' : 'text-violet-300'} w-13 text-right shrink-0">${sharePct.toFixed(1)}%</span>
+                            <span class="num-clean text-sm font-extrabold ${isDot ? 'text-orange-300' : 'text-violet-300'} w-14 text-right shrink-0">${sharePct.toFixed(1)}%</span>
                         </div>
                     </td>
                 `;
@@ -8996,7 +9116,9 @@
             uptimeSummary.forEach(item => {
                 const badgeCls = item.isDebuff ? 'badge-debuff' : 'badge-buff';
                 const typeLabel = item.isDebuff ? '약화' : '강화';
-                const barGrad = item.isDebuff ? 'from-rose-500 to-amber-500' : 'from-emerald-500 to-teal-400';
+                const barStyleGrad = item.isDebuff
+                    ? 'linear-gradient(90deg, #f43f5e, #f59e0b)'
+                    : 'linear-gradient(90deg, #10b981, #2dd4bf)';
                 const pctColor = item.isDebuff ? 'text-rose-300' : 'text-emerald-300';
 
                 const effectParts = [];
@@ -9020,8 +9142,8 @@
                     <td class="py-3 px-3 text-right num-clean text-sm font-semibold text-gray-200 whitespace-nowrap">${item.activeSec.toFixed(1)}초 <span class="text-xs font-medium text-gray-500">/ ${totalTime}초</span></td>
                     <td class="py-3 px-3.5">
                         <div class="flex items-center gap-2.5">
-                            <div class="flex-1 h-2.5 bg-darkBg rounded-full overflow-hidden border border-borderCol">
-                                <div class="h-full bg-gradient-to-r ${barGrad} rounded-full" style="width:${Math.min(100, item.uptimePct).toFixed(1)}%"></div>
+                            <div class="flex-1 bg-darkBg rounded-full overflow-hidden border border-borderCol" style="height:10px; min-width:80px;">
+                                <div style="width:${Math.min(100, item.uptimePct).toFixed(1)}%; height:100%; background:${barStyleGrad}; border-radius:9999px; display:block;"></div>
                             </div>
                             <span class="num-clean text-sm font-extrabold ${pctColor} w-14 text-right shrink-0">${item.uptimePct.toFixed(1)}%</span>
                         </div>
@@ -9041,8 +9163,11 @@
             }
 
             logs.forEach((log, i) => {
+                const isFollowUp = (log.chainStep && log.chainStep > 1);
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-cardBg/70 transition";
+                tr.className = isFollowUp
+                    ? "bg-sky-950/15 hover:bg-cardBg/70 transition"
+                    : "hover:bg-cardBg/70 transition";
                 const schoolMeta = getSchoolMeta(log.school);
 
                 const badgesHtml = log.triggeredBadges.length > 0
@@ -9072,7 +9197,10 @@
                             <span class="num-clean text-violet-400 font-bold text-[11px] w-5 shrink-0">#${i + 1}</span>
                             ${iconBoxHtml}
                             <div class="flex flex-col items-start gap-0.5 min-w-0">
-                                <span class="text-[13px] font-extrabold text-white whitespace-nowrap leading-tight">${log.skillName}</span>
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[13px] font-extrabold ${isFollowUp ? 'text-sky-200' : 'text-white'} whitespace-nowrap leading-tight">${isFollowUp ? '↳ ' : ''}${log.skillName}</span>
+                                    ${isFollowUp ? `<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-400/40 whitespace-nowrap leading-tight">후속타 ${log.chainStep}/${log.chainTotal}</span>` : ''}
+                                </div>
                                 <span class="${getCategoryBadgeClass(log.category)} px-1.5 py-0.2 rounded text-[10px] font-bold leading-tight">${getCategoryLabel(log.category)}</span>
                             </div>
                         </div>
