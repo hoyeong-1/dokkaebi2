@@ -22,9 +22,14 @@
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif; background-color: #0b0c10; color: #f3f4f6; }
+        body { font-family: 'Pretendard Variable', 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif; background-color: #0b0c10; color: #f3f4f6; }
+        .num-clean { font-variant-numeric: tabular-nums; letter-spacing: -0.015em; }
+        .no-spinner::-webkit-outer-spin-button,
+        .no-spinner::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .no-spinner { -moz-appearance: textfield; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0b0c10; }
         ::-webkit-scrollbar-thumb { background: #2e3346; border-radius: 3px; }
@@ -113,9 +118,9 @@
                         <div class="flex items-center gap-1.5 bg-cardBg border border-borderCol rounded-xl px-2.5 py-1">
                             <span class="text-[11px] text-gray-400 font-semibold"><i class="fa-solid fa-khanda text-amber-400 mr-1"></i>무기(평타):</span>
                             <select id="weaponTypeSelect" onchange="onWeaponTypeChange()" class="bg-transparent text-xs font-bold text-amber-300 focus:outline-none cursor-pointer">
-                                <option value="sword" class="bg-panelBg text-white">검 / 도 (계수 60% · 0.6초)</option>
-                                <option value="fan" class="bg-panelBg text-white">부채 (계수 63% · 0.6초)</option>
-                                <option value="staff" class="bg-panelBg text-white">지팡이 / 활 (계수 72% · 0.6초)</option>
+                                <option value="sword" class="bg-panelBg text-white">검 / 도 (72% · 0.65초)</option>
+                                <option value="fan" class="bg-panelBg text-white">부채 (63% · 0.65초)</option>
+                                <option value="staff" class="bg-panelBg text-white">지팡이 / 활 (60% · 0.65초)</option>
                             </select>
                         </div>
                         <span class="text-xs text-gray-400 font-medium">시뮬 시간:</span>
@@ -124,10 +129,7 @@
                             <button type="button" onclick="setSimDuration(600)" id="durBtn600" class="px-2.5 py-1 rounded-lg text-xs font-bold transition text-gray-400 hover:text-white">10분</button>
                             <button type="button" onclick="setSimDuration(1800)" id="durBtn1800" class="px-2.5 py-1 rounded-lg text-xs font-bold transition text-gray-400 hover:text-white">30분</button>
                         </div>
-                        <select id="simMode" onchange="calculateDPS()" class="bg-cardBg border border-borderCol rounded-xl px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-violet-500">
-                            <option value="priority" selected>우선순위 (쿨마다)</option>
-                            <option value="sequence">고정 순서 반복</option>
-                        </select>
+
                     </div>
                 </div>
 
@@ -155,14 +157,21 @@
                     </div>
                 </div>
 
-                <!-- Permanent State Toggles -->
-                <div class="bg-cardBg/70 border border-borderCol rounded-xl p-3 flex flex-col gap-2 mb-2">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div class="text-xs text-gray-300 flex items-center gap-1.5 font-medium shrink-0">
-                            <i class="fa-solid fa-sliders text-violet-400"></i>
-                            <span>상시 디버프/버프:</span>
+                <!-- Permanent State Toggles (Buff / Debuff Separated) -->
+                <div class="bg-cardBg/70 border border-borderCol rounded-xl p-3 flex flex-col gap-2.5 mb-2">
+                    <div class="flex flex-col sm:flex-row sm:items-start gap-2">
+                        <div class="text-xs text-emerald-300 flex items-center gap-1.5 font-bold shrink-0 w-24 pt-0.5">
+                            <i class="fa-solid fa-arrow-up text-emerald-400"></i>
+                            <span>상시 버프:</span>
                         </div>
-                        <div class="flex flex-wrap items-center gap-1.5" id="initialStateToggles"></div>
+                        <div class="flex flex-wrap items-center gap-1.5 flex-1" id="initialBuffToggles"></div>
+                    </div>
+                    <div class="border-t border-borderCol/60 pt-2 flex flex-col sm:flex-row sm:items-start gap-2">
+                        <div class="text-xs text-rose-300 flex items-center gap-1.5 font-bold shrink-0 w-24 pt-0.5">
+                            <i class="fa-solid fa-arrow-down text-rose-400"></i>
+                            <span>상시 디버프:</span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 flex-1" id="initialDebuffToggles"></div>
                     </div>
                 </div>
 
@@ -176,39 +185,15 @@
                 </div>
             </div>
 
-            <!-- 2. Ultimate (도술/궁극기 1개 제한) & Style Sinsik Effect (신식효과) Banner + School Enhancement Level -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Ultimate & Sinsik Effect Card (Auto-equipped on >=3 same school skills) -->
-                <div id="sinsikBanner" class="bg-panelBg border border-borderCol rounded-2xl p-4 shadow-xl flex flex-col justify-between relative overflow-hidden">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-extrabold text-amber-300 flex items-center gap-1.5">
-                            <i class="fa-solid fa-crown text-amber-400"></i> 궁극기 & 신식효과
-                        </span>
-                        <span class="text-[10px] text-gray-400">동일 계열 3개+</span>
-                    </div>
-                    <div id="sinsikBannerContent" class="text-xs text-gray-400">
-                        <!-- Dynamically rendered based on >=3 school condition -->
-                    </div>
-                </div>
-
-                <!-- School Enhancement Level (Lv.0~50) & Breakthrough Info Card -->
-                <div id="bt6BannerCard" class="bg-panelBg border border-borderCol rounded-2xl p-4 shadow-xl flex flex-col justify-between">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-extrabold text-purple-300 flex items-center gap-1.5">
-                            <i class="fa-solid fa-arrow-up-right-dots text-emerald-400"></i> 계열 강화 (Lv.0~50)
-                        </span>
-                        <button onclick="resetAllSchoolLevels()" class="text-[10px] bg-cardBg hover:bg-gray-800 text-gray-300 border border-borderCol px-2 py-0.5 rounded-lg transition">
-                            초기화
-                        </button>
-                    </div>
-                    <div id="bt6BannerContent" class="text-xs text-gray-400">
-                        <!-- Dynamically rendered school enhancement controls for active schools in cycle -->
-                    </div>
+            <!-- 2. Ultimate (도술/궁극기 1개 제한) & Style Sinsik Effect (신식효과) Banner -->
+            <div id="sinsikBanner" class="bg-panelBg border border-borderCol rounded-2xl px-4 py-3 shadow-xl relative overflow-hidden">
+                <div id="sinsikBannerContent" class="text-xs text-gray-400">
+                    <!-- Dynamically rendered based on >=3 school condition -->
                 </div>
             </div>
 
             <!-- 3. Drag & Drop Skill Order Deck -->
-            <div class="bg-panelBg border border-borderCol rounded-2xl p-5 shadow-xl">
+            <div class="bg-panelBg border border-borderCol rounded-2xl p-4 shadow-xl">
                 <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
                     <div class="flex items-center gap-2">
                         <h2 class="text-sm font-bold text-violet-400 flex items-center gap-2">
@@ -245,7 +230,7 @@
                 </div>
 
                 <!-- Skill Sequence Cards -->
-                <div id="cycleContainer" class="bg-darkBg/90 border-2 border-dashed border-borderCol rounded-xl p-3.5 min-h-[185px] flex flex-wrap content-start gap-2.5 relative transition">
+                <div id="cycleContainer" class="bg-darkBg/90 border-2 border-dashed border-borderCol rounded-xl p-2.5 min-h-[160px] grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 relative transition">
                 </div>
             </div>
 
@@ -267,16 +252,16 @@
                 </div>
 
                 <!-- View A: Skill Damage Contribution Summary -->
-                <div id="summaryViewBox" class="overflow-x-auto max-h-[340px] overflow-y-auto border border-borderCol rounded-xl">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead class="bg-cardBg text-gray-400 sticky top-0 z-10 border-b border-borderCol">
-                            <tr>
-                                <th class="py-2.5 px-3 font-semibold">도술명 (분류)</th>
-                                <th class="py-2.5 px-3 font-semibold text-right">시전 횟수</th>
-                                <th class="py-2.5 px-3 font-semibold text-right">기본 계수합</th>
-                                <th class="py-2.5 px-3 font-semibold text-right">시너지/신식/돌파 보너스</th>
-                                <th class="py-2.5 px-3 font-semibold text-right">최종 누적 피해량</th>
-                                <th class="py-2.5 px-3 font-semibold w-36">딜 지분율 (%)</th>
+                <div id="summaryViewBox" class="overflow-x-auto border border-borderCol rounded-xl">
+                    <table class="w-full text-left border-collapse text-[13px]">
+                        <thead class="bg-cardBg text-gray-300 sticky top-0 z-10 border-b border-borderCol text-xs">
+                            <tr class="whitespace-nowrap">
+                                <th class="py-3 px-3.5 font-bold">도술명 (분류)</th>
+                                <th class="py-3 px-3 font-bold text-right">시전 횟수</th>
+                                <th class="py-3 px-3 font-bold text-right">기본 계수합</th>
+                                <th class="py-3 px-3 font-bold text-right">보너스 계수</th>
+                                <th class="py-3 px-3 font-bold text-right">최종 누적 피해량</th>
+                                <th class="py-3 px-3.5 font-bold w-48">딜 지분율 (%)</th>
                             </tr>
                         </thead>
                         <tbody id="summaryTableBody" class="divide-y divide-borderCol/60 bg-darkBg/50"></tbody>
@@ -284,15 +269,15 @@
                 </div>
 
                 <!-- View Uptime: Buff/Debuff Uptime Statistics -->
-                <div id="uptimeViewBox" class="hidden overflow-x-auto max-h-[340px] overflow-y-auto border border-borderCol rounded-xl">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead class="bg-cardBg text-gray-400 sticky top-0 z-10 border-b border-borderCol">
-                            <tr>
-                                <th class="py-2.5 px-3 font-semibold">상태명 (구분)</th>
-                                <th class="py-2.5 px-3 font-semibold">주요 효과</th>
-                                <th class="py-2.5 px-3 font-semibold text-right">부여/갱신</th>
-                                <th class="py-2.5 px-3 font-semibold text-right">유지 시간</th>
-                                <th class="py-2.5 px-3 font-semibold w-44">가동률 (%)</th>
+                <div id="uptimeViewBox" class="hidden overflow-x-auto border border-borderCol rounded-xl">
+                    <table class="w-full text-left border-collapse text-[13px]">
+                        <thead class="bg-cardBg text-gray-300 sticky top-0 z-10 border-b border-borderCol text-xs">
+                            <tr class="whitespace-nowrap">
+                                <th class="py-3 px-3.5 font-bold">상태명 (구분)</th>
+                                <th class="py-3 px-3 font-bold">주요 효과</th>
+                                <th class="py-3 px-3 font-bold text-right">부여/갱신</th>
+                                <th class="py-3 px-3 font-bold text-right">유지 시간</th>
+                                <th class="py-3 px-3.5 font-bold w-48">가동률 (%)</th>
                             </tr>
                         </thead>
                         <tbody id="uptimeTableBody" class="divide-y divide-borderCol/60 bg-darkBg/50"></tbody>
@@ -300,16 +285,16 @@
                 </div>
 
                 <!-- View B: Step-by-Step Cast Timeline -->
-                <div id="timelineViewBox" class="hidden overflow-x-auto max-h-[340px] overflow-y-auto border border-borderCol rounded-xl">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead class="bg-cardBg text-gray-400 sticky top-0 z-10 border-b border-borderCol">
-                            <tr>
-                                <th class="py-2.5 px-3 font-semibold w-24">시전 시각</th>
-                                <th class="py-2.5 px-3 font-semibold">도술명</th>
-                                <th class="py-2.5 px-3 font-semibold text-right">기본 계수</th>
-                                <th class="py-2.5 px-3 font-semibold">적용된 효과 (시너지/신식/돌파)</th>
-                                <th class="py-2.5 px-3 font-semibold text-right">최종 피해량</th>
-                                <th class="py-2.5 px-3 font-semibold">유지 상태(남은시간)</th>
+                <div id="timelineViewBox" class="hidden overflow-x-auto max-h-[640px] overflow-y-auto border border-borderCol rounded-xl">
+                    <table class="w-full text-left border-collapse text-[13px]">
+                        <thead class="bg-cardBg text-gray-300 sticky top-0 z-10 border-b border-borderCol text-xs">
+                            <tr class="whitespace-nowrap">
+                                <th class="py-3 px-2.5 font-bold w-[72px]">시전 시각</th>
+                                <th class="py-3 px-2.5 font-bold">도술명</th>
+                                <th class="py-3 px-2 font-bold text-right">기본 계수</th>
+                                <th class="py-3 px-2.5 font-bold">적용된 효과</th>
+                                <th class="py-3 px-2 font-bold text-right">최종 피해량</th>
+                                <th class="py-3 px-2.5 font-bold">유지 상태</th>
                             </tr>
                         </thead>
                         <tbody id="timelineTableBody" class="divide-y divide-borderCol/60 bg-darkBg/50"></tbody>
@@ -319,17 +304,30 @@
 
         </div>
 
-        <!-- Right Column: 100 Skills Database Browser (5 Cols) -->
-        <div class="lg:col-span-5 flex flex-col">
-            <div class="bg-panelBg border border-borderCol rounded-2xl p-5 shadow-xl flex-1 flex flex-col">
+        <!-- Right Column: All-Schools Enhancement + 101 Skills Database Browser (5 Cols) -->
+        <div class="lg:col-span-5 flex flex-col gap-4">
+            <!-- School Enhancement Level (Lv.0~50) for All 12 Schools (6x2 Grid) -->
+            <div id="bt6BannerCard" class="bg-panelBg border border-borderCol rounded-2xl p-4 shadow-xl shrink-0">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-extrabold text-gray-100 flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-up-right-dots text-emerald-400"></i> 도술 계열 강화 레벨
+                        <span class="text-[11px] font-medium text-gray-400">(0 ~ 50)</span>
+                    </span>
+                    <button onclick="resetAllSchoolLevels()" class="text-xs font-bold text-rose-400 hover:text-rose-300 bg-rose-950/30 hover:bg-rose-900/40 border border-rose-800/40 px-2.5 py-1 rounded-lg transition">
+                        초기화
+                    </button>
+                </div>
+                <div id="bt6BannerContent" class="text-xs text-gray-400">
+                    <!-- Dynamically rendered 6x2 school enhancement grid -->
+                </div>
+            </div>
+
+            <div class="bg-panelBg border border-borderCol rounded-2xl p-5 shadow-xl flex-1 flex flex-col min-h-0">
                 <div class="flex justify-between items-center mb-2.5">
                     <h2 class="text-sm font-bold text-violet-400 flex items-center gap-2">
                         <i class="fa-solid fa-book-open"></i> 도술 도감 (101종)
-                        <span id="customCountBadge" class="hidden text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full font-extrabold">커스텀 0개</span>
                     </h2>
-                    <button type="button" onclick="resetAllCustomSkills()" class="text-[11px] bg-cardBg hover:bg-gray-800 text-gray-300 hover:text-white border border-borderCol px-2.5 py-1 rounded-lg transition flex items-center gap-1" title="커스텀 수정한 모든 도술 수치와 효과를 초기 데이터로 되돌립니다">
-                        <i class="fa-solid fa-rotate-left text-amber-400"></i> 커스텀 전체 초기화
-                    </button>
+                    <span class="text-[11px] text-gray-400">클릭하여 배치 · 우측 돌파 입력 (0~10)</span>
                 </div>
 
                 <!-- Category Filter Bar (전체 / 일반 / 특별 / 도술) -->
@@ -362,8 +360,10 @@
                     </select>
                 </div>
 
-                <!-- 100 Skills Scrollable List -->
-                <div class="flex-1 overflow-y-auto max-h-[680px] space-y-2 pr-1" id="skillListContainer"></div>
+                <!-- 101 Skills Scrollable List (fills full available height) -->
+                <div class="relative flex-1 min-h-[560px]">
+                    <div class="lg:absolute lg:inset-0 overflow-y-auto max-h-[680px] lg:max-h-none space-y-2 pr-1" id="skillListContainer"></div>
+                </div>
             </div>
         </div>
 
@@ -570,9 +570,9 @@
 
         // 무기 종류별 기본공격(평타) 계수 및 모션 시간
         const WEAPON_TYPES = {
-            sword: { id: 'sword', name: '기본공격 (검/도)', coeff: 60, motion: 0.6 },
-            fan:   { id: 'fan',   name: '기본공격 (부채)',  coeff: 63, motion: 0.6 },
-            staff: { id: 'staff', name: '기본공격 (지팡이/활)', coeff: 72, motion: 0.6 }
+            sword: { id: 'sword', name: '기본공격 (검/도)', coeff: 72, motion: 0.65 },
+            fan:   { id: 'fan',   name: '기본공격 (부채)',  coeff: 63, motion: 0.65 },
+            staff: { id: 'staff', name: '기본공격 (지팡이/활)', coeff: 60, motion: 0.65 }
         };
 
         // 12대 계열별 대표 궁극기(도술) 매핑 (각 계열의 마지막 궁극기 ID/이름 지정 + SKILL_DATA에서 category가 '도술'인 스킬도 자동 인식)
@@ -7151,7 +7151,7 @@
         let schoolEnhanceLevels = JSON.parse(localStorage.getItem('dokkaebi_school_lv_v6')) || {};
         // 3개 이상 채용한 계열이 2개 이상일 때 사용자가 선택한 궁극기 계열
         let selectedUltSchool = localStorage.getItem('dokkaebi_ult_school_v6') || null;
-        // 무기 종류 (sword: 60%, fan: 63%, staff: 72%)
+        // 무기 종류 (sword: 72%, fan: 63%, staff: 60%, 0.65초)
         let currentWeaponType = localStorage.getItem('dokkaebi_weapon_v6') || 'sword';
         let activeTreeName = localStorage.getItem('dokkaebi_active_tree_name_v6') || DEFAULT_PRESETS[0].name;
         let permanentStates = JSON.parse(localStorage.getItem('dokkaebi_perm_states_v6')) || {};
@@ -7257,6 +7257,107 @@
             calculateDPS();
         }
 
+        function getSkillBreakthroughInfo(sk) {
+            if (!sk || sk.category === '도술') {
+                return { btStage: 0, btStagePct: 0, btCdrSec: 0, isBt6: false, bt6ExtraCoeff: 0, bt6DmgBonusPct: 0 };
+            }
+            const btStage = Math.max(0, Math.min(10, parseInt(breakthroughStageMap[sk.name], 10) || 0));
+            const btStagePct = (sk.breakthroughDmgTable && sk.breakthroughDmgTable[btStage] !== undefined)
+                ? Number(sk.breakthroughDmgTable[btStage])
+                : (btStage * 3);
+            const btCdrSec = btStage > 0
+                ? ((sk.breakthroughCdrTable && sk.breakthroughCdrTable[btStage] !== undefined)
+                    ? Number(sk.breakthroughCdrTable[btStage])
+                    : Number(((Number(sk.cooldown) || 5) * 0.015 * btStage).toFixed(3)))
+                : 0;
+            const isBt6 = (sk.category === '특별') && (btStage >= 6);
+            const bt6 = (isBt6 && sk.breakthrough6) ? sk.breakthrough6 : { extraCoeff: 0, dmgBonusPct: 0, cooldownRedSec: 0 };
+            return {
+                btStage,
+                btStagePct,
+                btCdrSec: btCdrSec + (Number(bt6.cooldownRedSec) || 0),
+                isBt6,
+                bt6ExtraCoeff: Number(bt6.extraCoeff) || 0,
+                bt6DmgBonusPct: Number(bt6.dmgBonusPct) || 0
+            };
+        }
+
+        function getSkillEnhancedCoeff(sk) {
+            if (!sk) return 0;
+            const base = Number(sk.coeff) || 0;
+            const enhPct = getSchoolEnhancePct(sk.school);
+            const { btStagePct, bt6ExtraCoeff, bt6DmgBonusPct } = getSkillBreakthroughInfo(sk);
+            const effectiveBase = base + bt6ExtraCoeff;
+            const mult = (1 + enhPct / 100.0) * (1 + btStagePct / 100.0) * (1 + bt6DmgBonusPct / 100.0);
+            return Number((effectiveBase * mult).toFixed(2));
+        }
+
+        function getSkillCoeffTooltip(sk) {
+            if (!sk) return '';
+            const enhPct = getSchoolEnhancePct(sk.school);
+            const { btStage, btStagePct, isBt6, bt6ExtraCoeff, bt6DmgBonusPct } = getSkillBreakthroughInfo(sk);
+            const parts = [`기본 ${sk.coeff}%`];
+            if (isBt6 && bt6ExtraCoeff > 0) parts.push(`6✦ 추가 +${bt6ExtraCoeff}%`);
+            if (enhPct > 0) parts.push(`계열강화 +${enhPct.toFixed(2)}%`);
+            if (btStagePct > 0) parts.push(`${btStage}돌파 +${btStagePct}%`);
+            if (isBt6 && bt6DmgBonusPct > 0) parts.push(`6✦ 증폭 +${bt6DmgBonusPct}%`);
+            return parts.join(' · ');
+        }
+
+        function syncSkillDisplayedStats(skillName) {
+            const sk = skillDb[skillName];
+            if (!sk) return;
+            const dispCoeff = getSkillEnhancedCoeff(sk);
+            const { btCdrSec } = getSkillBreakthroughInfo(sk);
+            const dispCd = Number(Math.max(0.5, (Number(sk.cooldown) || 5) - btCdrSec).toFixed(2));
+            const tip = getSkillCoeffTooltip(sk);
+            document.querySelectorAll(`[data-coeff-for="${skillName}"]`).forEach(el => {
+                el.innerText = `${dispCoeff}%`;
+                el.title = tip;
+            });
+            document.querySelectorAll(`[data-cd-for="${skillName}"]`).forEach(el => {
+                el.innerText = el.dataset.cdUnit === 's' ? `${dispCd}s` : `${dispCd}초`;
+            });
+        }
+
+        function onSkillBreakthroughInput(skillName, inputEl, source, event) {
+            if (event) event.stopPropagation();
+            const raw = inputEl.value.trim();
+            let lv = 0;
+            if (raw !== '') {
+                let parsed = parseInt(raw, 10);
+                if (isNaN(parsed)) parsed = 0;
+                if (parsed > 10) {
+                    parsed = 10;
+                    inputEl.value = 10;
+                } else if (parsed < 0) {
+                    parsed = 0;
+                    inputEl.value = 0;
+                }
+                lv = parsed;
+            }
+            breakthroughStageMap[skillName] = lv;
+            if (skillDb[skillName]?.category === '특별') {
+                bt6ActiveMap[skillName] = (lv >= 6);
+            }
+            saveAllState();
+            if (source === 'list') {
+                renderCycle();
+            } else {
+                renderSkillList();
+            }
+            syncSkillDisplayedStats(skillName);
+            calculateDPS();
+        }
+
+        function stepSkillBreakthroughStage(skillName, delta, event) {
+            if (event) event.stopPropagation();
+            const cur = Math.max(0, Math.min(10, parseInt(breakthroughStageMap[skillName], 10) || 0));
+            const next = Math.max(0, Math.min(10, cur + delta));
+            if (next === cur) return;
+            setSkillBreakthroughStage(skillName, next, event);
+        }
+
         function setSkillBreakthroughStage(skillName, stage, event) {
             if (event) event.stopPropagation();
             const lv = Math.max(0, Math.min(10, parseInt(stage, 10) || 0));
@@ -7266,6 +7367,7 @@
                 bt6ActiveMap[skillName] = (lv >= 6);
             }
             saveAllState();
+            renderSkillList();
             renderCycle();
             calculateDPS();
         }
@@ -7282,9 +7384,32 @@
                 }
             });
             saveAllState();
+            renderSkillList();
             renderCycle();
             calculateDPS();
             showToast(`모든 일반/특별 도술에 ${lv}돌파(피해량 +${lv * 3}% 및 돌파 대기시간 감소)가 일괄 적용되었습니다!`);
+        }
+
+        function onSchoolEnhanceInput(schoolId, inputEl) {
+            const raw = inputEl.value.trim();
+            if (raw === '') {
+                schoolEnhanceLevels[schoolId] = 0;
+            } else {
+                let parsed = parseInt(raw, 10);
+                if (isNaN(parsed)) parsed = 0;
+                if (parsed > 50) {
+                    parsed = 50;
+                    inputEl.value = 50;
+                } else if (parsed < 0) {
+                    parsed = 0;
+                    inputEl.value = 0;
+                }
+                schoolEnhanceLevels[schoolId] = parsed;
+            }
+            saveAllState();
+            renderSkillList();
+            renderCycle();
+            calculateDPS(true);
         }
 
         function setSchoolEnhanceLevel(schoolId, level) {
@@ -7292,6 +7417,7 @@
             schoolEnhanceLevels[schoolId] = lv;
             saveAllState();
             renderSinsikAndBt6Banners();
+            renderSkillList();
             renderCycle();
             calculateDPS();
         }
@@ -7300,6 +7426,7 @@
             schoolEnhanceLevels = {};
             saveAllState();
             renderSinsikAndBt6Banners();
+            renderSkillList();
             renderCycle();
             calculateDPS();
             showToast("모든 계열 강화 레벨이 Lv.0으로 초기화되었습니다.");
@@ -7427,7 +7554,7 @@
             return foundName ? skillDb[foundName] : null;
         }
 
-        function renderSinsikAndBt6Banners() {
+        function renderSinsikAndBt6Banners(skipEnhanceRerender = false) {
             const sinsikContent = document.getElementById('sinsikBannerContent');
             const bannerBox = document.getElementById('sinsikBanner');
             const { schoolCounts, eligibleSchools } = syncUltimateInCycle(false);
@@ -7440,34 +7567,30 @@
             }).join(' ');
 
             if (!equippedDosul) {
-                bannerBox.className = "bg-panelBg border border-borderCol rounded-2xl p-4 shadow-xl flex flex-col justify-between relative overflow-hidden";
+                bannerBox.className = "bg-panelBg border border-borderCol rounded-2xl px-4 py-3 shadow-xl relative overflow-hidden";
                 sinsikContent.innerHTML = `
-                    <div class="flex flex-col gap-2">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-9 h-9 rounded-xl bg-darkBg border border-borderCol flex items-center justify-center text-gray-600 shrink-0">
-                                <i class="fa-solid fa-lock"></i>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-darkBg border border-borderCol flex items-center justify-center text-gray-600 shrink-0">
+                                <i class="fa-solid fa-lock text-sm"></i>
                             </div>
                             <div>
-                                <div class="text-gray-300 font-semibold">궁극기 미해금</div>
-                                <div class="text-[11px] text-gray-500">동일 계열 3개 이상 채용 시 자동 편성</div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-extrabold text-amber-300/90"><i class="fa-solid fa-crown text-amber-400/70 mr-1"></i>궁극기 & 신식</span>
+                                    <span class="text-xs font-bold text-gray-400">미해금</span>
+                                </div>
+                                <div class="text-[11px] text-gray-500 mt-0.5">동일 계열 3개 이상 채용 시 자동 편성</div>
                             </div>
                         </div>
-                        ${countChips ? `<div class="flex flex-wrap gap-1.5 pt-1 border-t border-borderCol/60">${countChips}</div>` : ''}
+                        ${countChips ? `<div class="flex flex-wrap items-center gap-1.5">${countChips}</div>` : ''}
                     </div>
                 `;
             } else {
                 const schoolMeta = getSchoolMeta(equippedDosul.school);
-                const sinsik = styleSinsikDb[equippedDosul.school] || {
-                    styleName: schoolMeta.name,
-                    name: `${schoolMeta.name} 신식효과`,
-                    dmgBonus: 0,
-                    sameStyleBonus: 0,
-                    cdrBonus: 0,
-                    desc: ''
-                };
+                const enhCoeff = getSkillEnhancedCoeff(equippedDosul);
 
                 // 3개 이상 채용된 계열이 2종류 이상일 때 궁극기 선택 버튼 제공
-                let selectorHtml = '';
+                let rightControlsHtml = '';
                 if (eligibleSchools.length >= 2) {
                     const btns = eligibleSchools.map(scId => {
                         const m = getSchoolMeta(scId);
@@ -7478,89 +7601,87 @@
                                 active ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow' : 'bg-darkBg border-borderCol text-gray-400 hover:text-white'
                             }">
                                 <i class="fa-solid fa-crown ${active ? 'text-amber-400' : 'text-gray-600'}"></i>
-                                <span>[${m.name}] ${ultSk ? ultSk.name : '궁극기'} 선택</span>
+                                <span>${m.name} · ${ultSk ? ultSk.name : '궁극기'}</span>
                             </button>
                         `;
                     }).join('');
-                    selectorHtml = `
-                        <div class="mt-2 pt-2 border-t border-borderCol/70">
-                            <span class="text-[10px] text-amber-300 font-bold block mb-1">⚡ 3개 이상 달성 계열(${eligibleSchools.length}종) 중 궁극기 선택:</span>
-                            <div class="flex flex-wrap gap-1.5">${btns}</div>
+                    rightControlsHtml = `<div class="flex flex-wrap items-center gap-1.5">${btns}</div>`;
+                } else {
+                    rightControlsHtml = `
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex items-center gap-1.5">${countChips}</div>
+                            <div class="hidden sm:flex items-center gap-2 bg-darkBg/80 border border-borderCol rounded-xl px-2.5 py-1.5 text-xs num-clean">
+                                <span class="text-gray-400">계수 <b class="text-emerald-400 font-extrabold">${enhCoeff}%</b></span>
+                                <span class="text-gray-600">·</span>
+                                <span class="text-gray-400">쿨 <b class="text-white font-bold">${equippedDosul.cooldown}s</b></span>
+                            </div>
                         </div>
                     `;
                 }
 
-                bannerBox.className = "bg-panelBg border border-amber-500/50 rounded-2xl p-4 shadow-xl flex flex-col justify-between relative overflow-hidden";
+                bannerBox.className = "bg-panelBg border border-amber-500/50 rounded-2xl px-4 py-3 shadow-xl relative overflow-hidden";
                 sinsikContent.innerHTML = `
-                    <div>
-                        <div class="flex items-center gap-3.5">
-                            <div class="w-14 h-14 rounded-2xl overflow-hidden bg-darkBg border-2 border-amber-400 shrink-0 flex items-center justify-center shadow-lg">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-12 h-12 rounded-xl overflow-hidden bg-darkBg border-2 border-amber-400 shrink-0 flex items-center justify-center shadow-lg">
                                 <img src="${getSkillIconSrc(equippedDosul)}" data-fallback-idx="0" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${equippedDosul.imageFile || ''}')">
                                 <div class="hidden w-full h-full items-center justify-center text-sm font-extrabold text-amber-300">${equippedDosul.name.substring(0, 2)}</div>
                             </div>
-                            <div class="min-w-0 flex-1">
+                            <div class="min-w-0">
+                                <div class="text-[11px] font-bold text-amber-300/90 flex items-center gap-1 leading-none mb-1">
+                                    <i class="fa-solid fa-crown text-amber-400 text-[10px]"></i> 궁극기 & 신식효과
+                                </div>
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="text-base font-black text-white">${equippedDosul.name}</span>
-                                    <span class="px-2 py-0.5 rounded-md text-[11px] font-bold text-white" style="background:${schoolMeta.color}">
+                                    <span class="text-base font-black text-white leading-tight">${equippedDosul.name}</span>
+                                    <span class="px-2 py-0.5 rounded-md text-[11px] font-bold text-white leading-tight" style="background:${schoolMeta.color}">
                                         ${schoolMeta.name} 신식
                                     </span>
                                 </div>
-                                <div class="text-xs text-amber-300 font-bold mt-1">
-                                    ${equippedDosul.school === 'jeolmyeong'
-                                        ? '암습 타격당 계수 +55/+90/+125% 합산(4타) · 5스택 도술 궁쿨 -6초'
-                                        : `궁극기 +${sinsik.dmgBonus || 0}% · ${schoolMeta.name} +${sinsik.sameStyleBonus || 0}%${sinsik.cdrBonus ? ` · 쿨감 ${sinsik.cdrBonus}%` : ''}`
-                                    }
-                                </div>
                             </div>
                         </div>
-                        ${selectorHtml}
+                        ${rightControlsHtml}
                     </div>
                 `;
             }
 
-            // 우측 배너: 현재 사이클에 포함된 계열들의 도술 강화 레벨(Lv.0~50) 설정 UI
+            if (skipEnhanceRerender) return;
+
+            // 전체 12대 계열 도술 강화 레벨(Lv.0~50) 6x2 타일형 입력 UI
             const bt6Content = document.getElementById('bt6BannerContent');
-            const activeSchoolsInCycle = Array.from(new Set(cycle.map(sName => skillDb[sName]?.school).filter(Boolean)));
+            const activeSchoolsSet = new Set(cycle.map(sName => skillDb[sName]?.school).filter(Boolean));
+            const allSchools = SCHOOLS.filter(s => s.id !== 'all');
 
-            if (activeSchoolsInCycle.length === 0) {
-                bt6Content.innerHTML = `
-                    <div class="flex items-center gap-2.5 py-1">
-                        <div class="w-9 h-9 rounded-xl bg-darkBg border border-borderCol flex items-center justify-center text-gray-600 shrink-0">
-                            <i class="fa-solid fa-book-journal-whills"></i>
+            const cardsHtml = allSchools.map(meta => {
+                const scId = meta.id;
+                const lv = Math.max(0, Math.min(50, parseInt(schoolEnhanceLevels[scId], 10) || 0));
+                const pct = getSchoolEnhancePct(scId);
+                const isEquipped = activeSchoolsSet.has(scId);
+                const topStyle = isEquipped
+                    ? `border-color:${meta.color}; background:${meta.color}22;`
+                    : '';
+                const inputBorderCls = lv > 0
+                    ? 'border-amber-400/60 text-white'
+                    : 'border-borderCol text-gray-300';
+
+                return `
+                    <div class="flex flex-col gap-1.5 min-w-0">
+                        <div class="rounded-xl border border-borderCol bg-cardBg/80 py-2.5 px-1 flex flex-col items-center justify-center transition" style="${topStyle}" title="${meta.name} 강화 Lv.${lv} (+${pct.toFixed(2)}%)${scId === 'heonsin' ? ` · 용맹 +${getYongmaengAtkBuffPct().toFixed(1)}%` : ''}">
+                            <span class="w-5 h-1 rounded-full mb-1.5" style="background:${meta.color}"></span>
+                            <span class="text-[15px] font-extrabold ${isEquipped ? 'text-white' : 'text-gray-100'} leading-none">${meta.name}</span>
                         </div>
-                        <div>
-                            <div class="text-gray-300 font-semibold">채용된 계열 없음</div>
-                            <div class="text-[11px] text-gray-500">도술 추가 시 계열 강화 레벨 설정 가능</div>
-                        </div>
+                        <input type="number" min="0" max="50" step="1" value="${lv}"
+                               onfocus="this.select()"
+                               oninput="onSchoolEnhanceInput('${scId}', this)"
+                               onchange="setSchoolEnhanceLevel('${scId}', this.value)"
+                               onkeydown="if(event.key==='Enter'){this.blur();}"
+                               class="w-full h-10 rounded-xl bg-darkBg border ${inputBorderCls} text-center text-[15px] font-extrabold num-clean no-spinner focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/40 transition" />
                     </div>
                 `;
-            } else {
-                const rowsHtml = activeSchoolsInCycle.map(scId => {
-                    const meta = getSchoolMeta(scId);
-                    const lv = Math.max(0, Math.min(50, parseInt(schoolEnhanceLevels[scId], 10) || 0));
-                    const pct = getSchoolEnhancePct(scId);
-                    let optionsHtml = '';
-                    for (let i = 0; i <= 50; i++) {
-                        optionsHtml += `<option value="${i}" ${i === lv ? 'selected' : ''}>Lv.${i} (+${SCHOOL_ENHANCE_BONUS_TABLE[i].toFixed(2)}%)</option>`;
-                    }
-                    return `
-                        <div class="flex items-center justify-between gap-2 bg-cardBg border border-borderCol rounded-xl px-3 py-1.5">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold text-white" style="background:${meta.color}">${meta.name}</span>
-                                <span class="text-[11px] text-emerald-400 font-bold">+${pct.toFixed(2)}%</span>
-                                ${scId === 'heonsin' ? `<span class="text-[10px] text-amber-300 font-bold">(용맹 공증·6✦주피증 +${getYongmaengAtkBuffPct().toFixed(1)}%)</span>` : ''}
-                            </div>
-                            <select onchange="setSchoolEnhanceLevel('${scId}', this.value)" class="bg-darkBg border border-borderCol rounded-lg px-2 py-1 text-[11px] font-bold text-gray-200 focus:outline-none focus:border-violet-500">
-                                ${optionsHtml}
-                            </select>
-                        </div>
-                    `;
-                }).join('');
-                bt6Content.innerHTML = `
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-[120px] overflow-y-auto pr-1">${rowsHtml}</div>
-                    
-                `;
-            }
+            }).join('');
+
+            bt6Content.innerHTML = `
+                <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">${cardsHtml}</div>
+            `;
         }
 
         // =========================================================================
@@ -7832,20 +7953,27 @@
             });
         }
 
-        function getAllKnownStates() {
+        function getKnownBuffStates() {
+            return ["공격력 증가", "질풍", "원소", "기세", "정밀", "수호", "척살(체력조건)"];
+        }
+
+        function getKnownDebuffStates() {
             return [
                 "충격", "파열", "파쇄", "관통", "낙인", "추적", "한기",
                 "출혈", "화상", "감전", "약화", "빙결", "마비", "속박",
                 "파열(받피증10%)", "파쇄(받피증10%)", "관통(방깎10%)", "추적(방깎10%)",
-                "받는 피해 증가", "방어력 감소", "공격력 증가",
-                "질풍", "원소", "기세", "정밀", "수호", "척살(체력조건)"
+                "받는 피해 증가", "방어력 감소"
             ];
         }
 
         function renderStateToggles() {
-            const container = document.getElementById('initialStateToggles');
-            container.innerHTML = '';
-            getAllKnownStates().forEach(st => {
+            const buffBox = document.getElementById('initialBuffToggles');
+            const debuffBox = document.getElementById('initialDebuffToggles');
+            if (!buffBox || !debuffBox) return;
+            buffBox.innerHTML = '';
+            debuffBox.innerHTML = '';
+
+            const buildBtn = (st, isBuff) => {
                 const active = !!permanentStates[st];
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -7856,14 +7984,19 @@
                     renderStyleResourceToggles();
                     calculateDPS();
                 };
+                const activeCls = isBuff
+                    ? 'bg-emerald-600/30 border-emerald-400 text-emerald-200'
+                    : 'bg-rose-600/30 border-rose-400 text-rose-200';
+                const iconColor = isBuff ? 'text-emerald-400' : 'text-rose-400';
                 btn.className = `px-2 py-0.5 rounded-md text-[11px] font-semibold transition border flex items-center gap-1 ${
-                    active 
-                        ? 'bg-violet-600/30 border-violet-400 text-violet-200' 
-                        : 'bg-darkBg border-borderCol text-gray-400 hover:text-gray-200'
+                    active ? activeCls : 'bg-darkBg border-borderCol text-gray-400 hover:text-gray-200'
                 }`;
-                btn.innerHTML = `<i class="fa-solid ${active ? 'fa-check text-violet-400' : 'fa-plus text-gray-600'} text-[9px]"></i> ${st}`;
-                container.appendChild(btn);
-            });
+                btn.innerHTML = `<i class="fa-solid ${active ? 'fa-check ' + iconColor : 'fa-plus text-gray-600'} text-[9px]"></i> ${st}`;
+                return btn;
+            };
+
+            getKnownBuffStates().forEach(st => buffBox.appendChild(buildBtn(st, true)));
+            getKnownDebuffStates().forEach(st => debuffBox.appendChild(buildBtn(st, false)));
         }
 
         // =========================================================================
@@ -7928,8 +8061,7 @@
         };
 
         function runSimulationForOrder(skillOrder, recordFullLogs = true) {
-            const modeEl = document.getElementById('simMode');
-            const mode = modeEl ? modeEl.value : 'priority';
+
             const simDuration = simDurationSec || 300;
             const weapon = WEAPON_TYPES[currentWeaponType] || WEAPON_TYPES.sword;
 
@@ -8255,7 +8387,7 @@
                 }
             }
 
-            // 무기 기본공격(0.6초)
+            // 무기 기본공격 (0.65초)
             function executeBasicAttack(startTime) {
                 processScheduledEventsUpTo(startTime);
                 updateTimedResources(startTime);
@@ -8774,64 +8906,44 @@
 
             const ultIdx = skillOrder.findIndex(sName => skillDb[sName]?.category === '도술');
 
-            if (mode === 'sequence') {
-                let seqIdx = 0;
-                while (currentTime < simDuration) {
-                    const slot = slotStates[seqIdx % slotStates.length];
-                    if (!skillDb[slot.name]) {
-                        seqIdx++;
-                        continue;
+            // 우선순위 (쿨마다) 시전: 직전 시전한 스택형 도술을 연속으로 2회 쓰지 않고 다음 순위 도술을 먼저 시전 후 다시 사용
+            let lastCastIdx = -1;
+            while (currentTime < simDuration) {
+                syncAllSlotRecharges(currentTime);
+                let castIdx = -1;
+                let fallbackIdx = -1;
+                for (let i = 0; i < slotStates.length; i++) {
+                    const slot = slotStates[i];
+                    if (skillDb[slot.name] && slot.charges > 0) {
+                        if (i !== lastCastIdx) {
+                            castIdx = i;
+                            break;
+                        } else if (fallbackIdx === -1) {
+                            fallbackIdx = i;
+                        }
                     }
+                }
+                if (castIdx === -1 && fallbackIdx !== -1) {
+                    castIdx = fallbackIdx;
+                }
 
-                    syncAllSlotRecharges(currentTime);
-                    while (slot.charges <= 0 && slot.nextRechargeAt !== null && currentTime + 1e-5 < slot.nextRechargeAt && currentTime < simDuration) {
-                        const { motion } = executeBasicAttack(currentTime);
-                        currentTime += motion;
-                        syncAllSlotRecharges(currentTime);
-                    }
-                    if (currentTime >= simDuration) break;
-
-                    seqIdx++;
-                    const castStart = currentTime;
-                    const { motion } = consumeSlotChargeAndCast(slot, castStart);
+                if (castIdx !== -1) {
+                    const slot = slotStates[castIdx];
+                    const { motion } = consumeSlotChargeAndCast(slot, currentTime);
+                    lastCastIdx = castIdx;
 
                     if (pendingUltFlatCdrSec > 0 && ultIdx !== -1) {
                         const ultSlot = slotStates[ultIdx];
                         if (ultSlot && ultSlot.nextRechargeAt !== null) {
-                            ultSlot.nextRechargeAt = Math.max(castStart, ultSlot.nextRechargeAt - pendingUltFlatCdrSec);
+                            ultSlot.nextRechargeAt = Math.max(0, ultSlot.nextRechargeAt - pendingUltFlatCdrSec);
                         }
                         pendingUltFlatCdrSec = 0;
                     }
                     currentTime += motion;
-                }
-            } else {
-                while (currentTime < simDuration) {
-                    syncAllSlotRecharges(currentTime);
-                    let castIdx = -1;
-                    for (let i = 0; i < slotStates.length; i++) {
-                        const slot = slotStates[i];
-                        if (skillDb[slot.name] && slot.charges > 0) {
-                            castIdx = i;
-                            break;
-                        }
-                    }
-
-                    if (castIdx !== -1) {
-                        const slot = slotStates[castIdx];
-                        const { motion } = consumeSlotChargeAndCast(slot, currentTime);
-
-                        if (pendingUltFlatCdrSec > 0 && ultIdx !== -1) {
-                            const ultSlot = slotStates[ultIdx];
-                            if (ultSlot && ultSlot.nextRechargeAt !== null) {
-                                ultSlot.nextRechargeAt = Math.max(0, ultSlot.nextRechargeAt - pendingUltFlatCdrSec);
-                            }
-                            pendingUltFlatCdrSec = 0;
-                        }
-                        currentTime += motion;
-                    } else {
-                        const { motion } = executeBasicAttack(currentTime);
-                        currentTime += motion;
-                    }
+                } else {
+                    const { motion } = executeBasicAttack(currentTime);
+                    lastCastIdx = -1;
+                    currentTime += motion;
                 }
             }
 
@@ -8888,8 +9000,8 @@
             };
         }
 
-        function calculateDPS() {
-            renderSinsikAndBt6Banners();
+        function calculateDPS(skipEnhanceRerender = false) {
+            renderSinsikAndBt6Banners(skipEnhanceRerender);
             const res = runSimulationForOrder(cycle, true);
             const mins = Math.round(res.totalTime / 60);
             const uptimePct = res.totalTime > 0 ? Math.min(100, (res.totalMotion / res.totalTime) * 100) : 0;
@@ -8961,16 +9073,16 @@
                             </div>
                         </div>
                     </td>
-                    <td class="py-2.5 px-3 text-right font-mono text-gray-300">${item.casts.toLocaleString()}${unitLabel}</td>
-                    <td class="py-2.5 px-3 text-right font-mono text-gray-400">${Math.round(item.baseSum).toLocaleString()}%</td>
-                    <td class="py-2.5 px-3 text-right font-mono ${bonus > 0 ? 'text-amber-400 font-semibold' : 'text-gray-500'}">+${Math.round(bonus).toLocaleString()}%</td>
-                    <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">${Math.round(item.finalSum).toLocaleString()}%</td>
-                    <td class="py-2.5 px-3">
-                        <div class="flex items-center gap-2">
-                            <div class="flex-1 h-2 bg-darkBg rounded-full overflow-hidden border border-borderCol">
-                                <div class="h-full bg-gradient-to-r ${barGrad}" style="width:${Math.min(100, sharePct).toFixed(1)}%"></div>
+                    <td class="py-3 px-3 text-right num-clean text-sm font-semibold text-gray-200 whitespace-nowrap">${item.casts.toLocaleString()}${unitLabel}</td>
+                    <td class="py-3 px-3 text-right num-clean text-sm font-medium text-gray-400 whitespace-nowrap">${Math.round(item.baseSum).toLocaleString()}%</td>
+                    <td class="py-3 px-3 text-right num-clean text-sm whitespace-nowrap ${bonus > 0 ? 'text-amber-400 font-bold' : 'text-gray-500 font-medium'}">+${Math.round(bonus).toLocaleString()}%</td>
+                    <td class="py-3 px-3 text-right num-clean text-[15px] font-extrabold text-emerald-400 whitespace-nowrap">${Math.round(item.finalSum).toLocaleString()}%</td>
+                    <td class="py-3 px-3.5">
+                        <div class="flex items-center gap-2.5">
+                            <div class="flex-1 h-2.5 bg-darkBg rounded-full overflow-hidden border border-borderCol">
+                                <div class="h-full bg-gradient-to-r ${barGrad} rounded-full" style="width:${Math.min(100, sharePct).toFixed(1)}%"></div>
                             </div>
-                            <span class="font-mono text-[11px] font-bold ${isDot ? 'text-orange-300' : 'text-violet-300'} w-11 text-right">${sharePct.toFixed(1)}%</span>
+                            <span class="num-clean text-sm font-extrabold ${isDot ? 'text-orange-300' : 'text-violet-300'} w-13 text-right shrink-0">${sharePct.toFixed(1)}%</span>
                         </div>
                     </td>
                 `;
@@ -9004,21 +9116,21 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-cardBg/70 transition";
                 tr.innerHTML = `
-                    <td class="py-2.5 px-3">
-                        <div class="flex items-center gap-2">
-                            <span class="${badgeCls} px-2 py-0.5 rounded text-[10px] font-bold">${typeLabel}</span>
-                            <span class="text-sm font-extrabold text-white">${item.state}</span>
+                    <td class="py-3 px-3.5">
+                        <div class="flex items-center gap-2.5">
+                            <span class="${badgeCls} px-2 py-0.5 rounded-md text-[11px] font-bold shrink-0">${typeLabel}</span>
+                            <span class="text-sm font-extrabold text-white whitespace-nowrap">${item.state}</span>
                         </div>
                     </td>
-                    <td class="py-2.5 px-3 text-gray-300 text-xs">${effectText}</td>
-                    <td class="py-2.5 px-3 text-right font-mono text-gray-300">${countText}</td>
-                    <td class="py-2.5 px-3 text-right font-mono text-gray-300">${item.activeSec.toFixed(1)}초 <span class="text-[10px] text-gray-500">/ ${totalTime}초</span></td>
-                    <td class="py-2.5 px-3">
-                        <div class="flex items-center gap-2">
-                            <div class="flex-1 h-2 bg-darkBg rounded-full overflow-hidden border border-borderCol">
-                                <div class="h-full bg-gradient-to-r ${barGrad}" style="width:${Math.min(100, item.uptimePct).toFixed(1)}%"></div>
+                    <td class="py-3 px-3 text-[13px] font-medium text-gray-300">${effectText}</td>
+                    <td class="py-3 px-3 text-right num-clean text-sm font-semibold text-gray-200 whitespace-nowrap">${countText}</td>
+                    <td class="py-3 px-3 text-right num-clean text-sm font-semibold text-gray-200 whitespace-nowrap">${item.activeSec.toFixed(1)}초 <span class="text-xs font-medium text-gray-500">/ ${totalTime}초</span></td>
+                    <td class="py-3 px-3.5">
+                        <div class="flex items-center gap-2.5">
+                            <div class="flex-1 h-2.5 bg-darkBg rounded-full overflow-hidden border border-borderCol">
+                                <div class="h-full bg-gradient-to-r ${barGrad} rounded-full" style="width:${Math.min(100, item.uptimePct).toFixed(1)}%"></div>
                             </div>
-                            <span class="font-mono text-[11px] font-bold ${pctColor} w-12 text-right">${item.uptimePct.toFixed(1)}%</span>
+                            <span class="num-clean text-sm font-extrabold ${pctColor} w-14 text-right shrink-0">${item.uptimePct.toFixed(1)}%</span>
                         </div>
                     </td>
                 `;
@@ -9041,32 +9153,44 @@
                 const schoolMeta = getSchoolMeta(log.school);
 
                 const badgesHtml = log.triggeredBadges.length > 0
-                    ? log.triggeredBadges.map(b => `<span class="badge-cond px-2 py-0.5 rounded-md text-[10px] font-semibold mr-1 inline-block">${b}</span>`).join('')
-                    : `<span class="text-gray-600 text-[11px]">-</span>`;
+                    ? log.triggeredBadges.map(b => `<span class="badge-cond px-1.5 py-0.5 rounded-md text-[11px] font-semibold mr-1 mb-1 inline-block leading-snug">${b}</span>`).join('')
+                    : `<span class="text-gray-600 text-xs">-</span>`;
 
                 const activeHtml = log.activeSnapshot.length > 0
-                    ? log.activeSnapshot.map(s => `<span class="bg-cardBg text-gray-300 border border-borderCol px-1.5 py-0.5 rounded text-[10px] mr-1 inline-block">${s}</span>`).join('')
-                    : `<span class="text-gray-600 text-[11px]">없음</span>`;
+                    ? log.activeSnapshot.map(s => `<span class="bg-cardBg text-gray-200 border border-borderCol px-1.5 py-0.5 rounded-md text-[11px] font-medium num-clean mr-1 mb-1 inline-block whitespace-nowrap">${s}</span>`).join('')
+                    : `<span class="text-gray-600 text-xs">없음</span>`;
+
+                const iconBoxHtml = log.category === '평타'
+                    ? `<div class="w-9 h-9 rounded-xl bg-cardBg border border-borderCol shrink-0 flex items-center justify-center shadow"><i class="fa-solid fa-khanda text-amber-400 text-sm"></i></div>`
+                    : `<div class="w-9 h-9 rounded-xl overflow-hidden bg-cardBg border border-borderCol shrink-0 flex items-center justify-center shadow">
+                           <img src="${log.iconSrc}" data-fallback-idx="0" alt="${log.skillName}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${log.imageFile || ''}')">
+                           <div class="hidden w-full h-full items-center justify-center text-xs font-extrabold text-white" style="background:${schoolMeta.color}44">${log.skillName.substring(0, 2)}</div>
+                       </div>`;
 
                 tr.innerHTML = `
-                    <td class="py-2 px-3 font-mono text-[11px] text-gray-400">${log.startTime.toFixed(2)}s ~ ${log.endTime.toFixed(2)}s</td>
-                    <td class="py-2 px-3">
-                        <div class="flex items-center gap-2.5">
-                            <span class="text-violet-400 font-bold text-xs">#${i + 1}</span>
-                            <div class="w-10 h-10 rounded-xl overflow-hidden bg-cardBg border border-borderCol shrink-0 flex items-center justify-center shadow">
-                                <img src="${log.iconSrc}" data-fallback-idx="0" alt="${log.skillName}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${log.imageFile || ''}')">
-                                <div class="hidden w-full h-full items-center justify-center text-xs font-extrabold text-white" style="background:${schoolMeta.color}44">${log.skillName.substring(0, 2)}</div>
-                            </div>
-                            <span class="text-sm font-extrabold text-white">${log.skillName}</span>
+                    <td class="py-2.5 px-2.5 num-clean whitespace-nowrap">
+                        <div class="leading-tight">
+                            <div class="text-[13px] font-semibold text-gray-200">${log.startTime.toFixed(2)}s</div>
+                            <div class="text-[11px] font-medium text-gray-500">~ ${log.endTime.toFixed(2)}s</div>
                         </div>
                     </td>
-                    <td class="py-2 px-3 text-right text-gray-300 font-mono">${log.baseCoeff.toFixed(2)}%</td>
-                    <td class="py-2 px-3">${badgesHtml}</td>
-                    <td class="py-2 px-3 text-right font-mono font-bold ${log.synergyGain > 0 ? 'text-amber-400' : 'text-emerald-400'}">
-                        ${log.finalCoeff.toFixed(2)}%
-                        ${log.synergyGain > 0 ? `<span class="text-[10px] text-amber-300 block">(+${log.synergyGain.toFixed(1)}%)</span>` : ''}
+                    <td class="py-2.5 px-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="num-clean text-violet-400 font-bold text-[11px] w-5 shrink-0">#${i + 1}</span>
+                            ${iconBoxHtml}
+                            <div class="flex flex-col items-start gap-0.5 min-w-0">
+                                <span class="text-[13px] font-extrabold text-white whitespace-nowrap leading-tight">${log.skillName}</span>
+                                <span class="${getCategoryBadgeClass(log.category)} px-1.5 py-0.2 rounded text-[10px] font-bold leading-tight">${getCategoryLabel(log.category)}</span>
+                            </div>
+                        </div>
                     </td>
-                    <td class="py-2 px-3">${activeHtml}</td>
+                    <td class="py-2.5 px-2 text-right num-clean text-[13px] font-medium text-gray-400 whitespace-nowrap">${log.baseCoeff.toFixed(1)}%</td>
+                    <td class="py-2.5 px-2.5">${badgesHtml}</td>
+                    <td class="py-2.5 px-2 text-right num-clean whitespace-nowrap">
+                        <span class="text-sm font-extrabold text-emerald-400">${log.finalCoeff.toFixed(1)}%</span>
+                        ${log.synergyGain > 0 ? `<span class="text-[11px] font-bold text-amber-400 block">(+${log.synergyGain.toFixed(1)}%)</span>` : ''}
+                    </td>
+                    <td class="py-2.5 px-2.5">${activeHtml}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -9136,9 +9260,9 @@
             });
 
             if (sortBy === 'coeffDesc') {
-                list.sort((a, b) => b.coeff - a.coeff);
+                list.sort((a, b) => getSkillEnhancedCoeff(b) - getSkillEnhancedCoeff(a));
             } else if (sortBy === 'dpsDesc') {
-                list.sort((a, b) => (b.coeff / (b.cooldown || 1)) - (a.coeff / (a.cooldown || 1)));
+                list.sort((a, b) => (getSkillEnhancedCoeff(b) / (b.cooldown || 1)) - (getSkillEnhancedCoeff(a) / (a.cooldown || 1)));
             } else if (sortBy === 'cdAsc') {
                 list.sort((a, b) => a.cooldown - b.cooldown);
             }
@@ -9152,8 +9276,21 @@
                 const schoolMeta = getSchoolMeta(sk.school);
                 const iconSrc = getSkillIconSrc(sk);
                 const cat = sk.category || '일반';
+                const isDosul = cat === '도술';
+                const { btStage, btCdrSec, isBt6 } = getSkillBreakthroughInfo(sk);
+                const displayCoeff = getSkillEnhancedCoeff(sk);
+                const coeffTooltip = getSkillCoeffTooltip(sk);
+                const displayCd = Number(Math.max(0.5, (Number(sk.cooldown) || 5) - btCdrSec).toFixed(2));
+                const bt6DescHtml = (cat === '특별' && sk.breakthrough6 && sk.breakthrough6.desc)
+                    ? `<div class="mt-1.5 px-2 py-1 rounded-lg border text-[11px] font-semibold leading-snug ${
+                        isBt6
+                            ? 'bg-amber-500/15 border-amber-400/60 text-amber-200'
+                            : 'bg-darkBg/70 border-borderCol/80 text-gray-400'
+                    }"><span class="font-extrabold ${isBt6 ? 'text-amber-300' : 'text-gray-500'} mr-1">${isBt6 ? '✦ 6돌파 활성' : '✦ 6돌파'}</span>${sk.breakthrough6.desc.replace(/^6✦\s*/, '')}</div>`
+                    : '';
+
                 const card = document.createElement('div');
-                card.className = "bg-cardBg border border-borderCol hover:border-violet-500/80 rounded-2xl p-3.5 transition flex items-center justify-between gap-3.5 group cursor-pointer shadow-sm";
+                card.className = "bg-cardBg border border-borderCol hover:border-violet-500/80 rounded-2xl p-3.5 transition flex items-center justify-between gap-3 group cursor-pointer shadow-sm";
                 card.onclick = () => addSkillToCycle(sk.name);
 
                 const effBadges = (sk.effects || []).map(e => {
@@ -9174,6 +9311,23 @@
                     </span>`;
                 }).join('');
 
+                const btInputBorder = btStage >= 6
+                    ? 'border-amber-400/70 bg-amber-500/15 text-amber-200'
+                    : (btStage > 0 ? 'border-amber-500/40 bg-darkBg text-amber-300' : 'border-borderCol bg-darkBg text-gray-300');
+
+                const btControlHtml = !isDosul ? `
+                    <div onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" class="flex items-center gap-1 px-2 py-1 rounded-xl border ${btInputBorder} transition" title="돌파 단계 (0~10)">
+                        <span class="text-[11px] font-extrabold ${btStage >= 6 ? 'text-amber-300' : 'text-amber-400/80'}">✦</span>
+                        <input type="number" min="0" max="10" step="1" value="${btStage}"
+                               onfocus="this.select()"
+                               oninput="onSkillBreakthroughInput('${sk.name}', this, 'list', event)"
+                               onchange="setSkillBreakthroughStage('${sk.name}', this.value, event)"
+                               onkeydown="if(event.key==='Enter'){this.blur();}"
+                               class="w-7 bg-transparent text-center text-xs font-extrabold num-clean no-spinner focus:outline-none text-white" />
+                        <span class="text-[10px] font-bold text-gray-400">돌</span>
+                    </div>
+                ` : '';
+
                 card.innerHTML = `
                     <div class="flex items-center gap-3.5 flex-1 min-w-0">
                         <div class="w-16 h-16 rounded-2xl overflow-hidden bg-darkBg border-2 border-borderCol group-hover:border-violet-500/60 shrink-0 relative flex items-center justify-center shadow-md">
@@ -9190,28 +9344,26 @@
                                     ${schoolMeta.name}
                                 </span>
                                 ${cat !== '일반' ? `<span class="${getCategoryBadgeClass(cat)} text-[10px] font-extrabold px-2 py-0.5 rounded-md">${getCategoryLabel(cat)}</span>` : ''}
-                                ${sk.isCustomized ? `<span class="bg-amber-500/25 text-amber-300 border border-amber-400/60 text-[10px] font-extrabold px-2 py-0.5 rounded-md"><i class="fa-solid fa-pen-to-square mr-0.5"></i>커스텀</span>` : ''}
                                 ${sk.maxCharges > 1 ? `<span class="bg-sky-950/80 text-sky-300 border border-sky-500/40 text-[10px] font-extrabold px-2 py-0.5 rounded-md">${sk.maxCharges}스택</span>` : ''}
                                 ${sk.castTime > 0 ? `<span class="bg-amber-950/80 text-amber-300 border border-amber-500/40 text-[10px] font-extrabold px-2 py-0.5 rounded-md">캐스팅 ${sk.castTime}s</span>` : ''}
                                 ${sk.chargeStages > 0 ? `<span class="bg-orange-950/80 text-orange-300 border border-orange-500/40 text-[10px] font-extrabold px-2 py-0.5 rounded-md">${sk.chargeStages}단차징 +${sk.chargeTime}s</span>` : ''}
                             </div>
 
-                            <div class="text-xs text-gray-300 flex items-center gap-3 font-semibold">
-                                <span>계수 <b class="text-emerald-400 text-sm font-extrabold">${sk.coeff}%</b></span>
+                            <div class="text-xs text-gray-300 flex items-center gap-2.5 font-semibold num-clean">
+                                <span title="${coeffTooltip}">계수 <b data-coeff-for="${sk.name}" class="${isBt6 ? 'text-amber-300' : 'text-emerald-400'} text-sm font-extrabold">${displayCoeff}%</b></span>
                                 <span class="text-gray-600">·</span>
-                                <span>쿨 <b class="text-white">${sk.cooldown}초</b></span>
+                                <span>쿨 <b data-cd-for="${sk.name}" data-cd-unit="초" class="${btCdrSec > 0 ? 'text-amber-300' : 'text-white'}">${displayCd}초</b></span>
                                 <span class="text-gray-600">·</span>
                                 <span class="text-gray-400">모션 ${sk.motion}초</span>
                             </div>
 
                             ${(effBadges || condBadges) ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${effBadges}${condBadges}</div>` : ''}
+                            ${bt6DescHtml}
                         </div>
                     </div>
 
                     <div class="shrink-0 flex flex-col sm:flex-row items-center gap-1.5">
-                        <button type="button" onclick="openSkillCustomModal('${sk.name}', event)" class="px-2.5 py-2 bg-cardBg hover:bg-amber-600/30 text-gray-300 hover:text-amber-200 rounded-xl text-xs font-extrabold transition border border-borderCol hover:border-amber-500/50 flex items-center gap-1" title="수치 및 약화·강화 효과 커스텀">
-                            <i class="fa-solid fa-sliders text-amber-400"></i> 커스텀
-                        </button>
+                        ${btControlHtml}
                         <span class="px-3 py-2 bg-violet-600/20 group-hover:bg-violet-600 text-violet-300 group-hover:text-white rounded-xl text-xs font-extrabold transition border border-violet-500/30">
                             + 추가
                         </span>
@@ -9234,7 +9386,7 @@
 
             if (cycle.length === 0) {
                 container.innerHTML = `
-                    <div class="w-full flex flex-col items-center justify-center py-12 text-gray-500">
+                    <div class="col-span-full flex flex-col items-center justify-center py-10 text-gray-500">
                         <i class="fa-solid fa-hand-pointer text-2xl mb-2 opacity-50"></i>
                         <p class="text-sm font-semibold">우측 도감에서 도술을 클릭해 추가하세요 (최대 8개 + 궁극기 1개)</p>
                     </div>
@@ -9252,7 +9404,7 @@
                 const isDosul = cat === '도술';
 
                 const item = document.createElement('div');
-                item.className = `bg-cardBg border-2 border-borderCol hover:border-violet-400 rounded-2xl p-3 w-48 flex flex-col justify-between relative group cursor-grab active:cursor-grabbing shadow-lg transition ${
+                item.className = `bg-cardBg border-2 border-borderCol hover:border-violet-400 rounded-2xl p-2.5 w-full min-w-0 flex flex-col justify-between relative group cursor-grab active:cursor-grabbing shadow-lg transition ${
                     isBt6 ? 'bt6-glow' : (isDosul ? 'dosul-glow' : '')
                 }`;
                 item.draggable = true;
@@ -9284,26 +9436,55 @@
                 };
                 const currentBtCdrSec = getStageCdrSec(btStage);
                 const reducedCdVal = Math.max(0.5, (Number(sk.cooldown) || 5) - currentBtCdrSec);
+                const displayCoeff = getSkillEnhancedCoeff(sk);
+                const coeffTooltip = getSkillCoeffTooltip(sk);
+                const specialBt6NoteHtml = (cat === '특별' && sk.breakthrough6 && sk.breakthrough6.desc)
+                    ? `<div class="mt-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold truncate border ${
+                        isBt6
+                            ? 'bg-amber-500/20 border-amber-400/60 text-amber-200'
+                            : 'bg-darkBg/70 border-borderCol/70 text-gray-500'
+                    }" title="${sk.breakthrough6.desc}">✦ ${sk.breakthrough6.desc.replace(/^6✦\s*/, '')}</div>`
+                    : '';
 
                 let specialFooterHtml = '';
                 if (!isDosul) {
-                    let stageOptions = '';
-                    for (let s = 0; s <= 10; s++) {
-                        const sCdr = getStageCdrSec(s);
-                        const cdrTxt = sCdr > 0 ? ` / -${Number(sCdr.toFixed(2))}s` : '';
-                        stageOptions += `<option value="${s}" ${s === btStage ? 'selected' : ''}>${s}돌파 (+${s * 3}%${cdrTxt})</option>`;
-                    }
+                    const pillCls = btStage >= 6
+                        ? 'bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-amber-500/20 border-amber-400/70 shadow-sm shadow-amber-500/20'
+                        : (btStage > 0
+                            ? 'bg-amber-950/25 border-amber-500/40'
+                            : 'bg-darkBg/90 border-borderCol');
+                    const starCls = btStage >= 6 ? 'text-amber-300' : (btStage > 0 ? 'text-amber-400' : 'text-gray-600');
+                    const subMetaTxt = btStage > 0
+                        ? `피해 +${btStage * 3}%${currentBtCdrSec > 0 ? ` · 쿨 -${Number(currentBtCdrSec.toFixed(2))}s` : ''}`
+                        : '미돌파 (0~10)';
+
                     specialFooterHtml = `
-                        <div class="mt-2 pt-2 border-t border-borderCol/70" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">
-                            <select onchange="setSkillBreakthroughStage('${name}', this.value, event)" class="w-full bg-darkBg border border-borderCol rounded-lg px-2 py-1 text-xs font-bold text-amber-300 focus:outline-none cursor-pointer">
-                                ${stageOptions}
-                            </select>
+                        <div class="mt-2 pt-2 border-t border-borderCol/60" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">
+                            <div class="flex items-center justify-between rounded-xl border ${pillCls} p-1 transition">
+                                <button type="button" onclick="stepSkillBreakthroughStage('${name}', -1, event)" class="w-6 h-6 rounded-lg bg-darkBg/80 hover:bg-gray-800 text-gray-300 hover:text-white flex items-center justify-center text-xs font-black transition ${btStage <= 0 ? 'opacity-35 cursor-not-allowed' : ''}" title="돌파 -1">−</button>
+                                <div class="flex items-center justify-center gap-0.5">
+                                    <span class="text-xs font-black ${starCls}">✦</span>
+                                    <input type="number" min="0" max="10" step="1" value="${btStage}"
+                                           onfocus="this.select()"
+                                           oninput="onSkillBreakthroughInput('${name}', this, 'cycle', event)"
+                                           onchange="setSkillBreakthroughStage('${name}', this.value, event)"
+                                           onkeydown="if(event.key==='Enter'){this.blur();}"
+                                           class="w-7 bg-transparent text-center text-[13px] font-black num-clean no-spinner focus:outline-none ${btStage > 0 ? 'text-amber-200' : 'text-gray-300'}" />
+                                    <span class="text-[11px] font-extrabold ${btStage > 0 ? 'text-amber-300/90' : 'text-gray-500'}">돌파</span>
+                                </div>
+                                <button type="button" onclick="stepSkillBreakthroughStage('${name}', 1, event)" class="w-6 h-6 rounded-lg bg-darkBg/80 hover:bg-amber-600/40 text-amber-300 hover:text-white flex items-center justify-center text-xs font-black transition ${btStage >= 10 ? 'opacity-35 cursor-not-allowed' : ''}" title="돌파 +1">+</button>
+                            </div>
+                            <div class="text-[10px] text-center num-clean font-semibold mt-1 ${btStage >= 6 ? 'text-amber-300' : (btStage > 0 ? 'text-amber-400/80' : 'text-gray-500')}">${subMetaTxt}</div>
+                            ${specialBt6NoteHtml}
                         </div>
                     `;
                 } else {
                     specialFooterHtml = `
-                        <div class="w-full mt-2 py-1 rounded-lg text-xs font-extrabold bg-rose-950/60 border border-rose-500/40 text-amber-200 text-center">
-                            <i class="fa-solid fa-crown text-amber-400 mr-1"></i>[${schoolMeta.name}] 궁극기
+                        <div class="mt-2 pt-2 border-t border-rose-500/25">
+                            <div class="w-full py-1.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-rose-950/80 via-amber-950/60 to-rose-950/80 border border-amber-500/45 text-amber-200 text-center">
+                                <i class="fa-solid fa-crown text-amber-400 mr-1"></i>[${schoolMeta.name}] 궁극기
+                            </div>
+                            <div class="text-[10px] text-center font-semibold text-amber-300/80 mt-1">${schoolMeta.name} 신식 활성화</div>
                         </div>
                     `;
                 }
@@ -9319,9 +9500,6 @@
                                 ${sk.maxCharges > 1 ? `<span class="bg-sky-950/80 text-sky-300 border border-sky-500/40 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md">${sk.maxCharges}스택</span>` : ''}
                             </div>
                             <div class="flex items-center gap-1">
-                                <button type="button" onclick="openSkillCustomModal('${name}', event)" class="w-6 h-6 rounded-lg bg-darkBg/80 ${sk.isCustomized ? 'text-amber-400 border border-amber-500/40' : 'text-gray-400'} hover:text-amber-300 hover:bg-amber-950/40 transition flex items-center justify-center text-[11px]" title="이 도술 수치·효과 커스텀">
-                                    <i class="fa-solid fa-sliders"></i>
-                                </button>
                                 ${!isDosul ? `
                                     <button onclick="removeFromCycle(${index})" class="w-6 h-6 rounded-lg bg-darkBg/80 text-gray-400 hover:text-red-400 hover:bg-red-950/40 transition flex items-center justify-center text-xs" title="제거">
                                         <i class="fa-solid fa-xmark"></i>
@@ -9330,19 +9508,19 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="w-14 h-14 rounded-2xl overflow-hidden bg-darkBg border-2 border-borderCol shrink-0 flex items-center justify-center shadow-md">
+                        <div class="flex items-center gap-2.5 mb-2">
+                            <div class="w-12 h-12 rounded-xl overflow-hidden bg-darkBg border-2 border-borderCol shrink-0 flex items-center justify-center shadow-md">
                                 <img src="${iconSrc}" data-fallback-idx="0" alt="${name}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')">
-                                <div class="hidden w-full h-full items-center justify-center text-sm font-black text-white" style="background:${schoolMeta.color}55">${name.substring(0, 2)}</div>
+                                <div class="hidden w-full h-full items-center justify-center text-xs font-black text-white" style="background:${schoolMeta.color}55">${name.substring(0, 2)}</div>
                             </div>
                             <div class="min-w-0 flex-1">
-                                <div class="text-[15px] font-black text-white leading-tight break-keep" title="${name}">${name}</div>
-                                <div class="text-xs text-emerald-400 font-extrabold mt-0.5">${sk.coeff}%</div>
+                                <div class="text-[14px] font-black text-white leading-tight break-keep truncate" title="${name}">${name}</div>
+                                <div data-coeff-for="${name}" class="text-xs ${isBt6 ? 'text-amber-300' : 'text-emerald-400'} font-extrabold num-clean mt-0.5" title="${coeffTooltip}">${displayCoeff}%</div>
                             </div>
                         </div>
 
-                        <div class="text-xs text-gray-300 flex justify-between items-center bg-darkBg/60 px-2.5 py-1 rounded-lg">
-                            <span>쿨 <b class="${currentBtCdrSec > 0 ? 'text-amber-300' : 'text-white'}">${Number(reducedCdVal.toFixed(2))}s</b></span>
+                        <div class="text-[11px] text-gray-300 flex justify-between items-center bg-darkBg/60 px-2 py-1 rounded-lg num-clean">
+                            <span>쿨 <b data-cd-for="${name}" data-cd-unit="s" class="${currentBtCdrSec > 0 ? 'text-amber-300' : 'text-white'}">${Number(reducedCdVal.toFixed(2))}s</b></span>
                             <span class="text-gray-400">모션 ${sk.motion}s</span>
                         </div>
                     </div>
