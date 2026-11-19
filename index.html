@@ -195,12 +195,11 @@
             <!-- 3. Drag & Drop Skill Order Deck -->
             <div class="bg-panelBg border border-borderCol rounded-2xl p-4 shadow-xl">
                 <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
-                    <div class="flex items-center gap-2">
-                        <h2 class="text-sm font-bold text-violet-400 flex items-center gap-2">
-                            <i class="fa-solid fa-layer-group"></i> 스킬 배치
-                        </h2>
-                        <span id="normalSlotCountBadge" class="text-[11px] bg-violet-950/80 text-violet-200 border border-violet-600/40 px-2 py-0.5 rounded-full font-extrabold">일반/특별 0 / 8</span>
-                        <span id="ultSlotCountBadge" class="text-[11px] bg-rose-950/80 text-amber-200 border border-amber-500/40 px-2 py-0.5 rounded-full font-extrabold">궁극기 0 / 1</span>
+                    <div class="flex items-center gap-2.5">
+                        <h2 class="text-sm font-extrabold text-white tracking-tight">도술 순서</h2>
+                        <span id="cycleTotalCountBadge" class="text-xs font-bold text-gray-400 num-clean">0/9</span>
+                        <span id="normalSlotCountBadge" class="hidden"></span>
+                        <span id="ultSlotCountBadge" class="hidden"></span>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <div class="flex items-center gap-1 bg-cardBg border border-borderCol rounded-xl px-2 py-1">
@@ -220,6 +219,9 @@
                                 <option value="10" class="bg-panelBg text-white">전체 10돌파</option>
                             </select>
                         </div>
+                        <button onclick="openRecommendModal()" class="px-3 py-1.5 text-xs font-bold text-emerald-300 bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-600/50 rounded-xl transition flex items-center gap-1.5 shadow-sm" title="현재 계열 강화 레벨과 돌파 단계를 기준으로 최고 DPS 빌드를 자동 추천합니다">
+                            <i class="fa-solid fa-trophy"></i> 추천 스킬
+                        </button>
                         <button onclick="autoOptimizeOrder()" class="px-3 py-1.5 text-xs font-bold text-amber-300 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-700/50 rounded-xl transition flex items-center gap-1.5" title="현재 담은 도술들의 순서를 조합해 최고 DPS 순서를 자동으로 찾습니다">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> 최적 순서 정렬
                         </button>
@@ -229,8 +231,8 @@
                     </div>
                 </div>
 
-                <!-- Skill Sequence Cards -->
-                <div id="cycleContainer" class="bg-darkBg/90 border-2 border-dashed border-borderCol rounded-xl p-2.5 min-h-[160px] grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 relative transition">
+                <!-- Skill Sequence Vertical List -->
+                <div id="cycleContainer" class="flex flex-col gap-2 min-h-[120px] relative transition">
                 </div>
             </div>
 
@@ -245,7 +247,7 @@
                             <i class="fa-solid fa-stopwatch mr-1"></i> 버프/디버프 가동률
                         </button>
                         <button onclick="switchLogView('timeline')" id="tabBtnTimeline" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-cardBg text-gray-400 hover:text-white border border-borderCol transition">
-                            <i class="fa-solid fa-clock-rotate-left mr-1"></i> 시전 로그 (150회)
+                            <i class="fa-solid fa-bars-staggered mr-1"></i> 타임라인
                         </button>
                     </div>
                     <span id="timelineCountBadge" class="text-[11px] text-gray-400 bg-cardBg px-2.5 py-1 rounded-lg border border-borderCol">총 0회 시전</span>
@@ -284,21 +286,23 @@
                     </table>
                 </div>
 
-                <!-- View B: Step-by-Step Cast Timeline -->
-                <div id="timelineViewBox" class="hidden overflow-x-auto max-h-[640px] overflow-y-auto border border-borderCol rounded-xl">
-                    <table class="w-full text-left border-collapse text-[13px]">
-                        <thead class="bg-cardBg text-gray-300 sticky top-0 z-10 border-b border-borderCol text-xs">
-                            <tr class="whitespace-nowrap">
-                                <th class="py-3 px-2.5 font-bold w-[72px]">시전 시각</th>
-                                <th class="py-3 px-2.5 font-bold">도술명</th>
-                                <th class="py-3 px-2 font-bold text-right">기본 계수</th>
-                                <th class="py-3 px-2.5 font-bold">적용된 효과</th>
-                                <th class="py-3 px-2 font-bold text-right">최종 피해량</th>
-                                <th class="py-3 px-2.5 font-bold">유지 상태</th>
-                            </tr>
-                        </thead>
-                        <tbody id="timelineTableBody" class="divide-y divide-borderCol/60 bg-darkBg/50"></tbody>
-                    </table>
+                <!-- View B: Visual & Chronological Timeline -->
+                <div id="timelineViewBox" class="hidden border border-borderCol rounded-xl bg-[#0e1017] p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm font-extrabold text-white">타임라인</h3>
+                            <span id="timelineRangeHint" class="text-[11px] text-gray-500"></span>
+                        </div>
+                        <div class="inline-flex rounded-xl bg-darkBg p-0.5 border border-borderCol">
+                            <button type="button" onclick="setTimelineSubMode('bySkill')" id="tlMode_bySkill"
+                                    class="px-3 py-1 rounded-lg text-xs font-bold bg-[#232736] text-white border border-gray-600/60 transition">도술마다</button>
+                            <button type="button" onclick="setTimelineSubMode('chrono')" id="tlMode_chrono"
+                                    class="px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition">시간순</button>
+                            <button type="button" onclick="setTimelineSubMode('single')" id="tlMode_single"
+                                    class="px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition">한 줄</button>
+                        </div>
+                    </div>
+                    <div id="timelineVisualContainer"></div>
                 </div>
             </div>
 
@@ -544,6 +548,30 @@
                         <i class="fa-solid fa-check"></i> 커스텀 저장 및 즉시 반영
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 4: Recommended Skill Build Modal -->
+    <div id="recommendModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-panelBg border border-borderCol rounded-2xl w-full max-w-2xl p-6 shadow-2xl max-h-[88vh] flex flex-col">
+            <div class="flex justify-between items-center mb-3 pb-3 border-b border-borderCol">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-white">추천 스킬 빌드 (Top 3)</h3>
+                        <p id="recommendContextInfo" class="text-[11px] text-gray-400">현재 계열 강화 레벨 · 돌파 단계 기준 최고 DPS 조합</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeRecommendModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div id="recommendListContainer" class="flex-1 overflow-y-auto space-y-3 pr-1"></div>
+
+            <div class="flex justify-end mt-4 pt-3 border-t border-borderCol">
+                <button type="button" onclick="closeRecommendModal()" class="px-4 py-2 bg-cardBg hover:bg-gray-800 text-gray-300 rounded-xl text-xs font-medium border border-borderCol">닫기</button>
             </div>
         </div>
     </div>
@@ -6885,7 +6913,7 @@
                     const pct = mPct ? parseFloat(mPct[1]) : 0;
 
                     let ampPct = 0;
-                    if (['받는 피해 증가', '주는 피해 증가', '공격력 증가', '방어력 감소'].includes(applySt)) {
+                    if (['받는 피해 증가', '주는 피해 증가', '공격력 증가'].includes(applySt)) {
                         ampPct = pct;
                     }
 
@@ -6930,7 +6958,7 @@
                     if (['받는 피해 증가', '공격력 증가', '주는 피해 증가'].includes(stateName)) {
                         ampPct = pctVal || 10.0;
                     } else if (stateName === '방어력 감소') {
-                        ampPct = pctVal || 10.0;
+                        ampPct = 0;
                     } else if (stateName === '치명타 피해 증가') {
                         ampPct = pctVal || 10.0;
                     } else if (stateName === '받는 치명타 피해량 증가') {
@@ -8048,9 +8076,9 @@
             '회전하는 칼날': 14
         };
 
-        function runSimulationForOrder(skillOrder, recordFullLogs = true) {
+        function runSimulationForOrder(skillOrder, recordFullLogs = true, overrideDuration = null) {
 
-            const simDuration = simDurationSec || 300;
+            const simDuration = overrideDuration || simDurationSec || 300;
             const weapon = WEAPON_TYPES[currentWeaponType] || WEAPON_TYPES.sword;
 
             if (!skillOrder || skillOrder.length === 0) {
@@ -8091,9 +8119,18 @@
                 "암흑", "변이", "기절", "수면", "얼어붙은 다리", "치유 효과 감소"
             ]);
 
-            // 버프/디버프 가동률 추적 맵
+            // 버프/디버프 가동률 및 타임라인 트랙 추적 맵
             const stateUptimeMap = {};
-            function recordStateInterval(stateName, startT, endT, isDebuff, ampPct = 0, isPermanent = false, extraNote = '') {
+            const stateTrackMap = {};
+            const timelineCasts = [];
+            const resourceHistory = [];
+            if (recordFullLogs) {
+                if (activeUltSchool === 'jeogyeok') resourceHistory.push({ time: 0.0, value: jeogyeokArrows, max: 3, label: '화살촉' });
+                else if (activeUltSchool === 'jeolmyeong') resourceHistory.push({ time: 0.0, value: jeolmyeongSwords, max: 5, label: '검의 형상' });
+            }
+
+            function recordStateInterval(stateName, startT, endT, isDebuff, ampPct = 0, isPermanent = false, extraNote = '', sourceSkill = '') {
+                if (!recordFullLogs) return;
                 const s = Math.max(0, Math.min(simDuration, startT));
                 const e = Math.max(0, Math.min(simDuration, endT));
                 if (e <= s) return;
@@ -8114,10 +8151,39 @@
                 if (isPermanent) entry.isPermanent = true;
                 else entry.applyCount++;
                 entry.intervals.push([s, e]);
+
+                if (!isPermanent) {
+                    if (!stateTrackMap[stateName]) {
+                        const isDot = ['출혈', '화상', '감전', '강화 저주'].includes(stateName);
+                        let lbl = stateName;
+                        if (isDot) lbl = stateName === '강화 저주' ? '강화 저주(도트·폭발)' : `${stateName}(1초마다 공격력의 2%)`;
+                        else if (stateName === '연속 조준') lbl = '연속 조준(주는 피해 +5%/중첩, 최대 5)';
+                        else if (ampPct > 0) lbl = `${stateName.replace(/^[^:]+:/, '')} +${ampPct}%`;
+                        else if (extraNote) lbl = `${stateName} (${extraNote})`;
+                        stateTrackMap[stateName] = {
+                            state: stateName,
+                            isDebuff: !!isDebuff,
+                            isDot,
+                            ampPct: Number(ampPct) || 0,
+                            label: lbl,
+                            sources: new Set(),
+                            rawIntervals: []
+                        };
+                    }
+                    const trk = stateTrackMap[stateName];
+                    if (ampPct > trk.ampPct) {
+                        trk.ampPct = Number(ampPct);
+                        if (!trk.isDot && stateName !== '연속 조준') {
+                            trk.label = `${stateName.replace(/^[^:]+:/, '')} +${ampPct}%`;
+                        }
+                    }
+                    if (sourceSkill) trk.sources.add(sourceSkill);
+                    trk.rawIntervals.push([s, e]);
+                }
             }
 
             if (activeUltSchool === 'jeogyeok' && styleResourceToggles.yonsokChojunStack && yonsokChojunStacks > 0) {
-                recordStateInterval('연속 조준', 0.0, 10.0, false, 25, false, 'PvE 피해 +5%/중첩 (최대 +25%)');
+                recordStateInterval('연속 조준', 0.0, 10.0, false, 25, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || '');
             }
 
             const activeStates = {};
@@ -8125,7 +8191,7 @@
             Object.keys(permanentStates).forEach(st => {
                 if (permanentStates[st]) {
                     let defaultAmp = 0;
-                    if (['받는 피해 증가', '방어력 감소', '주는 피해 증가', '파열(받피증10%)', '파쇄(받피증10%)', '관통(방깎10%)', '추적(방깎10%)'].includes(st)) {
+                    if (['받는 피해 증가', '주는 피해 증가', '파열(받피증10%)', '파쇄(받피증10%)'].includes(st)) {
                         defaultAmp = 10.0;
                     } else if (st === '공격력 증가') {
                         defaultAmp = yongmaengBuffPct;
@@ -8204,6 +8270,9 @@
                         lastArrowGainTime += 4.0;
                         if (jeogyeokArrows < 3) {
                             jeogyeokArrows++;
+                            if (recordFullLogs && activeUltSchool === 'jeogyeok') {
+                                resourceHistory.push({ time: lastArrowGainTime, value: jeogyeokArrows, max: 3, label: '화살촉' });
+                            }
                         }
                     }
                 }
@@ -8232,7 +8301,7 @@
             }
 
             // 약화(디버프) 및 도트 상태 적용/갱신 헬퍼
-            function applyDebuffEffectAt(eff, applyTime, expireEndTime) {
+            function applyDebuffEffectAt(eff, applyTime, expireEndTime, sourceSkill = '') {
                 const prev = activeStates[eff.state];
                 const newExpire = expireEndTime;
                 activeStates[eff.state] = {
@@ -8245,7 +8314,7 @@
                 const dotNote = (eff.dotHitCoeff > 0)
                     ? (eff.state === '강화 저주' ? '1초 도트·5중첩 폭발' : `초당 ${eff.dotHitCoeff}% 도트`)
                     : (eff.cdrPct > 0 ? `쿨감 ${eff.cdrPct}%` : '');
-                recordStateInterval(eff.state, applyTime, newExpire, true, eff.ampPct || 0, false, dotNote);
+                recordStateInterval(eff.state, applyTime, newExpire, true, eff.ampPct || 0, false, dotNote, sourceSkill);
 
                 if (styleResourceToggles.includeDotDamage && eff.dotHitCoeff > 0) {
                     if (eff.state === '강화 저주') {
@@ -8342,7 +8411,7 @@
                             summaryMap[ev.skillName].finalSum += tickFinal;
                         }
                         (ev.debuffEffects || []).forEach(eff => {
-                            applyDebuffEffectAt(eff, ev.time, ev.time + Number(eff.duration || 5));
+                            applyDebuffEffectAt(eff, ev.time, ev.time + Number(eff.duration || 5), ev.skillName);
                         });
                     } else if (eventType === 'dot') {
                         const d = activeDots[dotKey];
@@ -8415,6 +8484,25 @@
                 summaryMap[basicAttackKey].baseSum += rawBaseCoeff;
                 summaryMap[basicAttackKey].finalSum += finalCoeff;
 
+                if (recordFullLogs) {
+                    timelineCasts.push({
+                        type: 'basic',
+                        skillName: weapon.name,
+                        startTime,
+                        endTime: startTime + motion,
+                        prepTime: 0,
+                        motion,
+                        cd: 0,
+                        finalCoeff,
+                        ampMult: Number(ampMultiplier.toFixed(3)),
+                        appliedChips: [],
+                        activeDebuffCount: Object.values(activeStates).filter(v => v.isDebuff && v.expireAt > hitTime).length,
+                        activeBuffCount: Object.values(activeStates).filter(v => !v.isDebuff && v.ampPct > 0 && v.expireAt > hitTime).length,
+                        chainStep: 0,
+                        chainTotal: 0
+                    });
+                }
+
                 if (recordFullLogs && logs.length < 150) {
                     const endTime = startTime + motion;
                     const activeSnapshot = Object.keys(activeStates)
@@ -8485,7 +8573,7 @@
                             isDebuff: false
                         };
                         const buffNote = eff.cdrPct > 0 ? `쿨감 ${eff.cdrPct}%` : '';
-                        recordStateInterval(eff.state, startTime, newExpire, false, effAmp, false, buffNote);
+                        recordStateInterval(eff.state, startTime, newExpire, false, effAmp, false, buffNote, skillName);
                     }
                 });
 
@@ -8500,7 +8588,7 @@
                             cdrPct: prev ? prev.cdrPct : 0,
                             isDebuff: false
                         };
-                        recordStateInterval('주는 피해 증가', startTime, newExpire, false, yongmaengBuffPct, false, '용맹의 기운 6✦');
+                        recordStateInterval('주는 피해 증가', startTime, newExpire, false, yongmaengBuffPct, false, '용맹의 기운 6✦', skillName);
                     } else if (skillName === '전투의 함성') {
                         const prev = activeStates['면역 및 피해 감소'];
                         const newExpire = startTime + 4.0;
@@ -8510,7 +8598,7 @@
                             cdrPct: 0,
                             isDebuff: false
                         };
-                        recordStateInterval('면역 및 피해 감소', startTime, newExpire, false, 0, false, '전투의 함성 6✦ (받피감 50%)');
+                        recordStateInterval('면역 및 피해 감소', startTime, newExpire, false, 0, false, '전투의 함성 6✦ (받피감 50%)', skillName);
                     } else if (skillName === '은신' && (!chainMeta || chainMeta.step === 2)) {
                         const prev = activeStates['확정 치명타'];
                         const newExpire = startTime + 3.0;
@@ -8520,7 +8608,7 @@
                             cdrPct: 0,
                             isDebuff: false
                         };
-                        recordStateInterval('확정 치명타', startTime, newExpire, false, 0, false, '은신 6✦ (연계 시 3초 · 이속 +10%)');
+                        recordStateInterval('확정 치명타', startTime, newExpire, false, 0, false, '은신 6✦ (연계 시 3초 · 이속 +10%)', skillName);
                     }
                 }
 
@@ -8612,7 +8700,7 @@
                             if (hitTime > yonsokChojunExpireAt) yonsokChojunStacks = 0;
                             yonsokChojunStacks = Math.min(5, yonsokChojunStacks + usedArrows);
                             yonsokChojunExpireAt = startTime + motion + 10.0;
-                            recordStateInterval('연속 조준', startTime + motion, yonsokChojunExpireAt, false, yonsokChojunStacks * 5, false, 'PvE 피해 +5%/중첩 (최대 +25%)');
+                            recordStateInterval('연속 조준', startTime + motion, yonsokChojunExpireAt, false, yonsokChojunStacks * 5, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || skillName);
                         }
                     } else {
                         if (jeogyeokArrows >= 1) {
@@ -8623,7 +8711,7 @@
                                 if (hitTime > yonsokChojunExpireAt) yonsokChojunStacks = 0;
                                 yonsokChojunStacks = Math.min(5, yonsokChojunStacks + 1);
                                 yonsokChojunExpireAt = startTime + motion + 10.0;
-                                recordStateInterval('연속 조준', startTime + motion, yonsokChojunExpireAt, false, yonsokChojunStacks * 5, false, 'PvE 피해 +5%/중첩 (최대 +25%)');
+                                recordStateInterval('연속 조준', startTime + motion, yonsokChojunExpireAt, false, yonsokChojunStacks * 5, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || skillName);
                             }
                         }
                     }
@@ -8676,7 +8764,7 @@
                                 cdrPct: prev ? prev.cdrPct : 0,
                                 isDebuff: isDebuffTrig
                             };
-                            recordStateInterval(appSt, applyStart, newExpire, isDebuffTrig, cond.ampPct || 0, false, `${cond.reqState} 연계 발동`);
+                            recordStateInterval(appSt, applyStart, newExpire, isDebuffTrig, cond.ampPct || 0, false, `${cond.reqState} 연계 발동`, skillName);
                             if (cond.ampPct > 0) {
                                 triggeredBadges.push(`[${cond.reqState}➔${cond.applyState}] ${cond.duration}초(+${cond.ampPct}%) 발동`);
                             } else {
@@ -8726,7 +8814,7 @@
                     }
 
                     debuffEffects.forEach(eff => {
-                        applyDebuffEffectAt(eff, hitTime, hitTime + Number(eff.duration || 5));
+                        applyDebuffEffectAt(eff, hitTime, hitTime + Number(eff.duration || 5), skillName);
                     });
 
                     for (let h = 1; h < groundHits; h++) {
@@ -8763,7 +8851,7 @@
                     }
 
                     debuffEffects.forEach(eff => {
-                        applyDebuffEffectAt(eff, hitTime, startTime + motion + Number(eff.duration || 5));
+                        applyDebuffEffectAt(eff, hitTime, startTime + motion + Number(eff.duration || 5), skillName);
                         if (styleResourceToggles.includeDotDamage && eff.dotHitCoeff > 0) {
                             triggeredBadges.push(`[${eff.state} 1s 도트 부여]`);
                         }
@@ -8814,6 +8902,80 @@
 
                 totalMotion += motion;
                 castCount++;
+
+                if (recordFullLogs) {
+                    const prepTime = Number(sk.castTime || 0) + Number(sk.chargeTime || 0);
+                    const appliedChips = [];
+                    triggeredBadges.forEach(b => {
+                        const clean = b.replace(/^\[|\]$/g, '');
+                        if (clean.startsWith('계열강화') || clean.includes('돌파 +') || clean.includes('돌파 쿨감') || clean.startsWith('캐스팅') || clean.includes('단차징')) return;
+                        let kind = 'etc';
+                        if (clean.includes('받피') || clean.includes('감전') || clean.includes('화상') || clean.includes('출혈') || clean.includes('약화') || clean.includes('방어력 감소') || clean.includes('받는 피해') || clean.includes('치명타 피해')) {
+                            kind = 'debuff';
+                        } else if (clean.includes('신식') || clean.includes('화살촉') || clean.includes('검의형상') || clean.includes('공격력') || clean.includes('주는 피해') || clean.includes('연속조준')) {
+                            kind = 'buff';
+                        }
+                        appliedChips.push({ label: clean, kind });
+                    });
+                    // 시전으로 새로 부여한 주요 버프/디버프도 칩으로 표시 (만료시각 포함)
+                    (sk.effects || []).forEach(eff => {
+                        const expT = (eff.type === 'buff' ? startTime : startTime + motion) + Number(eff.duration || 5);
+                        const expStr = `${Math.floor(expT / 60)}:${(expT % 60).toFixed(1).padStart(4, '0')}`;
+                        if (eff.type === 'buff') {
+                            let valStr = eff.state;
+                            if (skillName === '용맹의 기운' && eff.state === '공격력 증가') valStr = `공격력 +${yongmaengBuffPct}%`;
+                            else if (eff.ampPct > 0) valStr = `${eff.state} +${eff.ampPct}%`;
+                            appliedChips.push({ label: `${valStr} ~${expStr}`, kind: eff.ampPct > 0 ? 'buff' : 'etc' });
+                        } else {
+                            let valStr = eff.state;
+                            if (eff.dotHitCoeff > 0) valStr = `대상 ${eff.state}(1초마다 ${eff.dotHitCoeff}%)`;
+                            else if (eff.ampPct > 0) valStr = `대상 ${eff.state} +${eff.ampPct}%`;
+                            else valStr = `대상 ${eff.state}`;
+                            appliedChips.push({ label: `${valStr} ~${expStr}`, kind: (eff.ampPct > 0 || eff.dotHitCoeff > 0) ? 'debuff' : 'etc' });
+                        }
+                    });
+                    if (isBt6) {
+                        const exp5 = startTime + motion + 5.0;
+                        const exp5Str = `${Math.floor(exp5 / 60)}:${(exp5 % 60).toFixed(1).padStart(4, '0')}`;
+                        if (skillName === '용맹의 기운') {
+                            const exp10 = startTime + 10.0;
+                            appliedChips.push({ label: `주는 피해 +${yongmaengBuffPct}% ~${Math.floor(exp10 / 60)}:${(exp10 % 60).toFixed(1).padStart(4, '0')}`, kind: 'buff' });
+                        } else if (skillName === '꿰뚫는 저격') {
+                            const exp10 = startTime + motion + 10.0;
+                            appliedChips.push({ label: `대상 감전(1초마다 2%) ~${Math.floor(exp10 / 60)}:${(exp10 % 60).toFixed(1).padStart(4, '0')}`, kind: 'debuff' });
+                        } else if (skillName === '일섬') {
+                            appliedChips.push({ label: `대상 받는 피해 +20% ~${exp5Str}`, kind: 'debuff' });
+                        } else if (skillName === '환상술') {
+                            appliedChips.push({ label: `대상 받는 치명타 피해 +20% ~${exp5Str}`, kind: 'debuff' });
+                        } else if (skillName === '은신' && (!chainMeta || chainMeta.step === 2)) {
+                            const exp3 = startTime + 3.0;
+                            appliedChips.push({ label: `확정 치명타 ~${Math.floor(exp3 / 60)}:${(exp3 % 60).toFixed(1).padStart(4, '0')}`, kind: 'buff' });
+                        }
+                    }
+
+                    timelineCasts.push({
+                        type: 'skill',
+                        skillName,
+                        startTime,
+                        endTime: startTime + motion,
+                        prepTime,
+                        motion,
+                        cd: effectiveCd,
+                        finalCoeff: logFinalCoeff,
+                        ampMult: Number((1 + buffAdditivePct / 100.0).toFixed(3)),
+                        appliedChips,
+                        activeDebuffCount: Object.values(activeStates).filter(v => v.isDebuff && v.expireAt > hitTime).length,
+                        activeBuffCount: Object.values(activeStates).filter(v => !v.isDebuff && v.ampPct > 0 && v.expireAt > hitTime).length,
+                        chainStep: chainMeta ? chainMeta.step : 0,
+                        chainTotal: chainMeta ? chainMeta.total : 0
+                    });
+
+                    if (activeUltSchool === 'jeogyeok') {
+                        resourceHistory.push({ time: startTime + motion, value: jeogyeokArrows, max: 3, label: '화살촉' });
+                    } else if (activeUltSchool === 'jeolmyeong') {
+                        resourceHistory.push({ time: startTime + motion, value: jeolmyeongSwords, max: 5, label: '검의 형상' });
+                    }
+                }
 
                 if (recordFullLogs && logs.length < 150) {
                     const endTime = startTime + motion;
@@ -8965,6 +9127,18 @@
                 delete summaryMap[basicAttackKey];
             }
 
+            if (!recordFullLogs) {
+                const dps = totalFinalCoeff / simDuration;
+                const baseDps = totalBaseCoeff / simDuration;
+                const synergyGain = totalFinalCoeff - totalBaseCoeff;
+                const synergyPct = totalBaseCoeff > 0 ? (synergyGain / totalBaseCoeff) * 100 : 0;
+                return {
+                    dps, baseDps, totalCoeff: totalFinalCoeff, baseCoeff: totalBaseCoeff,
+                    synergyGain, synergyPct, totalTime: simDuration, totalMotion,
+                    castCount, logs: [], skillSummary: [], uptimeSummary: []
+                };
+            }
+
             // 버프/디버프 가동률 구간 병합(Interval Merge) 정밀 계산
             const uptimeSummary = Object.values(stateUptimeMap).map(entry => {
                 const sorted = entry.intervals.slice().sort((a, b) => a[0] - b[0]);
@@ -9007,7 +9181,8 @@
             return {
                 dps, baseDps, totalCoeff: totalFinalCoeff, baseCoeff: totalBaseCoeff,
                 synergyGain, synergyPct, totalTime: simDuration, totalMotion,
-                castCount, logs, skillSummary, uptimeSummary
+                castCount, logs, skillSummary, uptimeSummary,
+                timelineCasts, stateTrackMap, resourceHistory, activeUltSchool
             };
         }
 
@@ -9033,7 +9208,7 @@
 
             renderSummaryTable(res.skillSummary, res.totalCoeff);
             renderUptimeTable(res.uptimeSummary, res.totalTime);
-            renderTimeline(res.logs);
+            renderVisualTimeline(res);
         }
 
         function renderSummaryTable(skillSummary, grandTotal) {
@@ -9153,111 +9328,753 @@
             });
         }
 
-        function renderTimeline(logs) {
-            const tbody = document.getElementById('timelineTableBody');
-            tbody.innerHTML = '';
+        let timelineSubMode = 'bySkill';
+        let lastSimResult = null;
 
-            if (logs.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-500">우측 도술 도감에서 도술을 클릭해 스킬트리에 추가해보세요.</td></tr>`;
-                return;
-            }
-
-            logs.forEach((log, i) => {
-                const isFollowUp = (log.chainStep && log.chainStep > 1);
-                const tr = document.createElement('tr');
-                tr.className = isFollowUp
-                    ? "bg-sky-950/15 hover:bg-cardBg/70 transition"
-                    : "hover:bg-cardBg/70 transition";
-                const schoolMeta = getSchoolMeta(log.school);
-
-                const badgesHtml = log.triggeredBadges.length > 0
-                    ? log.triggeredBadges.map(b => `<span class="badge-cond px-1.5 py-0.5 rounded-md text-[11px] font-semibold mr-1 mb-1 inline-block leading-snug">${b}</span>`).join('')
-                    : `<span class="text-gray-600 text-xs">-</span>`;
-
-                const activeHtml = log.activeSnapshot.length > 0
-                    ? log.activeSnapshot.map(s => `<span class="bg-cardBg text-gray-200 border border-borderCol px-1.5 py-0.5 rounded-md text-[11px] font-medium num-clean mr-1 mb-1 inline-block whitespace-nowrap">${s}</span>`).join('')
-                    : `<span class="text-gray-600 text-xs">없음</span>`;
-
-                const iconBoxHtml = log.category === '평타'
-                    ? `<div class="w-9 h-9 rounded-xl bg-cardBg border border-borderCol shrink-0 flex items-center justify-center shadow"><i class="fa-solid fa-khanda text-amber-400 text-sm"></i></div>`
-                    : `<div class="w-9 h-9 rounded-xl overflow-hidden bg-cardBg border border-borderCol shrink-0 flex items-center justify-center shadow">
-                           <img src="${log.iconSrc}" data-fallback-idx="0" alt="${log.skillName}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${log.imageFile || ''}')">
-                           <div class="hidden w-full h-full items-center justify-center text-xs font-extrabold text-white" style="background:${schoolMeta.color}44">${log.skillName.substring(0, 2)}</div>
-                       </div>`;
-
-                tr.innerHTML = `
-                    <td class="py-2.5 px-2.5 num-clean whitespace-nowrap">
-                        <div class="leading-tight">
-                            <div class="text-[13px] font-semibold text-gray-200">${log.startTime.toFixed(2)}s</div>
-                            <div class="text-[11px] font-medium text-gray-500">~ ${log.endTime.toFixed(2)}s</div>
-                        </div>
-                    </td>
-                    <td class="py-2.5 px-2.5">
-                        <div class="flex items-center gap-2">
-                            <span class="num-clean text-violet-400 font-bold text-[11px] w-5 shrink-0">#${i + 1}</span>
-                            ${iconBoxHtml}
-                            <div class="flex flex-col items-start gap-0.5 min-w-0">
-                                <div class="flex items-center gap-1.5 flex-wrap">
-                                    <span class="text-[13px] font-extrabold ${isFollowUp ? 'text-sky-200' : 'text-white'} whitespace-nowrap leading-tight">${isFollowUp ? '↳ ' : ''}${log.skillName}</span>
-                                    ${isFollowUp ? `<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-400/40 whitespace-nowrap leading-tight">후속타 ${log.chainStep}/${log.chainTotal}</span>` : ''}
-                                </div>
-                                <span class="${getCategoryBadgeClass(log.category)} px-1.5 py-0.2 rounded text-[10px] font-bold leading-tight">${getCategoryLabel(log.category)}</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="py-2.5 px-2 text-right num-clean text-[13px] font-medium text-gray-400 whitespace-nowrap">${log.baseCoeff.toFixed(1)}%</td>
-                    <td class="py-2.5 px-2.5">${badgesHtml}</td>
-                    <td class="py-2.5 px-2 text-right num-clean whitespace-nowrap">
-                        <span class="text-sm font-extrabold text-emerald-400">${log.finalCoeff.toFixed(1)}%</span>
-                        ${log.synergyGain > 0 ? `<span class="text-[11px] font-bold text-amber-400 block">(+${log.synergyGain.toFixed(1)}%)</span>` : ''}
-                    </td>
-                    <td class="py-2.5 px-2.5">${activeHtml}</td>
-                `;
-                tbody.appendChild(tr);
+        function setTimelineSubMode(mode) {
+            timelineSubMode = mode;
+            ['bySkill', 'chrono', 'single'].forEach(m => {
+                const btn = document.getElementById('tlMode_' + m);
+                if (!btn) return;
+                btn.className = (m === mode)
+                    ? "px-3 py-1 rounded-lg text-xs font-bold bg-[#232736] text-white border border-gray-600/60 transition"
+                    : "px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition";
             });
+            if (lastSimResult) renderVisualTimeline(lastSimResult);
         }
 
-        // =========================================================================
-        // 10. 최적 스킬 순서 자동 탐색
-        // =========================================================================
+        function fmtMMSS(sec, dec = 0) {
+            const sVal = Math.max(0, Number(sec) || 0);
+            const m = Math.floor(sVal / 60);
+            const rem = sVal - m * 60;
+            const sStr = dec > 0
+                ? rem.toFixed(dec).padStart(3 + dec, '0')
+                : String(Math.floor(rem)).padStart(2, '0');
+            return `${m}:${sStr}`;
+        }
+
+        function renderVisualTimeline(res) {
+            lastSimResult = res;
+            const root = document.getElementById('timelineVisualContainer');
+            const hint = document.getElementById('timelineRangeHint');
+            if (!root) return;
+            if (!res || !res.timelineCasts || res.timelineCasts.length === 0) {
+                if (hint) hint.innerText = '';
+                root.innerHTML = `<div class="py-10 text-center text-xs text-gray-500">우측 도술 도감에서 도술을 클릭해 스킬트리에 추가해보세요.</div>`;
+                return;
+            }
+            if (timelineSubMode === 'bySkill') {
+                if (hint) hint.innerText = `가로 스크롤 · 전체 ${Math.round(res.totalTime / 60)}분`;
+                renderGanttTimeline(root, res);
+            } else if (timelineSubMode === 'chrono') {
+                if (hint) hint.innerText = `앞 200회 시전 기준`;
+                renderChronoTimeline(root, res);
+            } else {
+                if (hint) hint.innerText = `앞 150회 도술 시전 순서`;
+                renderSingleLineTimeline(root, res);
+            }
+        }
+
+        function renderGanttTimeline(root, res) {
+            const viewSec = Math.min(res.totalTime, 300);
+            const pxPerSec = 17;
+            const trackW = Math.ceil(viewSec * pxPerSec);
+
+            // 10초 간격 눈금선
+            let ticksHtml = '';
+            let gridLinesHtml = '';
+            for (let t = 0; t <= viewSec; t += 10) {
+                const x = t * pxPerSec;
+                ticksHtml += `<div class="absolute top-0 bottom-0 border-l border-borderCol/40 pointer-events-none" style="left:${x}px">
+                    <span class="text-[10px] text-gray-500 pl-1 num-clean">${fmtMMSS(t)}</span>
+                </div>`;
+                gridLinesHtml += `<div class="absolute top-0 bottom-0 border-l border-borderCol/25 pointer-events-none" style="left:${x}px"></div>`;
+            }
+
+            // 1) 도술별 시전/준비/쿨타임 행
+            let rowsHtml = '';
+            cycle.forEach(sName => {
+                const sk = skillDb[sName];
+                if (!sk) return;
+                const casts = res.timelineCasts.filter(c => c.type === 'skill' && c.skillName === sName && c.startTime < viewSec);
+                const bars = casts.map(c => {
+                    const left = c.startTime * pxPerSec;
+                    const prepW = Math.max(0, c.prepTime * pxPerSec);
+                    const actDur = Math.max(0.15, (c.motion - c.prepTime));
+                    const actW = Math.max(5, actDur * pxPerSec);
+                    const showCd = (c.chainStep === 0 || c.chainStep === 1) && c.cd > c.motion;
+                    const cdW = showCd ? Math.max(0, Math.min(viewSec - (c.startTime + c.motion), c.cd - c.motion) * pxPerSec) : 0;
+                    const tip = `${sName}${c.chainStep > 1 ? ` (후속타 ${c.chainStep}/${c.chainTotal})` : ''} · ${fmtMMSS(c.startTime, 1)} · ${c.finalCoeff.toFixed(1)}%`;
+                    return `
+                        ${prepW > 0 ? `<div class="absolute top-[7px] h-[18px] rounded-l bg-[#5f6ea8]" style="left:${left}px;width:${prepW}px" title="${tip} (준비 ${c.prepTime}s)"></div>` : ''}
+                        <div class="absolute top-[7px] h-[18px] ${prepW > 0 ? 'rounded-r' : 'rounded'} bg-[#8ea4ff] shadow-sm" style="left:${left + prepW}px;width:${actW}px" title="${tip}"></div>
+                        ${cdW > 0 ? `<div class="absolute top-[15px] h-[2px] bg-[#3f4a72]" style="left:${left + prepW + actW}px;width:${cdW}px"></div>` : ''}
+                    `;
+                }).join('');
+
+                rowsHtml += `
+                    <div class="flex items-center border-b border-borderCol/35 h-8">
+                        <div class="w-12 shrink-0 flex items-center justify-center sticky left-0 z-20 bg-[#0e1017] border-r border-borderCol/60 h-full">
+                            <img src="${getSkillIconSrc(sk)}" class="w-6 h-6 rounded object-cover" title="${sName}" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')">
+                            <div class="hidden w-6 h-6 rounded bg-cardBg items-center justify-center text-[9px] font-bold text-gray-300">${sName.substring(0, 2)}</div>
+                        </div>
+                        <div class="relative h-full" style="width:${trackW}px">${gridLinesHtml}${bars}</div>
+                    </div>
+                `;
+            });
+
+            // 2) 기본 공격 행
+            const basics = res.timelineCasts.filter(c => c.type === 'basic' && c.startTime < viewSec);
+            if (basics.length > 0) {
+                const basicBars = basics.map(c => `
+                    <div class="absolute top-[7px] h-[18px] rounded-sm bg-[#4c5368]" style="left:${c.startTime * pxPerSec}px;width:${Math.max(4, c.motion * pxPerSec)}px" title="${c.skillName} · ${fmtMMSS(c.startTime, 1)} · ${c.finalCoeff.toFixed(1)}%"></div>
+                `).join('');
+                rowsHtml += `
+                    <div class="flex items-center border-b border-borderCol/60 h-8">
+                        <div class="w-12 shrink-0 flex items-center justify-center sticky left-0 z-20 bg-[#0e1017] border-r border-borderCol/60 h-full text-[11px] font-bold text-gray-400">기본</div>
+                        <div class="relative h-full" style="width:${trackW}px">${gridLinesHtml}${basicBars}</div>
+                    </div>
+                `;
+            }
+
+            // 3) 버프/디버프/도트 구간 행 (갱신 세로선 포함)
+            const tracks = Object.values(res.stateTrackMap || {}).sort((a, b) => {
+                const score = (t) => (t.ampPct > 0 ? 30 : 0) + (t.isDot ? 20 : 0) + (t.isDebuff ? 10 : 5);
+                return score(b) - score(a);
+            });
+
+            tracks.forEach(track => {
+                const sorted = track.rawIntervals.filter(iv => iv[0] < viewSec).sort((a, b) => a[0] - b[0]);
+                if (sorted.length === 0) return;
+
+                const merged = [];
+                sorted.forEach(([s, e]) => {
+                    const clampedE = Math.min(viewSec, e);
+                    const last = merged[merged.length - 1];
+                    if (last && s <= last.end + 0.05) {
+                        if (s > last.start + 0.1) last.refreshes.push(s);
+                        if (clampedE > last.end) last.end = clampedE;
+                    } else {
+                        merged.push({ start: s, end: clampedE, refreshes: [] });
+                    }
+                });
+
+                let barCls = 'bg-[#252834] border border-[#3d4254] text-gray-300';
+                if (track.isDot) {
+                    barCls = 'bg-[#2a171c] border border-rose-500/60 text-rose-200';
+                } else if (track.isDebuff && track.ampPct > 0) {
+                    barCls = 'bg-[#421f29] border border-rose-500/50 text-rose-200';
+                } else if (!track.isDebuff && track.ampPct > 0) {
+                    barCls = 'bg-[#263052] border border-indigo-400/50 text-indigo-200';
+                }
+
+                const segsHtml = merged.map(seg => {
+                    const left = seg.start * pxPerSec;
+                    const w = Math.max(10, (seg.end - seg.start) * pxPerSec);
+                    const refLines = seg.refreshes.map(rt =>
+                        `<div class="absolute top-0 bottom-0 w-[1px] bg-white/35 pointer-events-none" style="left:${(rt - seg.start) * pxPerSec}px"></div>`
+                    ).join('');
+                    return `
+                        <div class="absolute top-[5px] h-[22px] rounded px-1.5 text-[10px] font-semibold truncate flex items-center ${barCls}"
+                             style="left:${left}px;width:${w}px" title="${track.label} (${fmtMMSS(seg.start, 1)} ~ ${fmtMMSS(seg.end, 1)})">
+                            ${refLines}<span class="truncate relative z-10">${track.label}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                const srcIcons = Array.from(track.sources).slice(0, 2).map(sName => {
+                    const sk = skillDb[sName];
+                    return sk ? `<img src="${getSkillIconSrc(sk)}" class="w-5 h-5 rounded object-cover" title="${sName}">` : '';
+                }).join('');
+
+                rowsHtml += `
+                    <div class="flex items-center border-b border-borderCol/35 h-8">
+                        <div class="w-12 shrink-0 flex items-center justify-center gap-0.5 sticky left-0 z-20 bg-[#0e1017] border-r border-borderCol/60 h-full px-0.5">
+                            ${srcIcons || '<span class="text-[10px] text-gray-500">효과</span>'}
+                        </div>
+                        <div class="relative h-full" style="width:${trackW}px">${gridLinesHtml}${segsHtml}</div>
+                    </div>
+                `;
+            });
+
+            // 4) 영력 자원 스텝 그래프 (저격 화살촉 / 절명 검의 형상)
+            let resourceRowHtml = '';
+            if (res.resourceHistory && res.resourceHistory.length > 1) {
+                const pts = res.resourceHistory.filter(p => p.time <= viewSec);
+                if (pts.length > 0) {
+                    const maxV = pts[0].max || 3;
+                    const ultSk = getEquippedDosulSkill();
+                    const ultIconHtml = ultSk
+                        ? `<img src="${getSkillIconSrc(ultSk)}" class="w-6 h-6 rounded object-cover" title="${pts[0].label || '자원'}">`
+                        : `<span class="text-[10px] font-bold text-indigo-300">자원</span>`;
+                    const hSvg = 34;
+                    const yOf = (v) => (hSvg - 4 - (v / maxV) * (hSvg - 8)).toFixed(1);
+                    let pathD = `M 0 ${yOf(pts[0].value)}`;
+                    let areaD = `M 0 ${hSvg - 4} L 0 ${yOf(pts[0].value)}`;
+                    let prevVal = pts[0].value;
+                    for (let i = 1; i < pts.length; i++) {
+                        const x = (pts[i].time * pxPerSec).toFixed(1);
+                        pathD += ` L ${x} ${yOf(prevVal)} L ${x} ${yOf(pts[i].value)}`;
+                        areaD += ` L ${x} ${yOf(prevVal)} L ${x} ${yOf(pts[i].value)}`;
+                        prevVal = pts[i].value;
+                    }
+                    pathD += ` L ${trackW} ${yOf(prevVal)}`;
+                    areaD += ` L ${trackW} ${yOf(prevVal)} L ${trackW} ${hSvg - 4} Z`;
+
+                    resourceRowHtml = `
+                        <div class="flex items-center border-b border-borderCol/35 h-9">
+                            <div class="w-12 shrink-0 flex items-center justify-center sticky left-0 z-20 bg-[#0e1017] border-r border-borderCol/60 h-full">
+                                ${ultIconHtml}
+                            </div>
+                            <div class="relative h-full" style="width:${trackW}px">
+                                ${gridLinesHtml}
+                                <svg width="${trackW}" height="${hSvg}" class="block relative z-10">
+                                    <path d="${areaD}" fill="rgba(142, 164, 255, 0.14)" />
+                                    <path d="${pathD}" fill="none" stroke="#8ea4ff" stroke-width="1.5" />
+                                </svg>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            root.innerHTML = `
+                <div class="overflow-x-auto border border-borderCol/60 rounded-xl bg-[#0e1017]">
+                    <div class="relative" style="min-width:${trackW + 48}px">
+                        <div class="flex h-6 border-b border-borderCol/60">
+                            <div class="w-12 shrink-0 sticky left-0 z-20 bg-[#0e1017] border-r border-borderCol/60"></div>
+                            <div class="relative flex-1">${ticksHtml}</div>
+                        </div>
+                        ${rowsHtml}
+                        ${resourceRowHtml}
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 text-[11px] text-gray-400">
+                    <span class="flex items-center gap-1.5"><i class="w-2.5 h-2.5 rounded-sm bg-[#5f6ea8] inline-block"></i> 기 모으기·조준</span>
+                    <span class="flex items-center gap-1.5"><i class="w-2.5 h-2.5 rounded-sm bg-[#8ea4ff] inline-block"></i> 동작</span>
+                    <span class="flex items-center gap-1.5"><i class="w-3 h-[2px] bg-[#3f4a72] inline-block"></i> 재사용 대기</span>
+                    <span class="flex items-center gap-1.5"><i class="w-2.5 h-2.5 rounded-sm bg-[#4c5368] inline-block"></i> 기본 공격</span>
+                    <span class="flex items-center gap-1.5"><i class="w-2.5 h-2.5 rounded-sm bg-[#263052] border border-indigo-400/60 inline-block"></i> 나에게 건 효과</span>
+                    <span class="flex items-center gap-1.5"><i class="w-2.5 h-2.5 rounded-sm bg-[#421f29] border border-rose-500/60 inline-block"></i> 대상에게 건 효과</span>
+                    <span class="flex items-center gap-1.5"><i class="w-2.5 h-2.5 rounded-sm bg-[#2a171c] border border-rose-500/70 inline-block"></i> 지속 피해</span>
+                    <span class="flex items-center gap-1.5"><i class="w-2.5 h-2.5 rounded-sm bg-[#252834] border border-[#3d4254] inline-block"></i> 그 밖의 효과(피해 계산 밖)</span>
+                </div>
+            `;
+        }
+
+        function renderChronoTimeline(root, res) {
+            const grouped = [];
+            res.timelineCasts.slice(0, 200).forEach(ev => {
+                const last = grouped[grouped.length - 1];
+                if (ev.type === 'basic' && last && last.type === 'basic') {
+                    last.count++;
+                    last.finalCoeff += ev.finalCoeff;
+                } else {
+                    grouped.push({ ...ev, count: 1 });
+                }
+            });
+
+            const wShort = currentWeaponType === 'sword' ? '검/도' : (currentWeaponType === 'fan' ? '부채' : '활/지');
+
+            const rowsHtml = grouped.map(ev => {
+                const sk = ev.type === 'skill' ? skillDb[ev.skillName] : null;
+                const isFollowUp = (ev.chainStep && ev.chainStep > 1);
+                const linesHtml =
+                    Array(Math.min(4, ev.activeDebuffCount || 0)).fill('<span class="w-[2px] self-stretch bg-rose-500/80 rounded-full"></span>').join('') +
+                    Array(Math.min(4, ev.activeBuffCount || 0)).fill('<span class="w-[2px] self-stretch bg-indigo-400/80 rounded-full"></span>').join('');
+
+                const chipsHtml = (ev.appliedChips || []).map(ch => {
+                    const cls = ch.kind === 'debuff'
+                        ? 'bg-[#381b24] border-rose-500/50 text-rose-200'
+                        : (ch.kind === 'buff' ? 'bg-[#222d4f] border-indigo-400/50 text-indigo-200' : 'bg-[#222530] border-gray-600/50 text-gray-300');
+                    return `<span class="px-1.5 py-0.5 rounded border text-[10px] font-semibold leading-tight ${cls}">${ch.label}</span>`;
+                }).join('');
+
+                const titleHtml = ev.type === 'basic'
+                    ? `<span class="text-xs font-bold text-gray-300">기본 공격 ×${ev.count}</span>`
+                    : `<div class="flex items-center gap-1.5 flex-wrap">
+                           <span class="text-xs font-extrabold ${isFollowUp ? 'text-sky-200' : 'text-white'}">${isFollowUp ? '↳ ' : ''}${ev.skillName}</span>
+                           ${isFollowUp ? `<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-400/40">후속타 ${ev.chainStep}/${ev.chainTotal}</span>` : ''}
+                       </div>`;
+
+                return `
+                    <div class="flex items-stretch gap-3 px-2 py-2 border-b border-borderCol/35 ${isFollowUp ? 'bg-sky-950/15' : ''} hover:bg-cardBg/40 transition">
+                        <div class="w-9 shrink-0 flex items-stretch gap-1 justify-end pr-0.5">${linesHtml}</div>
+                        <div class="w-11 shrink-0 text-xs text-gray-500 num-clean self-center">${fmtMMSS(ev.startTime, 1)}</div>
+                        <div class="w-8 h-8 rounded-lg overflow-hidden bg-cardBg border border-borderCol shrink-0 self-center flex items-center justify-center">
+                            ${sk ? `<img src="${getSkillIconSrc(sk)}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')"><div class="hidden w-full h-full items-center justify-center text-[10px] font-bold text-gray-300">${ev.skillName.substring(0, 2)}</div>` : `<span class="text-[10px] font-bold text-gray-400">${wShort}</span>`}
+                        </div>
+                        <div class="flex-1 min-w-0 self-center">
+                            ${titleHtml}
+                            ${chipsHtml ? `<div class="flex flex-wrap gap-1 mt-1">${chipsHtml}</div>` : ''}
+                        </div>
+                        <div class="shrink-0 self-center text-right num-clean text-xs">
+                            <span class="font-bold ${ev.type === 'basic' ? 'text-gray-400' : 'text-gray-100'}">${ev.finalCoeff.toLocaleString(undefined, { maximumFractionDigits: 1 })}%</span>
+                            ${ev.type === 'skill' && ev.ampMult > 1.001 ? `<span class="ml-1 font-extrabold text-indigo-400">×${ev.ampMult}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            root.innerHTML = `<div class="max-h-[620px] overflow-y-auto">${rowsHtml}</div>`;
+        }
+
+        function renderSingleLineTimeline(root, res) {
+            const items = res.timelineCasts.filter(c => c.type === 'skill').slice(0, 150).map(ev => {
+                const sk = skillDb[ev.skillName];
+                if (!sk) return '';
+                const isFollowUp = (ev.chainStep && ev.chainStep > 1);
+                return `
+                    <div class="flex flex-col items-center gap-0.5 shrink-0" title="${ev.skillName}${isFollowUp ? ` (후속타 ${ev.chainStep}/${ev.chainTotal})` : ''} · ${fmtMMSS(ev.startTime, 1)} · ${ev.finalCoeff.toFixed(1)}%">
+                        <div class="relative">
+                            <img src="${getSkillIconSrc(sk)}" class="w-8 h-8 rounded-lg border ${isFollowUp ? 'border-sky-400/70' : 'border-borderCol'} object-cover">
+                            ${isFollowUp ? `<span class="absolute -bottom-1 -right-1 px-1 rounded bg-sky-600 text-[8px] font-black text-white">${ev.chainStep}</span>` : ''}
+                        </div>
+                        <span class="text-[9px] text-gray-500 num-clean">${fmtMMSS(ev.startTime)}</span>
+                    </div>
+                `;
+            }).join('');
+            root.innerHTML = `<div class="flex flex-wrap gap-2 p-2 max-h-[460px] overflow-y-auto">${items}</div>`;
+        }
+
+        function getPermutationsExact(arr) {
+            if (arr.length <= 1) return [arr];
+            const result = [];
+            for (let i = 0; i < arr.length; i++) {
+                const current = arr[i];
+                const remaining = arr.slice(0, i).concat(arr.slice(i + 1));
+                const perms = getPermutationsExact(remaining);
+                for (let p of perms) result.push([current].concat(p));
+            }
+            return result;
+        }
+
+        function localSearchOrder(startArr, evalDuration = null, maxPasses = 6) {
+            let bestArr = startArr.slice();
+            let bestDps = runSimulationForOrder(bestArr, false, evalDuration).dps;
+            const n = bestArr.length;
+
+            for (let pass = 0; pass < maxPasses; pass++) {
+                let improved = false;
+
+                // 1) 삽입 탐색 (i 위치의 스킬을 j 위치로 이동)
+                for (let i = 0; i < n; i++) {
+                    const item = bestArr[i];
+                    let bestPos = i;
+                    let bestLocalDps = bestDps;
+                    for (let j = 0; j < n; j++) {
+                        if (j === i) continue;
+                        const cand = bestArr.slice();
+                        cand.splice(i, 1);
+                        cand.splice(j, 0, item);
+                        const d = runSimulationForOrder(cand, false, evalDuration).dps;
+                        if (d > bestLocalDps + 1e-4) {
+                            bestLocalDps = d;
+                            bestPos = j;
+                        }
+                    }
+                    if (bestPos !== i) {
+                        const cand = bestArr.slice();
+                        cand.splice(i, 1);
+                        cand.splice(bestPos, 0, item);
+                        bestArr = cand;
+                        bestDps = bestLocalDps;
+                        improved = true;
+                    }
+                }
+
+                // 2) 2-스왑 탐색 (i <-> j 교환)
+                for (let i = 0; i < n; i++) {
+                    for (let j = i + 1; j < n; j++) {
+                        const cand = bestArr.slice();
+                        const tmp = cand[i];
+                        cand[i] = cand[j];
+                        cand[j] = tmp;
+                        const d = runSimulationForOrder(cand, false, evalDuration).dps;
+                        if (d > bestDps + 1e-4) {
+                            bestDps = d;
+                            bestArr = cand;
+                            improved = true;
+                        }
+                    }
+                }
+
+                if (!improved) break;
+            }
+            return { order: bestArr, dps: bestDps };
+        }
+
+        function optimizeOrderFull(skillList, evalDuration = null, multiStartCount = 8) {
+            if (!skillList || skillList.length <= 1) {
+                const dps = skillList && skillList.length === 1
+                    ? runSimulationForOrder(skillList, false, evalDuration).dps
+                    : 0;
+                return { order: (skillList || []).slice(), dps };
+            }
+
+            // 6개 이하: 전체 순열(n! <= 720) 완전 탐색
+            if (skillList.length <= 6) {
+                const perms = getPermutationsExact(skillList);
+                let bestOrder = skillList.slice();
+                let bestDps = -1;
+                for (const p of perms) {
+                    const d = runSimulationForOrder(p, false, evalDuration).dps;
+                    if (d > bestDps) {
+                        bestDps = d;
+                        bestOrder = p;
+                    }
+                }
+                return { order: bestOrder, dps: bestDps };
+            }
+
+            // 7~9개: 다양한 초기 시작점 + 삽입/스왑 반복 국소 최적화 (전체 9슬롯 탐색)
+            const starts = [];
+            const seenKeys = new Set();
+            const addStart = (arr) => {
+                const key = arr.join('|');
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    starts.push(arr);
+                }
+            };
+
+            // 시작점 1: 현재 순서
+            addStart(skillList.slice());
+
+            // 시작점 2: 버프/디버프 선배치 휴리스틱
+            addStart(skillList.slice().sort((a, b) => {
+                const sa = skillDb[a], sb = skillDb[b];
+                const prio = (sk) => {
+                    if (!sk) return 0;
+                    if (sk.name === '용맹의 기운') return 100;
+                    if (sk.category === '도술') return 25;
+                    const hasBuffAmp = (sk.effects || []).some(e => e.type === 'buff' && ((e.ampPct || 0) > 0 || (e.cdrPct || 0) > 0));
+                    const hasDebuffAmp = (sk.effects || []).some(e => e.type === 'debuff' && ((e.ampPct || 0) > 0 || (e.dotHitCoeff || 0) > 0));
+                    if (hasBuffAmp) return 90;
+                    if (hasDebuffAmp) return 80;
+                    return 50;
+                };
+                return prio(sb) - prio(sa);
+            }));
+
+            // 시작점 3: 단일 초당 계수 높은순
+            addStart(skillList.slice().sort((a, b) => {
+                const sa = skillDb[a], sb = skillDb[b];
+                const da = sa ? getSkillEnhancedCoeff(sa) / Math.max(0.5, sa.cooldown) : 0;
+                const db = sb ? getSkillEnhancedCoeff(sb) / Math.max(0.5, sb.cooldown) : 0;
+                return db - da;
+            }));
+
+            // 시작점 4: 쿨타임 짧은순
+            addStart(skillList.slice().sort((a, b) => (skillDb[a]?.cooldown || 99) - (skillDb[b]?.cooldown || 99)));
+
+            // 시작점 5: 궁극기 + 쿨타임 긴순 (고계수 우선)
+            addStart(skillList.slice().sort((a, b) => (skillDb[b]?.cooldown || 0) - (skillDb[a]?.cooldown || 0)));
+
+            // 시작점 6: 역순
+            addStart(skillList.slice().reverse());
+
+            // 추가 교란 시작점 (결정론적 셔플로 재현성 확보)
+            let seed = 1337;
+            const nextRand = () => {
+                seed = (seed * 1664525 + 1013904223) >>> 0;
+                return seed / 4294967296;
+            };
+            let guard = 0;
+            while (starts.length < multiStartCount && guard < 30) {
+                guard++;
+                const shuf = skillList.slice();
+                for (let i = shuf.length - 1; i > 0; i--) {
+                    const j = Math.floor(nextRand() * (i + 1));
+                    const tmp = shuf[i];
+                    shuf[i] = shuf[j];
+                    shuf[j] = tmp;
+                }
+                addStart(shuf);
+            }
+
+            let globalBestOrder = skillList.slice();
+            let globalBestDps = -1;
+            for (const st of starts) {
+                const res = localSearchOrder(st, evalDuration, 6);
+                if (res.dps > globalBestDps) {
+                    globalBestDps = res.dps;
+                    globalBestOrder = res.order;
+                }
+            }
+            return { order: globalBestOrder, dps: globalBestDps };
+        }
+
         function autoOptimizeOrder() {
             if (cycle.length <= 1) {
                 showToast("최소 2개 이상의 도술이 스킬트리에 있어야 합니다.");
                 return;
             }
-            const targetList = cycle.slice(0, 6);
-            const restList = cycle.slice(6);
+            const beforeDps = runSimulationForOrder(cycle, false).dps;
+            const best = optimizeOrderFull(cycle, null, 8);
 
-            function getPermutations(arr) {
-                if (arr.length <= 1) return [arr];
-                const result = [];
-                for (let i = 0; i < arr.length; i++) {
-                    const current = arr[i];
-                    const remaining = arr.slice(0, i).concat(arr.slice(i + 1));
-                    const perms = getPermutations(remaining);
-                    for (let p of perms) result.push([current].concat(p));
-                }
-                return result;
-            }
-
-            const perms = getPermutations(targetList);
-            let bestOrder = [...cycle];
-            let bestDps = -1;
-
-            perms.forEach(p => {
-                const candidate = p.concat(restList);
-                const sim = runSimulationForOrder(candidate, false);
-                if (sim.dps > bestDps) {
-                    bestDps = sim.dps;
-                    bestOrder = candidate;
-                }
-            });
-
-            cycle = bestOrder;
+            cycle = best.order;
             saveAllState();
             renderCycle();
             calculateDPS();
-            showToast(`최적 순서 정렬 완료! (최고 DPS: ${bestDps.toFixed(2)}%/초)`);
+            const diff = best.dps - beforeDps;
+            const diffStr = diff > 0.01 ? ` (+${diff.toFixed(2)})` : '';
+            showToast(`전체 ${cycle.length}슬롯 최적 순서 정렬 완료! (DPS: ${best.dps.toFixed(2)}%/초${diffStr})`);
+        }
+
+        // =========================================================================
+        // 10-B. 현재 강화 레벨 & 돌파 단계 기준 최고 DPS 추천 스킬 빌드 탐색기
+        // =========================================================================
+        let lastRecommendedBuilds = [];
+
+        function getSingleSkillScore(sk) {
+            if (!sk || sk.category === '도술') return -1;
+            const coeff = getSkillEnhancedCoeff(sk);
+            const { btCdrSec } = getSkillBreakthroughInfo(sk);
+            const cd = Math.max(0.5, (Number(sk.cooldown) || 5) - btCdrSec);
+            let score = coeff / cd;
+            // 핵심 버프/디버프/시너지 보유 스킬 가산점
+            const hasAmpEffect = (sk.effects || []).some(e => (e.ampPct || 0) > 0 || (e.dotHitCoeff || 0) > 0 || (e.cdrPct || 0) > 0);
+            const hasTrig = (sk.conditionals || []).some(c => c.type === 'trigger_state' && (c.ampPct || 0) > 0);
+            if (hasAmpEffect) score += 18;
+            if (hasTrig) score += 12;
+            if (sk.name === '용맹의 기운') score += 35;
+            if (sk.name === '은신') score += 15;
+            return score;
+        }
+
+        function computeRecommendedBuilds() {
+            const allNormalSkills = Object.values(skillDb).filter(sk => sk.category !== '도술');
+            const scoredAll = allNormalSkills
+                .map(sk => ({ name: sk.name, school: sk.school, score: getSingleSkillScore(sk) }))
+                .sort((a, b) => b.score - a.score);
+
+            // 글로벌 후보 풀: 효율 상위 24개 + 핵심 시너지/버프/디버프/연계 스킬
+            const coreSynergyNames = [
+                '용맹의 기운', '내려찍기', '환영 참격', '심장 절단', '삼단 찌르기',
+                '꿰뚫는 저격', '요혼격', '화염구', '번개 폭풍', '연쇄 번개',
+                '화염 분출', '주먹 지르기', '삼묵법', '일섬', '환상술',
+                '묵직한 주먹', '은신', '월식', '쌍검 가르기', '황천의 부름'
+            ];
+            const globalPoolSet = new Set(scoredAll.slice(0, 24).map(x => x.name));
+            coreSynergyNames.forEach(n => { if (skillDb[n] && skillDb[n].category !== '도술') globalPoolSet.add(n); });
+
+            const evalDur = 120;
+            const results = [];
+            const schoolList = SCHOOLS.filter(s => s.id !== 'all');
+
+            schoolList.forEach(scMeta => {
+                const scId = scMeta.id;
+                const ultSkill = getUltimateSkillForSchool(scId);
+                if (!ultSkill) return;
+
+                const schoolNormals = scoredAll.filter(x => x.school === scId);
+                if (schoolNormals.length < 3) return;
+
+                // 1) 해당 계열 상위 3개 + 궁극기 1개로 시작
+                let picked = schoolNormals.slice(0, 3).map(x => x.name);
+                const pickedSet = new Set(picked);
+                const candidatePool = Array.from(new Set([...globalPoolSet, ...schoolNormals.slice(0, 8).map(x => x.name)]));
+
+                // 2) 나머지 5슬롯을 실제 시뮬레이션 DPS 기준 탐욕적(Greedy) 선택
+                while (picked.length < 8) {
+                    let bestSkill = null;
+                    let bestDps = -1;
+                    for (const candName of candidatePool) {
+                        if (pickedSet.has(candName)) continue;
+                        const testDeck = [...picked, candName, ultSkill.name];
+                        const sim = runSimulationForOrder(testDeck, false, evalDur);
+                        if (sim.dps > bestDps) {
+                            bestDps = sim.dps;
+                            bestSkill = candName;
+                        }
+                    }
+                    if (!bestSkill) break;
+                    picked.push(bestSkill);
+                    pickedSet.add(bestSkill);
+                }
+
+                // 3) 1:1 교체(Replacement) 정밀 탐색: 이미 뽑힌 8개 스킬을 더 좋은 후보로 교체 (계열 >= 3 유지)
+                let curOrderRes = localSearchOrder([...picked, ultSkill.name], evalDur, 3);
+                let curBestDps = curOrderRes.dps;
+                picked = curOrderRes.order.filter(n => n !== ultSkill.name);
+
+                for (let round = 0; round < 2; round++) {
+                    let replaced = false;
+                    for (let idx = 0; idx < picked.length; idx++) {
+                        const outSkill = picked[idx];
+                        const sameSchoolCountWithout = picked.filter((n, k) => k !== idx && skillDb[n]?.school === scId).length;
+                        let bestIn = null;
+                        let bestSwapDps = curBestDps;
+
+                        for (const candName of candidatePool) {
+                            if (picked.includes(candName)) continue;
+                            if (sameSchoolCountWithout < 3 && skillDb[candName]?.school !== scId) continue;
+                            const testPicked = picked.slice();
+                            testPicked[idx] = candName;
+                            const sim = runSimulationForOrder([...testPicked, ultSkill.name], false, evalDur);
+                            if (sim.dps > bestSwapDps + 0.1) {
+                                bestSwapDps = sim.dps;
+                                bestIn = candName;
+                            }
+                        }
+
+                        if (bestIn) {
+                            picked[idx] = bestIn;
+                            curBestDps = bestSwapDps;
+                            replaced = true;
+                        }
+                    }
+                    if (!replaced) break;
+                }
+
+                // 4) 1차 전체 순서 최적화 후 실제 시뮬 시간으로 평가
+                const opt1 = optimizeOrderFull([...picked, ultSkill.name], evalDur, 4);
+                const finalSim = runSimulationForOrder(opt1.order, false);
+
+                results.push({
+                    schoolId: scId,
+                    schoolName: scMeta.name,
+                    schoolColor: scMeta.color,
+                    ultName: ultSkill.name,
+                    deck: opt1.order,
+                    dps: finalSim.dps,
+                    baseDps: finalSim.baseDps,
+                    synergyPct: finalSim.synergyPct
+                });
+            });
+
+            results.sort((a, b) => b.dps - a.dps);
+            const top3 = results.slice(0, 3);
+
+            // 5) 최종 Top 3는 실제 시뮬 시간(simDurationSec) 기준으로 순서 정밀 재최적화
+            top3.forEach(b => {
+                const refined = optimizeOrderFull(b.deck, null, 6);
+                const refinedSim = runSimulationForOrder(refined.order, false);
+                b.deck = refined.order;
+                b.dps = refinedSim.dps;
+                b.baseDps = refinedSim.baseDps;
+                b.synergyPct = refinedSim.synergyPct;
+            });
+
+            top3.sort((a, b) => b.dps - a.dps);
+            return top3;
+        }
+
+        function openRecommendModal() {
+            const modal = document.getElementById('recommendModal');
+            const container = document.getElementById('recommendListContainer');
+            const infoEl = document.getElementById('recommendContextInfo');
+            modal.classList.remove('hidden');
+
+            // 현재 강화/돌파 요약 표시
+            const enhList = SCHOOLS.filter(s => s.id !== 'all')
+                .map(s => ({ name: s.name, lv: parseInt(schoolEnhanceLevels[s.id], 10) || 0 }))
+                .filter(x => x.lv > 0)
+                .sort((a, b) => b.lv - a.lv)
+                .slice(0, 4)
+                .map(x => `${x.name} Lv.${x.lv}`);
+            const btCount = Object.values(breakthroughStageMap).filter(v => (parseInt(v, 10) || 0) > 0).length;
+            const wName = (WEAPON_TYPES[currentWeaponType] || WEAPON_TYPES.sword).name.replace('기본공격 ', '');
+            const mins = Math.round((simDurationSec || 300) / 60);
+            infoEl.innerText = `${enhList.length > 0 ? enhList.join(' · ') : '계열 강화 Lv.0'} | 돌파 설정 ${btCount}종 | ${wName} · ${mins}분 기준`;
+
+            container.innerHTML = `
+                <div class="py-10 text-center text-xs text-gray-400">
+                    <i class="fa-solid fa-spinner fa-spin text-emerald-400 text-lg mb-2 block"></i>
+                    현재 도술 레벨과 돌파 단계 기준으로 최적 빌드를 계산 중입니다...
+                </div>
+            `;
+
+            setTimeout(() => {
+                lastRecommendedBuilds = computeRecommendedBuilds();
+                renderRecommendedBuilds(lastRecommendedBuilds);
+            }, 30);
+        }
+
+        function closeRecommendModal() {
+            document.getElementById('recommendModal').classList.add('hidden');
+        }
+
+        function applyRecommendedBuild(idx) {
+            const b = lastRecommendedBuilds[idx];
+            if (!b) return;
+            selectedUltSchool = b.schoolId;
+            cycle = [...b.deck];
+            activeTreeName = `추천 ${idx + 1}위 (${b.schoolName} · ${b.ultName})`;
+            syncUltimateInCycle(false);
+            saveAllState();
+            renderQuickPresetBar();
+            renderCycle();
+            calculateDPS();
+            closeRecommendModal();
+            showToast(`추천 ${idx + 1}위 [${b.schoolName}] 빌드가 적용되었습니다! (DPS ${b.dps.toFixed(2)}%/초)`);
+        }
+
+        function renderRecommendedBuilds(builds) {
+            const container = document.getElementById('recommendListContainer');
+            container.innerHTML = '';
+
+            if (!builds || builds.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-xs text-gray-500">추천 빌드를 생성할 수 없습니다.</div>`;
+                return;
+            }
+
+            const rankColors = [
+                'border-amber-400/70 bg-amber-950/15',
+                'border-violet-500/50 bg-cardBg',
+                'border-borderCol bg-cardBg'
+            ];
+            const rankBadges = [
+                '<span class="px-2 py-0.5 rounded-md text-[11px] font-black bg-amber-500 text-black">1위 · 최고 DPS</span>',
+                '<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-violet-600 text-white">2위</span>',
+                '<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-gray-700 text-gray-200">3위</span>'
+            ];
+
+            builds.forEach((b, idx) => {
+                const skillsHtml = b.deck.map((sName, sIdx) => {
+                    const sk = skillDb[sName];
+                    if (!sk) return '';
+                    const isUlt = sk.category === '도술';
+                    const btLv = isUlt ? 0 : (parseInt(breakthroughStageMap[sName], 10) || 0);
+                    return `
+                        <div class="flex items-center gap-1.5 bg-darkBg/90 border ${isUlt ? 'border-amber-500/60' : 'border-borderCol'} rounded-lg px-2 py-1 min-w-0">
+                            <span class="text-[10px] font-bold text-gray-500 num-clean">${sIdx + 1}</span>
+                            <div class="w-6 h-6 rounded-md overflow-hidden bg-cardBg shrink-0 flex items-center justify-center">
+                                <img src="${getSkillIconSrc(sk)}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')">
+                                <div class="hidden w-full h-full items-center justify-center text-[9px] font-bold text-white">${sName.substring(0, 2)}</div>
+                            </div>
+                            <span class="text-[11px] font-bold ${isUlt ? 'text-amber-300' : 'text-gray-100'} truncate">${sName}</span>
+                            ${btLv > 0 ? `<span class="text-[9px] font-bold text-amber-400 shrink-0">${btLv}돌</span>` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                const card = document.createElement('div');
+                card.className = `rounded-2xl border p-4 transition ${rankColors[idx] || rankColors[2]}`;
+                card.innerHTML = `
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            ${rankBadges[idx] || ''}
+                            <span class="px-2 py-0.5 rounded-md text-[11px] font-bold text-white" style="background:${b.schoolColor}">${b.schoolName}</span>
+                            <span class="text-sm font-black text-white">${b.ultName} 중심 빌드</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="text-right num-clean">
+                                <div class="text-base font-black text-emerald-400 leading-tight">${b.dps.toFixed(2)} <span class="text-[10px] font-normal text-gray-400">%/초</span></div>
+                                <div class="text-[10px] text-amber-300/90">시너지·돌파 +${b.synergyPct.toFixed(1)}%</div>
+                            </div>
+                            <button type="button" onclick="applyRecommendedBuild(${idx})" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold transition shadow-md shrink-0">
+                                적용
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        ${skillsHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
         }
 
         // =========================================================================
@@ -9396,10 +10213,13 @@
 
         function renderCycle() {
             const container = document.getElementById('cycleContainer');
+            if (!container) return;
             container.innerHTML = '';
 
             const nonUltCount = cycle.filter(sName => skillDb[sName] && skillDb[sName].category !== '도술').length;
             const ultCount = cycle.filter(sName => skillDb[sName]?.category === '도술').length;
+            const totalBadge = document.getElementById('cycleTotalCountBadge');
+            if (totalBadge) totalBadge.innerText = `${cycle.length}/9`;
             const normalBadge = document.getElementById('normalSlotCountBadge');
             const ultBadge = document.getElementById('ultSlotCountBadge');
             if (normalBadge) normalBadge.innerText = `일반/특별 ${nonUltCount} / 8`;
@@ -9407,9 +10227,9 @@
 
             if (cycle.length === 0) {
                 container.innerHTML = `
-                    <div class="col-span-full flex flex-col items-center justify-center py-10 text-gray-500">
-                        <i class="fa-solid fa-hand-pointer text-2xl mb-2 opacity-50"></i>
-                        <p class="text-sm font-semibold">우측 도감에서 도술을 클릭해 추가하세요 (최대 8개 + 궁극기 1개)</p>
+                    <div class="flex flex-col items-center justify-center py-10 text-gray-500 border border-dashed border-borderCol rounded-xl">
+                        <i class="fa-solid fa-hand-pointer text-xl mb-2 opacity-50"></i>
+                        <p class="text-xs font-semibold">우측 도감에서 도술을 클릭해 추가하세요 (최대 8개 + 궁극기 1개)</p>
                     </div>
                 `;
                 return;
@@ -9420,25 +10240,27 @@
                 const schoolMeta = getSchoolMeta(sk.school);
                 const iconSrc = getSkillIconSrc(sk);
                 const cat = sk.category || '일반';
-                const btStage = (cat !== '도술') ? Math.max(0, Math.min(10, parseInt(breakthroughStageMap[name], 10) || 0)) : 0;
-                const isBt6 = cat === '특별' && (!!bt6ActiveMap[name] || btStage >= 6);
                 const isDosul = cat === '도술';
+                const btStage = !isDosul ? Math.max(0, Math.min(10, parseInt(breakthroughStageMap[name], 10) || 0)) : 0;
 
-                const item = document.createElement('div');
-                item.className = `bg-cardBg border-2 border-borderCol hover:border-violet-400 rounded-2xl p-2.5 w-full min-w-0 flex flex-col justify-between relative group cursor-grab active:cursor-grabbing shadow-lg transition ${
-                    isBt6 ? 'bt6-glow' : (isDosul ? 'dosul-glow' : '')
-                }`;
-                item.draggable = true;
+                const row = document.createElement('div');
+                row.className = "group flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-[#161922] hover:bg-[#1c202c] border border-borderCol/80 hover:border-violet-500/45 transition select-none cursor-grab active:cursor-grabbing";
+                row.draggable = true;
 
-                item.addEventListener('dragstart', (e) => {
+                row.addEventListener('dragstart', (e) => {
                     draggedIndex = index;
                     e.dataTransfer.setData('text/plain', index);
-                    item.classList.add('opacity-40');
+                    row.classList.add('opacity-40');
                 });
-                item.addEventListener('dragend', () => item.classList.remove('opacity-40'));
-                item.addEventListener('dragover', (e) => e.preventDefault());
-                item.addEventListener('drop', (e) => {
+                row.addEventListener('dragend', () => row.classList.remove('opacity-40'));
+                row.addEventListener('dragover', (e) => {
                     e.preventDefault();
+                    row.classList.add('border-violet-400');
+                });
+                row.addEventListener('dragleave', () => row.classList.remove('border-violet-400'));
+                row.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    row.classList.remove('border-violet-400');
                     if (draggedIndex === null || draggedIndex === index) return;
                     const moved = cycle.splice(draggedIndex, 1)[0];
                     cycle.splice(index, 0, moved);
@@ -9448,106 +10270,49 @@
                     calculateDPS();
                 });
 
-                const getStageCdrSec = (stageNum) => {
-                    if (stageNum <= 0 || isDosul) return 0;
-                    if (sk.breakthroughCdrTable && sk.breakthroughCdrTable[stageNum] !== undefined) {
-                        return Number(sk.breakthroughCdrTable[stageNum]);
-                    }
-                    return Number(((Number(sk.cooldown) || 5) * 0.015 * stageNum).toFixed(3));
-                };
-                const currentBtCdrSec = getStageCdrSec(btStage);
-                const reducedCdVal = Math.max(0.5, (Number(sk.cooldown) || 5) - currentBtCdrSec);
-                const displayCoeff = getSkillEnhancedCoeff(sk);
-                const coeffTooltip = getSkillCoeffTooltip(sk);
-                const specialBt6NoteHtml = (cat === '특별' && sk.breakthrough6 && sk.breakthrough6.desc)
-                    ? `<div class="mt-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold truncate border ${
-                        isBt6
-                            ? 'bg-amber-500/20 border-amber-400/60 text-amber-200'
-                            : 'bg-darkBg/70 border-borderCol/70 text-gray-500'
-                    }" title="${sk.breakthrough6.desc}">✦ ${sk.breakthrough6.desc.replace(/^6✦\s*/, '')}</div>`
-                    : '';
-
-                let specialFooterHtml = '';
-                if (!isDosul) {
-                    const pillCls = btStage >= 6
-                        ? 'bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-amber-500/20 border-amber-400/70 shadow-sm shadow-amber-500/20'
-                        : (btStage > 0
-                            ? 'bg-amber-950/25 border-amber-500/40'
-                            : 'bg-darkBg/90 border-borderCol');
-                    const starCls = btStage >= 6 ? 'text-amber-300' : (btStage > 0 ? 'text-amber-400' : 'text-gray-600');
-                    const subMetaTxt = btStage > 0
-                        ? `피해 +${btStage * 3}%${currentBtCdrSec > 0 ? ` · 쿨 -${Number(currentBtCdrSec.toFixed(2))}s` : ''}`
-                        : '미돌파 (0~10)';
-
-                    specialFooterHtml = `
-                        <div class="mt-2 pt-2 border-t border-borderCol/60" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">
-                            <div class="flex items-center justify-between rounded-xl border ${pillCls} p-1 transition">
-                                <button type="button" onclick="stepSkillBreakthroughStage('${name}', -1, event)" class="w-6 h-6 rounded-lg bg-darkBg/80 hover:bg-gray-800 text-gray-300 hover:text-white flex items-center justify-center text-xs font-black transition ${btStage <= 0 ? 'opacity-35 cursor-not-allowed' : ''}" title="돌파 -1">−</button>
-                                <div class="flex items-center justify-center gap-0.5">
-                                    <span class="text-xs font-black ${starCls}">✦</span>
-                                    <input type="number" min="0" max="10" step="1" value="${btStage}"
-                                           onfocus="this.select()"
-                                           oninput="onSkillBreakthroughInput('${name}', this, 'cycle', event)"
-                                           onchange="setSkillBreakthroughStage('${name}', this.value, event)"
-                                           onkeydown="if(event.key==='Enter'){this.blur();}"
-                                           class="w-7 bg-transparent text-center text-[13px] font-black num-clean no-spinner focus:outline-none ${btStage > 0 ? 'text-amber-200' : 'text-gray-300'}" />
-                                    <span class="text-[11px] font-extrabold ${btStage > 0 ? 'text-amber-300/90' : 'text-gray-500'}">돌파</span>
-                                </div>
-                                <button type="button" onclick="stepSkillBreakthroughStage('${name}', 1, event)" class="w-6 h-6 rounded-lg bg-darkBg/80 hover:bg-amber-600/40 text-amber-300 hover:text-white flex items-center justify-center text-xs font-black transition ${btStage >= 10 ? 'opacity-35 cursor-not-allowed' : ''}" title="돌파 +1">+</button>
-                            </div>
-                            <div class="text-[10px] text-center num-clean font-semibold mt-1 ${btStage >= 6 ? 'text-amber-300' : (btStage > 0 ? 'text-amber-400/80' : 'text-gray-500')}">${subMetaTxt}</div>
-                            ${specialBt6NoteHtml}
+                const btControlsHtml = isDosul ? '' : `
+                    <div class="flex items-center gap-1.5" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">
+                        <button type="button" onclick="stepSkillBreakthroughStage('${name}', -1, event)"
+                                class="w-8 h-8 rounded-lg bg-[#10121a] hover:bg-[#232736] border border-borderCol text-gray-300 hover:text-white flex items-center justify-center transition text-sm font-bold ${btStage <= 0 ? 'opacity-40 cursor-not-allowed' : ''}" title="돌파 -1">−</button>
+                        <div class="w-10 flex flex-col items-center justify-center leading-none">
+                            <span class="text-[10px] text-gray-500 mb-0.5">돌파</span>
+                            <input type="number" min="0" max="10" step="1" value="${btStage}"
+                                   onfocus="this.select()"
+                                   oninput="onSkillBreakthroughInput('${name}', this, 'cycle', event)"
+                                   onchange="setSkillBreakthroughStage('${name}', this.value, event)"
+                                   onkeydown="if(event.key==='Enter'){this.blur();}"
+                                   class="w-8 bg-transparent text-center text-sm font-extrabold text-white num-clean no-spinner focus:outline-none focus:text-amber-300" />
                         </div>
-                    `;
-                } else {
-                    specialFooterHtml = `
-                        <div class="mt-2 pt-2 border-t border-rose-500/25">
-                            <div class="w-full py-1.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-rose-950/80 via-amber-950/60 to-rose-950/80 border border-amber-500/45 text-amber-200 text-center">
-                                <i class="fa-solid fa-crown text-amber-400 mr-1"></i>[${schoolMeta.name}] 궁극기
-                            </div>
-                            <div class="text-[10px] text-center font-semibold ${styleSinsikDb[sk.school] ? 'text-amber-300/80' : 'text-gray-500'} mt-1">${styleSinsikDb[sk.school] ? `${schoolMeta.name} 신식 활성화` : '신식 미적용'}</div>
-                        </div>
-                    `;
-                }
+                        <button type="button" onclick="stepSkillBreakthroughStage('${name}', 1, event)"
+                                class="w-8 h-8 rounded-lg bg-[#10121a] hover:bg-[#232736] border border-borderCol text-gray-300 hover:text-white flex items-center justify-center transition text-sm font-bold ${btStage >= 10 ? 'opacity-40 cursor-not-allowed' : ''}" title="돌파 +1">+</button>
+                    </div>
+                `;
 
-                item.innerHTML = `
-                    <div>
-                        <div class="flex justify-between items-center mb-2">
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <span class="bg-violet-600 text-white text-xs font-black px-2 py-0.5 rounded-md">#${index + 1}</span>
-                                <span class="text-[11px] font-extrabold px-2 py-0.5 rounded-md" style="color:${schoolMeta.color}; background:${schoolMeta.color}22;">
-                                    ${schoolMeta.name}
-                                </span>
-                                ${sk.maxCharges > 1 ? `<span class="bg-sky-950/80 text-sky-300 border border-sky-500/40 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md">${sk.maxCharges}스택</span>` : ''}
-                            </div>
-                            <div class="flex items-center gap-1">
-                                ${!isDosul ? `
-                                    <button onclick="removeFromCycle(${index})" class="w-6 h-6 rounded-lg bg-darkBg/80 text-gray-400 hover:text-red-400 hover:bg-red-950/40 transition flex items-center justify-center text-xs" title="제거">
-                                        <i class="fa-solid fa-xmark"></i>
-                                    </button>
-                                ` : `<span class="text-[10px] text-amber-400 font-extrabold">자동</span>`}
-                            </div>
+                row.innerHTML = `
+                    <div class="flex items-center gap-3 min-w-0">
+                        <i class="fa-solid fa-grip-vertical text-gray-600 group-hover:text-gray-400 text-xs shrink-0"></i>
+                        <span class="w-4 text-center text-xs font-bold text-gray-400 num-clean shrink-0">${index + 1}</span>
+                        <div class="w-11 h-11 rounded-lg overflow-hidden bg-darkBg border border-borderCol shrink-0 flex items-center justify-center shadow-sm">
+                            <img src="${iconSrc}" data-fallback-idx="0" alt="${name}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')">
+                            <div class="hidden w-full h-full items-center justify-center text-xs font-black text-white" style="background:${schoolMeta.color}55">${name.substring(0, 2)}</div>
                         </div>
-
-                        <div class="flex items-center gap-2.5 mb-2">
-                            <div class="w-12 h-12 rounded-xl overflow-hidden bg-darkBg border-2 border-borderCol shrink-0 flex items-center justify-center shadow-md">
-                                <img src="${iconSrc}" data-fallback-idx="0" alt="${name}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')">
-                                <div class="hidden w-full h-full items-center justify-center text-xs font-black text-white" style="background:${schoolMeta.color}55">${name.substring(0, 2)}</div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-extrabold text-white truncate">${name}</span>
+                                ${isDosul ? `<span class="px-1.5 py-0.5 text-[10px] font-bold rounded border border-indigo-400/50 bg-indigo-500/15 text-indigo-300 shrink-0">궁극기</span>` : ''}
                             </div>
-                            <div class="min-w-0 flex-1">
-                                <div class="text-[14px] font-black text-white leading-tight break-keep truncate" title="${name}">${name}</div>
-                                <div data-coeff-for="${name}" class="text-xs ${isBt6 ? 'text-amber-300' : 'text-emerald-400'} font-extrabold num-clean mt-0.5" title="${coeffTooltip}">${displayCoeff}%</div>
-                            </div>
-                        </div>
-
-                        <div class="text-[11px] text-gray-300 flex justify-between items-center bg-darkBg/60 px-2 py-1 rounded-lg num-clean">
-                            <span>쿨 <b data-cd-for="${name}" data-cd-unit="s" class="${currentBtCdrSec > 0 ? 'text-amber-300' : 'text-white'}">${Number(reducedCdVal.toFixed(2))}s</b></span>
-                            <span class="text-gray-400">모션 ${sk.motion}s</span>
+                            <div class="text-xs text-gray-400 mt-0.5">${schoolMeta.name}</div>
                         </div>
                     </div>
-                    ${specialFooterHtml}
+                    <div class="flex items-center gap-2.5 shrink-0">
+                        ${btControlsHtml}
+                        <button type="button" onclick="event.stopPropagation(); removeFromCycle(${index})"
+                                class="w-7 h-7 rounded-lg text-gray-500 hover:text-rose-400 hover:bg-rose-950/30 flex items-center justify-center transition" title="제거">
+                            <i class="fa-solid fa-xmark text-sm"></i>
+                        </button>
+                    </div>
                 `;
-                container.appendChild(item);
+                container.appendChild(row);
             });
         }
 
