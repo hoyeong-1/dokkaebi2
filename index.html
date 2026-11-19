@@ -25,78 +25,143 @@
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Pretendard Variable', 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif; background-color: #0b0c10; color: #f3f4f6; }
+        :root {
+            --bg: #0D0F13;
+            --surface: #13161D;
+            --raised: #1A1E28;
+            --line: #252A36;
+            --line-strong: #343B4C;
+            --fg: #ECEFF4;
+            --fg-2: #B4BCC8;
+            --sub: #7D8596;
+            --accent: #7F91F5;
+            --accent-soft: rgba(127, 145, 245, 0.14);
+            --danger: #E06C75;
+            --danger-soft: rgba(224, 108, 117, 0.14);
+        }
+
+        body {
+            font-family: 'Pretendard Variable', 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+            background-color: var(--bg) !important;
+            color: var(--fg) !important;
+        }
+
         .num-clean { font-variant-numeric: tabular-nums; letter-spacing: -0.015em; }
         .no-spinner::-webkit-outer-spin-button,
         .no-spinner::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .no-spinner { -moz-appearance: textfield; }
+
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0b0c10; }
-        ::-webkit-scrollbar-thumb { background: #2e3346; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #4b526e; }
-        .badge-buff { background: rgba(16, 185, 129, 0.14); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.32); }
-        .badge-debuff { background: rgba(244, 63, 94, 0.14); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.32); }
-        .badge-cond { background: rgba(245, 158, 11, 0.16); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.38); }
-        .tab-active { background: #7c3aed !important; color: #ffffff !important; border-color: #8b5cf6 !important; }
-        /* 도술 종류 배지 스타일 (일반 / 특별 / 도술) */
-        .cat-normal { background: rgba(100, 116, 139, 0.22); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.35); }
-        .cat-special { background: rgba(168, 85, 247, 0.22); color: #e9d5ff; border: 1px solid rgba(192, 132, 252, 0.5); }
-        .cat-dosul { background: linear-gradient(135deg, rgba(225, 29, 72, 0.3), rgba(217, 119, 6, 0.3)); color: #fde68a; border: 1px solid rgba(251, 191, 36, 0.6); }
-        .cat-dot { background: rgba(249, 115, 22, 0.22); color: #fdba74; border: 1px solid rgba(251, 146, 60, 0.55); }
-        .bt6-glow { box-shadow: 0 0 15px -2px rgba(245, 158, 11, 0.35); border-color: #f59e0b !important; }
-        .dosul-glow { box-shadow: 0 0 18px -2px rgba(244, 63, 94, 0.45); border-color: #fb7185 !important; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #464F64; }
+
+        /* 검소한 표면·경계선 통일 (과한 그림자·네온·블러 제거) */
+        header, .bg-panelBg, .bg-panelBg\/95 {
+            background-color: var(--surface) !important;
+            border-color: var(--line) !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+        }
+        .bg-cardBg, .bg-cardBg\/70, .bg-cardBg\/80 {
+            background-color: var(--raised) !important;
+            border-color: var(--line) !important;
+            box-shadow: none !important;
+        }
+        .bg-darkBg, .bg-darkBg\/90, .bg-darkBg\/80, .bg-darkBg\/50 {
+            background-color: var(--bg) !important;
+            border-color: var(--line) !important;
+        }
+        .border-borderCol { border-color: var(--line) !important; }
+        .shadow-xl, .shadow-lg, .shadow-2xl, .shadow-md, .shadow-sm { box-shadow: none !important; }
+        .blur-3xl { display: none !important; }
+
+        /* 과한 보라/호박/장미 톤 다운 */
+        .bg-violet-950\/30, .bg-amber-950\/20, .bg-violet-950\/80, .bg-rose-950\/80,
+        .bg-emerald-950\/50, .bg-amber-950\/40, .bg-red-950\/30, .bg-rose-950\/30 {
+            background-color: var(--raised) !important;
+            border-color: var(--line) !important;
+        }
+        .bg-emerald-950\/50:hover, .bg-amber-950\/40:hover, .bg-red-950\/30:hover, .bg-rose-950\/30:hover {
+            background-color: #232836 !important;
+            border-color: var(--line-strong) !important;
+        }
+
+        .text-violet-400, .text-violet-300 { color: var(--fg) !important; }
+        .text-amber-400, .text-amber-300 { color: var(--fg-2) !important; }
+        .text-emerald-300 { color: var(--fg-2) !important; }
+        #resDps { color: var(--accent) !important; }
+        #resSynergyGain { color: var(--fg) !important; }
+        #resSynergyPct { color: var(--sub) !important; }
+
+        /* 버튼 검소화 */
+        .bg-violet-600 {
+            background-color: #232836 !important;
+            border: 1px solid var(--line-strong) !important;
+            color: var(--fg) !important;
+        }
+        .bg-violet-600:hover { background-color: #2B3142 !important; }
+        .tab-active {
+            background-color: #232836 !important;
+            color: var(--fg) !important;
+            border-color: var(--line-strong) !important;
+        }
+
+        /* 배지 차분하게 정리 */
+        .badge-buff { background: var(--accent-soft); color: #A9B7FF; border: 1px solid rgba(127, 145, 245, 0.35); }
+        .badge-debuff { background: var(--danger-soft); color: #F09AA2; border: 1px solid rgba(224, 108, 117, 0.35); }
+        .badge-cond { background: rgba(255, 255, 255, 0.04); color: var(--fg-2); border: 1px solid var(--line-strong); }
+
+        .cat-normal  { background: transparent; color: var(--sub); border: 1px solid var(--line); }
+        .cat-special { background: var(--accent-soft); color: #B4C1FF; border: 1px solid rgba(127, 145, 245, 0.35); }
+        .cat-dosul   { background: var(--accent-soft); color: #C5D0FF; border: 1px solid rgba(127, 145, 245, 0.5); }
+        .cat-dot     { background: var(--danger-soft); color: #F09AA2; border: 1px solid rgba(224, 108, 117, 0.35); }
+
+        .bt6-glow, .dosul-glow { box-shadow: none !important; border-color: var(--line-strong) !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-violet-600 selection:text-white">
 
     <!-- Top Navigation Header -->
-    <header class="bg-panelBg/95 backdrop-blur-md border-b border-borderCol sticky top-0 z-40 shadow-xl">
-        <div class="max-w-[1440px] mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-3">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-violet-600/30 border border-violet-400/30">
-                    <i class="fa-solid fa-fire-flame-curved text-white text-lg"></i>
-                </div>
-                <div class="flex items-center gap-2">
-                    <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">도술 DPS 시뮬레이터</h1>
-                </div>
+    <header class="border-b border-borderCol bg-panelBg sticky top-0 z-40">
+        <div class="max-w-[1380px] mx-auto px-4 h-14 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <h1 class="text-base font-bold tracking-tight text-white truncate">도술 빌드 시뮬레이터</h1>
             </div>
 
             <!-- Action Controls -->
-            <div class="flex flex-wrap items-center gap-2">
-                <button onclick="openPresetModal()" class="px-3.5 py-2 text-xs font-bold text-white bg-violet-600 hover:bg-violet-500 rounded-xl transition shadow-lg shadow-violet-600/25 flex items-center gap-1.5">
-                    <i class="fa-solid fa-bookmark"></i> 스킬트리 저장 / 불러오기
-                    <span id="presetCountBadge" class="bg-violet-900/90 text-violet-200 px-1.5 py-0.2 rounded-full text-[10px]">0</span>
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button onclick="openPresetModal()" class="px-3 py-1.5 text-xs font-medium text-gray-200 bg-cardBg hover:bg-[#232836] border border-borderCol rounded-lg transition flex items-center gap-1.5">
+                    프리셋
+                    <span id="presetCountBadge" class="text-[11px] text-gray-400 num-clean">0</span>
                 </button>
 
-                <button onclick="openShareCodeModal()" class="px-3 py-2 text-xs font-semibold text-amber-300 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-700/50 rounded-xl transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-share-nodes"></i> 공유 코드
+                <button onclick="openShareCodeModal()" class="px-3 py-1.5 text-xs font-medium text-gray-200 bg-cardBg hover:bg-[#232836] border border-borderCol rounded-lg transition">
+                    공유 코드
                 </button>
-
             </div>
         </div>
     </header>
 
     <!-- Quick Preset Bar -->
-    <div class="bg-[#101218] border-b border-borderCol">
-        <div class="max-w-[1440px] mx-auto px-4 py-2 flex items-center justify-between gap-3 overflow-x-auto">
+    <div class="bg-[#0D0F13] border-b border-borderCol">
+        <div class="max-w-[1380px] mx-auto px-4 py-2 flex items-center justify-between gap-3 overflow-x-auto">
             <div class="flex items-center gap-2 shrink-0">
-                <span class="text-[11px] font-bold text-gray-400 flex items-center gap-1.5">
-                    <i class="fa-solid fa-folder-tree text-violet-400"></i> 내 스킬트리 프리셋:
-                </span>
+                <span class="text-[11px] font-medium text-gray-400">프리셋</span>
                 <div id="quickPresetBar" class="flex items-center gap-1.5"></div>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
-                <input type="text" id="quickSaveInput" placeholder="현재 스킬트리 이름 입력..." 
-                       class="bg-cardBg border border-borderCol rounded-lg px-2.5 py-1 text-xs text-gray-200 focus:outline-none focus:border-violet-500 w-44">
-                <button onclick="quickSaveCurrentTree()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1">
-                    <i class="fa-solid fa-floppy-disk"></i> 빠른 저장
+                <input type="text" id="quickSaveInput" placeholder="빌드 이름 입력..." 
+                       class="bg-cardBg border border-borderCol rounded-lg px-2.5 py-1 text-xs text-gray-200 focus:outline-none focus:border-gray-500 w-40">
+                <button onclick="quickSaveCurrentTree()" class="px-2.5 py-1 bg-cardBg hover:bg-[#232836] border border-borderCol text-gray-200 rounded-lg text-xs font-medium transition">
+                    저장
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Main Workspace -->
-    <main class="max-w-[1440px] mx-auto px-4 py-5 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-5">
+    <main class="max-w-[1380px] mx-auto px-4 py-5 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-4">
 
         <!-- Left Column: Simulation Dashboard, Sinsik Banner, Cycle Deck & Timeline (7 Cols) -->
         <div class="lg:col-span-7 flex flex-col gap-4">
@@ -116,18 +181,37 @@
                     <!-- Simulation Duration Selector: 3분 / 5분 / 10분 + 무기 선택 -->
                     <div class="flex flex-wrap items-center gap-2">
                         <div class="flex items-center gap-1.5 bg-cardBg border border-borderCol rounded-xl px-2.5 py-1">
-                            <span class="text-[11px] text-gray-400 font-semibold"><i class="fa-solid fa-khanda text-amber-400 mr-1"></i>무기(평타):</span>
+                            <span class="text-[11px] text-gray-400 font-semibold">전설무기:</span>
+                            <select id="legendWeaponSelect" onchange="onLegendWeaponChange()" class="bg-transparent text-xs font-bold text-gray-100 focus:outline-none cursor-pointer">
+                                <option value="" class="bg-panelBg text-white">미착용</option>
+                                <option value="10130030" class="bg-panelBg text-white">[절명] 심장추적자 (+10%)</option>
+                                <option value="10430040" class="bg-panelBg text-white">[저격] 화령궁 (+10%)</option>
+                                <option value="10030050" class="bg-panelBg text-white">[연타] 청명의 기둥 (+10%)</option>
+                                <option value="10030040" class="bg-panelBg text-white">[강타] 봉황멸화검 (+10%)</option>
+                                <option value="10330040" class="bg-panelBg text-white">[주술] 태초의 불꽃 (+10%)</option>
+                                <option value="10230050" class="bg-panelBg text-white">[파멸] 칠흑의 마력봉 (+10%)</option>
+                                <option value="10030030" class="bg-panelBg text-white">[강인] 음양수호대검 (+10%)</option>
+                                <option value="10130040" class="bg-panelBg text-white">[기동] 바람의 인도자 (+10%)</option>
+                                <option value="10230040" class="bg-panelBg text-white">[기만] 원혼탐식자 (+10%)</option>
+                                <option value="10130050" class="bg-panelBg text-white">[척살] 황룡의 분노 (+10%)</option>
+                                <option value="10230030" class="bg-panelBg text-white">[헌신] 영혼의 길잡이 (+10%)</option>
+                                <option value="10330030" class="bg-panelBg text-white">[제압] 선녀의 학우선 (+10%)</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1.5 bg-cardBg border border-borderCol rounded-xl px-2.5 py-1">
+                            <span class="text-[11px] text-gray-400 font-semibold">평타:</span>
                             <select id="weaponTypeSelect" onchange="onWeaponTypeChange()" class="bg-transparent text-xs font-bold text-amber-300 focus:outline-none cursor-pointer">
-                                <option value="sword" class="bg-panelBg text-white">검 / 도 (72% · 0.65초)</option>
-                                <option value="fan" class="bg-panelBg text-white">부채 (63% · 0.65초)</option>
-                                <option value="staff" class="bg-panelBg text-white">지팡이 / 활 (60% · 0.65초)</option>
+                                <option value="sword" class="bg-panelBg text-white">검 / 도 (72% · 0.625초)</option>
+                                <option value="fan" class="bg-panelBg text-white">부채 (63% · 0.625초)</option>
+                                <option value="staff" class="bg-panelBg text-white">지팡이 / 활 (60% · 0.625초)</option>
                             </select>
                         </div>
                         <span class="text-xs text-gray-400 font-medium">시뮬 시간:</span>
-                        <div class="inline-flex rounded-xl bg-darkBg p-1 border border-borderCol">
-                            <button type="button" onclick="setSimDuration(180)" id="durBtn180" class="px-2.5 py-1 rounded-lg text-xs font-bold transition text-gray-400 hover:text-white">3분</button>
-                            <button type="button" onclick="setSimDuration(300)" id="durBtn300" class="px-2.5 py-1 rounded-lg text-xs font-bold transition bg-violet-600 text-white">5분</button>
-                            <button type="button" onclick="setSimDuration(600)" id="durBtn600" class="px-2.5 py-1 rounded-lg text-xs font-bold transition text-gray-400 hover:text-white">10분</button>
+                        <div class="inline-flex rounded-lg bg-darkBg p-0.5 border border-borderCol">
+                            <button type="button" onclick="setSimDuration(60)" id="durBtn60" class="px-2.5 py-1 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white">1분</button>
+                            <button type="button" onclick="setSimDuration(180)" id="durBtn180" class="px-2.5 py-1 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white">3분</button>
+                            <button type="button" onclick="setSimDuration(300)" id="durBtn300" class="px-2.5 py-1 rounded-md text-xs font-semibold transition bg-violet-600 text-white">5분</button>
+                            <button type="button" onclick="setSimDuration(600)" id="durBtn600" class="px-2.5 py-1 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white">10분</button>
                         </div>
 
                     </div>
@@ -232,79 +316,10 @@
                 </div>
 
                 <!-- Skill Sequence Vertical List -->
-                <div id="cycleContainer" class="flex flex-col gap-2 min-h-[120px] relative transition">
+                <div id="cycleContainer" class="flex flex-col gap-2 h-[658px] min-h-[658px] relative transition">
                 </div>
             </div>
 
-            <!-- 4. Skill Contribution Breakdown & Timeline Tabs -->
-            <div class="bg-panelBg border border-borderCol rounded-2xl p-5 shadow-xl flex-1 flex flex-col">
-                <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <button onclick="switchLogView('summary')" id="tabBtnSummary" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-violet-600 text-white transition">
-                            <i class="fa-solid fa-chart-pie mr-1"></i> 딜 지분
-                        </button>
-                        <button onclick="switchLogView('uptime')" id="tabBtnUptime" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-cardBg text-gray-400 hover:text-white border border-borderCol transition">
-                            <i class="fa-solid fa-stopwatch mr-1"></i> 버프/디버프 가동률
-                        </button>
-                        <button onclick="switchLogView('timeline')" id="tabBtnTimeline" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-cardBg text-gray-400 hover:text-white border border-borderCol transition">
-                            <i class="fa-solid fa-bars-staggered mr-1"></i> 타임라인
-                        </button>
-                    </div>
-                    <span id="timelineCountBadge" class="text-[11px] text-gray-400 bg-cardBg px-2.5 py-1 rounded-lg border border-borderCol">총 0회 시전</span>
-                </div>
-
-                <!-- View A: Skill Damage Contribution Summary -->
-                <div id="summaryViewBox" class="overflow-x-auto border border-borderCol rounded-xl">
-                    <table class="w-full text-left border-collapse text-[13px]">
-                        <thead class="bg-cardBg text-gray-300 sticky top-0 z-10 border-b border-borderCol text-xs">
-                            <tr class="whitespace-nowrap">
-                                <th class="py-3 px-3.5 font-bold">도술명 (분류)</th>
-                                <th class="py-3 px-3 font-bold text-right">시전 횟수</th>
-                                <th class="py-3 px-3 font-bold text-right">기본 계수합</th>
-                                <th class="py-3 px-3 font-bold text-right">보너스 계수</th>
-                                <th class="py-3 px-3 font-bold text-right">최종 누적 피해량</th>
-                                <th class="py-3 px-3.5 font-bold w-48">딜 지분율 (%)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="summaryTableBody" class="divide-y divide-borderCol/60 bg-darkBg/50"></tbody>
-                    </table>
-                </div>
-
-                <!-- View Uptime: Buff/Debuff Uptime Statistics -->
-                <div id="uptimeViewBox" class="hidden overflow-x-auto border border-borderCol rounded-xl">
-                    <table class="w-full text-left border-collapse text-[13px]">
-                        <thead class="bg-cardBg text-gray-300 sticky top-0 z-10 border-b border-borderCol text-xs">
-                            <tr class="whitespace-nowrap">
-                                <th class="py-3 px-3.5 font-bold">상태명 (구분)</th>
-                                <th class="py-3 px-3 font-bold">주요 효과</th>
-                                <th class="py-3 px-3 font-bold text-right">부여/갱신</th>
-                                <th class="py-3 px-3 font-bold text-right">유지 시간</th>
-                                <th class="py-3 px-3.5 font-bold w-48">가동률 (%)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="uptimeTableBody" class="divide-y divide-borderCol/60 bg-darkBg/50"></tbody>
-                    </table>
-                </div>
-
-                <!-- View B: Visual & Chronological Timeline -->
-                <div id="timelineViewBox" class="hidden border border-borderCol rounded-xl bg-[#0e1017] p-4">
-                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                        <div class="flex items-center gap-2">
-                            <h3 class="text-sm font-extrabold text-white">타임라인</h3>
-                            <span id="timelineRangeHint" class="text-[11px] text-gray-500"></span>
-                        </div>
-                        <div class="inline-flex rounded-xl bg-darkBg p-0.5 border border-borderCol">
-                            <button type="button" onclick="setTimelineSubMode('bySkill')" id="tlMode_bySkill"
-                                    class="px-3 py-1 rounded-lg text-xs font-bold bg-[#232736] text-white border border-gray-600/60 transition">도술마다</button>
-                            <button type="button" onclick="setTimelineSubMode('chrono')" id="tlMode_chrono"
-                                    class="px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition">시간순</button>
-                            <button type="button" onclick="setTimelineSubMode('single')" id="tlMode_single"
-                                    class="px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition">한 줄</button>
-                        </div>
-                    </div>
-                    <div id="timelineVisualContainer"></div>
-                </div>
-            </div>
 
         </div>
 
@@ -370,6 +385,78 @@
                 </div>
             </div>
         </div>
+
+
+        <!-- Bottom Full-Width Section: Skill Contribution Breakdown & Timeline Tabs (12 Cols) -->
+        <div class="lg:col-span-12 bg-panelBg border border-borderCol rounded-2xl p-5 shadow-xl flex flex-col">
+                <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="switchLogView('summary')" id="tabBtnSummary" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-violet-600 text-white transition">
+                            <i class="fa-solid fa-chart-pie mr-1"></i> 딜 지분
+                        </button>
+                        <button onclick="switchLogView('uptime')" id="tabBtnUptime" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-cardBg text-gray-400 hover:text-white border border-borderCol transition">
+                            <i class="fa-solid fa-stopwatch mr-1"></i> 버프/디버프 가동률
+                        </button>
+                        <button onclick="switchLogView('timeline')" id="tabBtnTimeline" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-cardBg text-gray-400 hover:text-white border border-borderCol transition">
+                            <i class="fa-solid fa-bars-staggered mr-1"></i> 타임라인
+                        </button>
+                    </div>
+                    <span id="timelineCountBadge" class="text-[11px] text-gray-400 bg-cardBg px-2.5 py-1 rounded-lg border border-borderCol">총 0회 시전</span>
+                </div>
+
+                <!-- View A: Skill Damage Contribution Summary -->
+                <div id="summaryViewBox" class="overflow-x-auto border border-borderCol rounded-xl">
+                    <table class="w-full text-left border-collapse text-[13px]">
+                        <thead class="bg-cardBg text-gray-300 sticky top-0 z-10 border-b border-borderCol text-xs">
+                            <tr class="whitespace-nowrap">
+                                <th class="py-2.5 px-3 font-semibold">도술명</th>
+                                <th class="py-2.5 px-2.5 font-semibold text-right">시전</th>
+                                <th class="py-2.5 px-2.5 font-semibold text-right">기본 계수</th>
+                                <th class="py-2.5 px-2.5 font-semibold text-right">보너스</th>
+                                <th class="py-2.5 px-2.5 font-semibold text-right">누적 피해</th>
+                                <th class="py-2.5 px-3 font-semibold w-48">지분율</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryTableBody" class="divide-y divide-borderCol/60 bg-darkBg/50"></tbody>
+                    </table>
+                </div>
+
+                <!-- View Uptime: Buff/Debuff Uptime Statistics -->
+                <div id="uptimeViewBox" class="hidden overflow-x-auto border border-borderCol rounded-xl">
+                    <table class="w-full text-left border-collapse text-[13px]">
+                        <thead class="bg-cardBg text-gray-300 sticky top-0 z-10 border-b border-borderCol text-xs">
+                            <tr class="whitespace-nowrap">
+                                <th class="py-3 px-3.5 font-bold">상태명 (구분)</th>
+                                <th class="py-3 px-3 font-bold">주요 효과</th>
+                                <th class="py-3 px-3 font-bold text-right">부여/갱신</th>
+                                <th class="py-3 px-3 font-bold text-right">유지 시간</th>
+                                <th class="py-3 px-3.5 font-bold w-48">가동률 (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="uptimeTableBody" class="divide-y divide-borderCol/60 bg-darkBg/50"></tbody>
+                    </table>
+                </div>
+
+                <!-- View B: Visual & Chronological Timeline -->
+                <div id="timelineViewBox" class="hidden border border-borderCol rounded-xl bg-[#0e1017] p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm font-extrabold text-white">타임라인</h3>
+                            <span id="timelineRangeHint" class="text-[11px] text-gray-500"></span>
+                        </div>
+                        <div class="inline-flex rounded-xl bg-darkBg p-0.5 border border-borderCol">
+                            <button type="button" onclick="setTimelineSubMode('bySkill')" id="tlMode_bySkill"
+                                    class="px-3 py-1 rounded-lg text-xs font-bold bg-[#232736] text-white border border-gray-600/60 transition">도술마다</button>
+                            <button type="button" onclick="setTimelineSubMode('chrono')" id="tlMode_chrono"
+                                    class="px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition">시간순</button>
+                            <button type="button" onclick="setTimelineSubMode('single')" id="tlMode_single"
+                                    class="px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition">시전 순서</button>
+                        </div>
+                    </div>
+                    <div id="timelineVisualContainer"></div>
+                </div>
+            </div>
+
 
     </main>
 
@@ -598,12 +685,28 @@
 
         // 무기 종류별 기본공격(평타) 계수 및 모션 시간
         const WEAPON_TYPES = {
-            sword: { id: 'sword', name: '기본공격 (검/도)', coeff: 72, motion: 0.65 },
-            fan:   { id: 'fan',   name: '기본공격 (부채)',  coeff: 63, motion: 0.65 },
-            staff: { id: 'staff', name: '기본공격 (지팡이/활)', coeff: 60, motion: 0.65 }
+            sword: { id: 'sword', name: '기본공격 (검/도)', coeff: 72, motion: 0.625 },
+            fan:   { id: 'fan',   name: '기본공격 (부채)',  coeff: 63, motion: 0.625 },
+            staff: { id: 'staff', name: '기본공격 (지팡이/활)', coeff: 60, motion: 0.625 }
         };
 
-        // 12대 계열별 대표 궁극기(도술) 매핑 (각 계열의 마지막 궁극기 ID/이름 지정 + SKILL_DATA에서 category가 '도술'인 스킬도 자동 인식)
+        // 전설 무기 12종 (장착 시 해당 무기 평타 기준 + 해당 계열 도술 피해량 +10% 곱연산)
+        const LEGEND_WEAPONS = {
+            "10130030": { id: "10130030", name: "[절명] 심장추적자", weaponType: "sword", weaponLabel: "검/도", style: "jeolmyeong", styleName: "절명", upPct: 10 },
+            "10430040": { id: "10430040", name: "[저격] 화령궁", weaponType: "staff", weaponLabel: "활", style: "jeogyeok", styleName: "저격", upPct: 10 },
+            "10030050": { id: "10030050", name: "[연타] 청명의 기둥", weaponType: "staff", weaponLabel: "지팡이", style: "yeonta", styleName: "연타", upPct: 10 },
+            "10030040": { id: "10030040", name: "[강타] 봉황멸화검", weaponType: "sword", weaponLabel: "검", style: "gangta", styleName: "강타", upPct: 10 },
+            "10330040": { id: "10330040", name: "[주술] 태초의 불꽃", weaponType: "fan", weaponLabel: "부채", style: "jusul", styleName: "주술", upPct: 10 },
+            "10230050": { id: "10230050", name: "[파멸] 칠흑의 마력봉", weaponType: "staff", weaponLabel: "지팡이", style: "pamyeol", styleName: "파멸", upPct: 10 },
+            "10030030": { id: "10030030", name: "[강인] 음양수호대검", weaponType: "sword", weaponLabel: "검", style: "gangin", styleName: "강인", upPct: 10 },
+            "10130040": { id: "10130040", name: "[기동] 바람의 인도자", weaponType: "sword", weaponLabel: "도", style: "gidong", styleName: "기동", upPct: 10 },
+            "10230040": { id: "10230040", name: "[기만] 원혼탐식자", weaponType: "staff", weaponLabel: "지팡이", style: "giman", styleName: "기만", upPct: 10 },
+            "10130050": { id: "10130050", name: "[척살] 황룡의 분노", weaponType: "sword", weaponLabel: "도", style: "cheoksal", styleName: "척살", upPct: 10 },
+            "10230030": { id: "10230030", name: "[헌신] 영혼의 길잡이", weaponType: "staff", weaponLabel: "지팡이", style: "heonsin", styleName: "헌신", upPct: 10 },
+            "10330030": { id: "10330030", name: "[제압] 선녀의 학우선", weaponType: "fan", weaponLabel: "부채", style: "jeap", styleName: "제압", upPct: 10 }
+        };
+
+        // 12대 계열별 대표 궁극기(도술) 매핑
         const DEFAULT_ULTIMATE_NAMES = new Set([
             "암습", "폭주", "천벌", "일필휘지", "정조준", "신내림",
             "대폭발", "방패 낙하", "연속 쇄도", "개전의 가호", "회전하는 칼날", "사슬 묶기"
@@ -611,32 +714,91 @@
 
         // =========================================================================
         // [코드 전용 설정 1] 12대 스타일 신식효과 (STYLE_SINSIK_DATA)
-        // - 스킬트리에 category: "도술"(궁극기)인 스킬을 채용하면 해당 스타일의 신식효과가 자동 발동합니다.
-        // - dmgBonus: 전체 피해 증가(%)
-        // - sameStyleBonus: 동일 스타일 도술 추가 피해 증가(%)
-        // - cdrBonus: 전체 쿨타임 감소(%)
-        // - desc: 배너에 표시될 신식효과 설명 텍스트
         // =========================================================================
-                const STYLE_SINSIK_DATA = {
+        const STYLE_SINSIK_DATA = {
             jeolmyeong: {
                 styleName: '절명',
-                name: '절명 신식 (영력: 검의 형상)',
+                name: '절명 신식 · 검의 형상',
                 resourceName: '검의 형상',
                 maxStack: 5,
-                dmgBonus: 125,
-                sameStyleBonus: 0,
-                cdrBonus: 0,
-                desc: '모든 일반/특별 도술 시전 시 검의 형상 +1 (최대 5개) · 궁극기(암습) 시전 시 3/4/5개 소모하여 타격당 계수 +55%/+90%/+125% 합산 (4타 총 +220%/+360%/+500% · 계열강화 미적용) · 5스택 보유 상태에서 도술 사용 시마다 궁극기 쿨타임 6초 감소'
+                desc: '일반/특별 도술 시전 시 검의 형상 +1 (최대 5개) · 암습 시전 시 3/4/5개 소모해 타격당 +55%/+75%/+125% 합산 · 5스택 도술 사용 시 궁극기 쿨 -6초'
             },
             jeogyeok: {
                 styleName: '저격',
-                name: '저격 신식 (영력: 화살촉)',
+                name: '저격 신식 · 화살촉',
                 resourceName: '화살촉',
                 maxStack: 3,
-                dmgBonus: 75,
-                sameStyleBonus: 45,
-                cdrBonus: 0,
-                desc: '4초마다 화살촉 +1 충전 (최대 3개) · 저격 일반/특별 도술 시전 시 화살촉 1개 소모하여 피해량 +45% 증폭 · 궁극기(정조준) 시전 시 1/2/3개 소모하여 피해량 +25%/+50%/+75% 증폭'
+                desc: '4초마다 화살촉 +1 (최대 3개) · 저격 도술 +45%, 정조준 +25%/+50%/+75% · 소모 시 연속 조준(주는 피해 +5%/중첩, 최대 5중첩, 10초)'
+            },
+            gangta: {
+                styleName: '강타',
+                name: '강타 신식 · 영력 & 강압',
+                resourceName: '영력',
+                maxStack: 100,
+                desc: '도술 시전 +10 (차징 단계당 +2) · 32/67/100 이상 피해 +3%/+7%/+10% · 100에서 천벌 시전 시 강압(10초간 즉시 최대차지 · 일반/특별 쿨 초기화)'
+            },
+            pamyeol: {
+                styleName: '파멸',
+                name: '파멸 신식 · 영력 & 요기 범람',
+                resourceName: '영력',
+                maxStack: 200,
+                desc: '도술 시전 +15 · 200 도달 시 요기 범람(30초간 주는 피해 +20% · 일반/특별 쿨 초기화 · 하늘의 심판 6✦ 피해 +50%)'
+            },
+            yeonta: {
+                styleName: '연타',
+                name: '연타 신식 · 격노',
+                resourceName: '격노',
+                maxStack: 50,
+                desc: '도술 적중 타격마다 격노 +1 (최대 50중첩, 3초 유지) · 중첩당 주는 피해 +0.4% (최대 +20%)'
+            },
+            gidong: {
+                styleName: '기동',
+                name: '기동 신식 · 영력 & 연쇄',
+                resourceName: '영력',
+                maxStack: 200,
+                desc: '도술 시전 +10 · 200 도달 시 모두 소모해 연속 쇄도 쿨 초기화 및 연쇄(10초간 연속 쇄도·연계 피해 +50%)'
+            },
+            giman: {
+                styleName: '기만',
+                name: '기만 신식 · 눈물',
+                resourceName: '눈물',
+                maxStack: 2,
+                desc: '도술 시전 +1 (최대 2개) · 2개 보유 시 일반/특별 도술 사용 시 모두 소모해 해당 도술 쿨타임 -50%'
+            },
+            jusul: {
+                styleName: '주술',
+                name: '주술 신식 · 영력 & 구슬',
+                resourceName: '영력',
+                maxStack: 100,
+                desc: '도술 시전 +8 (초당 -4 감소) · 30/60/90 이상 구슬 1/2/3개(도술 시전 시 쿨 -0.1/-0.2/-0.3초 · 강화 저주 +30%/+60%/+90%)'
+            },
+            gangin: {
+                styleName: '강인',
+                name: '강인 신식 · 영력 & 강건',
+                resourceName: '영력',
+                maxStack: 100,
+                desc: '도술 시전 +5 · 100 도달 시 강인 도술 사용 시 모두 소모해 강건(10초간 보호막 200% · 받는 피해 -25%)'
+            },
+            cheoksal: {
+                styleName: '척살',
+                name: '척살 신식 · 척살태세 & 척결',
+                resourceName: '영력',
+                maxStack: 100,
+                desc: '척살 도술 시 척살태세(10초) · 도술 시전 +3, 100 도달 시 척결(30초, 주는 피해 +2%/중첩 최대 10) + 일반/특별 쿨 -20% · 궁극기 쿨 -10%'
+            },
+            heonsin: {
+                styleName: '헌신',
+                name: '헌신 신식 · 하트',
+                resourceName: '하트',
+                maxStack: 3,
+                desc: '도술 시전 +1 (최대 3개) · 3개 보유 시 헌신 도술 사용 시 모두 소모해 해당 도술 효과 강화(용맹의 기운 버프 ×1.3)'
+            },
+            jeap: {
+                styleName: '제압',
+                name: '제압 신식 · 자물쇠 & 푸른 사슬',
+                resourceName: '자물쇠',
+                maxStack: 3,
+                desc: '도술 시전 +1 (최대 3개) · 자물쇠 보유 시 주는 피해 +2%/중첩(최대 3) · 궁극기 쿨 -3초/중첩 · 사슬 묶기 시 자물쇠 소모해 푸른 사슬(받피증 +2%/중첩, 최대 9)'
             }
         };
 
@@ -1169,7 +1331,7 @@
     "imageFile": "jeolmyeong-09-eunsin.webp",
     "iconPath": "skills/jeolmyeong-09-eunsin.webp",
     "cooldown": 25,
-    "motion": 0.0,
+    "motion": 0.15,
     "coeff": 666.9,
     "hitInfo": "1타 0% + 2타 666.90%×1 (2연계)",
     "stepEffects": [],
@@ -1182,7 +1344,7 @@
     "buffsDebuffs": [],
     "options": [],
     "optionsText": "",
-    "baseMotion": 0.0,
+    "baseMotion": 0.15,
     "castTime": 0.0,
     "chargeStages": 0,
     "chargeTime": 0.0,
@@ -1191,6 +1353,11 @@
     "chainCoeffs": [
       0.0,
       666.9
+    ],
+    "chainMotion": 0.15,
+    "chainGap": 1.0,
+    "chainStepNames": [
+      "은신 · 급습"
     ]
   },
   {
@@ -1435,6 +1602,11 @@
     "chainCoeffs": [
       157.92,
       157.92
+    ],
+    "chainMotion": 0.25,
+    "chainGap": 1.0,
+    "chainStepNames": [
+      "묵직한 주먹 · 추가타"
     ]
   },
   {
@@ -1597,7 +1769,7 @@
       "dmgBonus": 0,
       "extraCoeff": 174.8,
       "cdr": 0,
-      "desc": "6✦ 피해량 60% 증가 (총 465.8%)"
+      "desc": "6✦ 피해량 60% 증가"
     },
     "buffsDebuffs": [],
     "options": [],
@@ -1643,7 +1815,7 @@
       "dmgBonus": 60,
       "extraCoeff": 110.88,
       "cdr": 0,
-      "desc": "6✦ 피해량 40% 증가 (총 388.08%) · 1인 타격 시 피해량 +60%"
+      "desc": "6✦ 피해량 40% 증가 · 1인 타격 시 피해량 +60%"
     },
     "buffsDebuffs": [],
     "options": [],
@@ -2267,7 +2439,7 @@
       "dmgBonus": 0,
       "extraCoeff": 161.0,
       "cdr": 0,
-      "desc": "6✦ 피해량 40% 증가 (총 563.4%)"
+      "desc": "6✦ 피해량 40% 증가"
     },
     "buffsDebuffs": [],
     "options": [],
@@ -2313,7 +2485,7 @@
       "dmgBonus": 0,
       "extraCoeff": 107.28,
       "cdr": 0,
-      "desc": "6✦ 피해량 40% 증가 · 돌풍 6회 추가 타격 (총 375.48%)"
+      "desc": "6✦ 피해량 40% 증가 · 돌풍 6회 추가 타격"
     },
     "buffsDebuffs": [],
     "options": [],
@@ -2653,7 +2825,7 @@
       "dmgBonus": 0,
       "extraCoeff": 104.0,
       "cdr": 0,
-      "desc": "6✦ 피해량 30% 증가 (총 449.7%) · 속박 대상 피해 +20%"
+      "desc": "6✦ 피해량 30% 증가 · 속박 대상 피해 +20%"
     },
     "buffsDebuffs": [
       {
@@ -2711,7 +2883,7 @@
       "dmgBonus": 0,
       "extraCoeff": 80.7,
       "cdr": 0,
-      "desc": "6✦ 피해량 30% 증가 (총 349.6%) · 속박 대상 피해 +20%"
+      "desc": "6✦ 피해량 30% 증가 · 속박 대상 피해 +20%"
     },
     "buffsDebuffs": [
       {
@@ -3258,7 +3430,7 @@
     "imageFile": "jeogyeok-08-jipjung-sagyeok.webp",
     "iconPath": "skills/jeogyeok-08-jipjung-sagyeok.webp",
     "cooldown": 8,
-    "motion": 0.5,
+    "motion": 0.7,
     "coeff": 239.6,
     "hitInfo": "239.60% · 1회",
     "stepEffects": [
@@ -3297,7 +3469,7 @@
     ],
     "optionsText": "[강화] 이동 속도 증가 : 5초 이동 속도가 15% 증가합니다.",
     "baseMotion": 0.3,
-    "castTime": 0.2,
+    "castTime": 0.4,
     "chargeStages": 0,
     "chargeTime": 0.0,
     "maxCharges": 1
@@ -3385,7 +3557,7 @@
     "imageFile": "jeogyeok-10-kkwettulneun-jeogyeok.webp",
     "iconPath": "skills/jeogyeok-10-kkwettulneun-jeogyeok.webp",
     "cooldown": 15,
-    "motion": 0.53,
+    "motion": 0.525,
     "coeff": 457.8,
     "hitInfo": "228.90% · 2회",
     "stepEffects": [
@@ -3423,7 +3595,7 @@
       "[약화] 받는 피해 증가 : 5초 대상이 받는 피해가 10% 증가합니다."
     ],
     "optionsText": "[약화] 받는 피해 증가 : 5초 대상이 받는 피해가 10% 증가합니다.",
-    "baseMotion": 0.53,
+    "baseMotion": 0.525,
     "castTime": 0.0,
     "chargeStages": 0,
     "chargeTime": 0.0,
@@ -3443,7 +3615,7 @@
     "imageFile": "jeogyeok-11-jeongjojun.webp",
     "iconPath": "skills/jeogyeok-11-jeongjojun.webp",
     "cooldown": 40,
-    "motion": 0.8,
+    "motion": 1.25,
     "coeff": 1579.4,
     "hitInfo": "1579.40% · 1회",
     "stepEffects": [],
@@ -3479,7 +3651,7 @@
     ],
     "optionsText": "[강화] 피해 증가 (상태이상) : 지속 대상에게 적용된 출혈·화상·감전·약화 1개당 주는 피해가 15% 증가합니다. / [강화] 자신에게 슈퍼 아머 : 0.7초 시전 중 자신에게 모든 군중 제어 효과에 대한 면역을 부여합니다.",
     "baseMotion": 0.3,
-    "castTime": 0.5,
+    "castTime": 0.95,
     "chargeStages": 0,
     "chargeTime": 0.0,
     "maxCharges": 1
@@ -3820,17 +3992,17 @@
         "title": "받는 치명타 피해량 증가",
         "descLines": [
           "5초",
-          "받는 치명타 피해량이 30% 증가합니다."
+          "받는 치명타 피해량이 20% 증가합니다."
         ],
-        "fullText": "[약화] 받는 치명타 피해량 증가 : 5초 받는 치명타 피해량이 30% 증가합니다."
+        "fullText": "[약화] 받는 치명타 피해량 증가 : 5초 받는 치명타 피해량이 20% 증가합니다."
       }
     ],
     "options": [
       "[강화] 자신에게 슈퍼 아머 : 1.2초 시전 중 자신에게 모든 군중 제어 효과에 대한 면역을 부여합니다.",
       "[약화] 강화 저주 : 5초 지속적으로 중첩당 7% 피해를 입힙니다. 5중첩 시 반경 3m 내 최대 5명의 적에게 358.2% 피해를 입히고 중첩이 초기화됩니다. PvP 1.7% · 152.2%",
-      "[약화] 받는 치명타 피해량 증가 : 5초 받는 치명타 피해량이 30% 증가합니다."
+      "[약화] 받는 치명타 피해량 증가 : 5초 받는 치명타 피해량이 20% 증가합니다."
     ],
-    "optionsText": "[강화] 자신에게 슈퍼 아머 : 1.2초 시전 중 자신에게 모든 군중 제어 효과에 대한 면역을 부여합니다. / [약화] 강화 저주 : 5초 지속적으로 중첩당 7% 피해를 입힙니다. 5중첩 시 반경 3m 내 최대 5명의 적에게 358.2% 피해를 입히고 중첩이 초기화됩니다. PvP 1.7% · 152.2% / [약화] 받는 치명타 피해량 증가 : 5초 받는 치명타 피해량이 30% 증가합니다.",
+    "optionsText": "[강화] 자신에게 슈퍼 아머 : 1.2초 시전 중 자신에게 모든 군중 제어 효과에 대한 면역을 부여합니다. / [약화] 강화 저주 : 5초 지속적으로 중첩당 7% 피해를 입힙니다. 5중첩 시 반경 3m 내 최대 5명의 적에게 358.2% 피해를 입히고 중첩이 초기화됩니다. PvP 1.7% · 152.2% / [약화] 받는 치명타 피해량 증가 : 5초 받는 치명타 피해량이 20% 증가합니다.",
     "baseMotion": 0.7,
     "castTime": 0.0,
     "chargeStages": 0,
@@ -4519,7 +4691,7 @@
       "dmgBonus": 70,
       "extraCoeff": 53.5,
       "cdr": 0,
-      "desc": "6✦ 피해량 30% 증가 (총 231.9%) · 1인 타격 시 피해량 +70%"
+      "desc": "6✦ 피해량 30% 증가 · 1인 타격 시 피해량 +70%"
     },
     "buffsDebuffs": [],
     "options": [],
@@ -4565,7 +4737,7 @@
       "dmgBonus": 0,
       "extraCoeff": 108.2,
       "cdr": 0,
-      "desc": "6✦ 피해량 50% 증가 (총 324.5%) · 파멸 신식(요기범람) 시 피해 +50%"
+      "desc": "6✦ 피해량 50% 증가 · 파멸 신식(요기범람) 시 피해 +50%"
     },
     "buffsDebuffs": [
       {
@@ -4602,7 +4774,7 @@
     "imageFile": "pamyeol-13-daepokbal.webp",
     "iconPath": "skills/pamyeol-13-daepokbal.webp",
     "cooldown": 50,
-    "motion": 1.3,
+    "motion": 1.433,
     "coeff": 972.6,
     "hitInfo": "324.20% · 3회",
     "stepEffects": [],
@@ -4638,7 +4810,7 @@
     ],
     "optionsText": "[강화] 다중 타격 피해 분산 : 지속 5명 이상 타격 시 피해량이 점차 감소하며 30명 일 때 20%의 피해를 입힙니다. / [강화] 자신에게 슈퍼 아머 : 0.7초 시전 중 자신에게 모든 군중 제어 효과에 대한 면역을 부여합니다.",
     "baseMotion": 0.6,
-    "castTime": 0.7,
+    "castTime": 0.833,
     "chargeStages": 0,
     "chargeTime": 0.0,
     "maxCharges": 1
@@ -4988,7 +5160,7 @@
       "dmgBonus": 0,
       "extraCoeff": 42.4,
       "cdr": 0,
-      "desc": "6✦ 피해량 20% 증가 (총 254.1%) · 면역 중 받는 피해 50% 감소"
+      "desc": "6✦ 피해량 20% 증가 · 면역 중 받는 피해 50% 감소"
     },
     "buffsDebuffs": [
       {
@@ -5257,6 +5429,11 @@
     "chainCoeffs": [
       128.7,
       128.7
+    ],
+    "chainMotion": 0.45,
+    "chainGap": 1.0,
+    "chainStepNames": [
+      "쌍검 가르기 · 재돌진"
     ]
   },
   {
@@ -5409,7 +5586,7 @@
       "dmgBonus": 50,
       "extraCoeff": 0,
       "cdr": 0,
-      "desc": "6✦ 피해량 50% 증가 (1타 78.4%×3 / 2타 23.5%×10) · 복귀 시 이동 속도 50% 증가"
+      "desc": "6✦ 피해량 50% 증가 · 복귀 시 이동 속도 50% 증가"
     },
     "buffsDebuffs": [],
     "options": [],
@@ -5423,6 +5600,11 @@
     "chainCoeffs": [
       132.9,
       133.0
+    ],
+    "chainMotion": 0.5,
+    "chainGap": 1.0,
+    "chainStepNames": [
+      "월식 · 귀환"
     ]
   },
   {
@@ -5460,7 +5642,7 @@
       "dmgBonus": 0,
       "extraCoeff": 97.04,
       "cdr": 0,
-      "desc": "6✦ 피해량 40% 증가 (총 339.64%) · 적중 대상 받는 피해 +20%(5초)"
+      "desc": "6✦ 피해량 40% 증가 · 적중 대상 받는 피해 +20%(5초)"
     },
     "buffsDebuffs": [
       {
@@ -5534,6 +5716,13 @@
       238.0,
       238.0,
       476.0
+    ],
+    "chainMotion": 0.45,
+    "chainGap": 0.4,
+    "chainStepNames": [
+      "연속 쇄도 · 2식",
+      "연속 쇄도 · 3식",
+      "연속 쇄도 · 마무리"
     ]
   },
   {
@@ -5648,7 +5837,7 @@
     "castTime": 0.0,
     "chargeStages": 0,
     "chargeTime": 0.0,
-    "maxCharges": 1
+    "maxCharges": 2
   },
   {
     "id": "skill_83",
@@ -5685,7 +5874,7 @@
       "dmgBonus": 0,
       "extraCoeff": 45.6,
       "cdr": 0,
-      "desc": "6✦ 도술 피해량 30% 증가 (총 197.4%) · 자신과 아군 주는 피해 증가(15~20%, 헌신 Lv 연동·10초)"
+      "desc": "6✦ 도술 피해량 30% 증가 · 자신과 아군 주는 피해 증가(15~20%, 10초)"
     },
     "buffsDebuffs": [
       {
@@ -6122,7 +6311,7 @@
       "dmgBonus": 0,
       "extraCoeff": 98.6,
       "cdr": 0,
-      "desc": "6✦ 피해량 30% 증가 (총 428.5%) · 적 받는 치명타 피해 +20%(5초)"
+      "desc": "6✦ 피해량 30% 증가 · 적 받는 치명타 피해 +20%(5초)"
     },
     "buffsDebuffs": [
       {
@@ -6499,7 +6688,7 @@
     "imageFile": "jeap-06-jijin.webp",
     "iconPath": "skills/jeap-06-jijin.webp",
     "cooldown": 22,
-    "motion": 1.68,
+    "motion": 1.683,
     "coeff": 207.4,
     "hitInfo": "103.70% · 2회",
     "stepEffects": [
@@ -6537,7 +6726,7 @@
       "[약화] 속박 : 2초 대상을 속박시켜 이동을 제한합니다."
     ],
     "optionsText": "[약화] 속박 : 2초 대상을 속박시켜 이동을 제한합니다.",
-    "baseMotion": 1.68,
+    "baseMotion": 1.683,
     "castTime": 0.0,
     "chargeStages": 0,
     "chargeTime": 0.0,
@@ -6635,7 +6824,7 @@
       "dmgBonus": 0,
       "extraCoeff": 69.72,
       "cdr": 0,
-      "desc": "6✦ 피해량 30% 증가 (총 302.12%) · 마지막 타격 침묵 1초 추가"
+      "desc": "6✦ 피해량 30% 증가 · 마지막 타격 침묵 1초 추가"
     },
     "buffsDebuffs": [
       {
@@ -6708,6 +6897,12 @@
       319.2,
       319.2,
       319.2
+    ],
+    "chainMotion": 0.5,
+    "chainGap": 0.4,
+    "chainStepNames": [
+      "사슬 묶기 · 2식",
+      "사슬 묶기 · 마무리"
     ]
   },
   {
@@ -6724,7 +6919,7 @@
     "imageFile": "jusul-07-hwangcheonui-bureum.webp",
     "iconPath": "skills/jusul-07-hwangcheonui-bureum.webp",
     "cooldown": 30,
-    "motion": 0.52,
+    "motion": 0.517,
     "coeff": 101.96,
     "hitInfo": "101.96% · 1회",
     "stepEffects": [
@@ -6745,12 +6940,12 @@
       "dmgBonus": 0,
       "extraCoeff": 30.59,
       "cdr": 0,
-      "desc": "6✦ 피해량 30% 증가 (132.55%) · 황천의 늪 장판 15틱 추가 (0.5초마다 55.23%)"
+      "desc": "6✦ 피해량 30% 증가 · 황천의 늪 장판 15틱 추가"
     },
     "buffsDebuffs": [],
     "options": [],
     "optionsText": "",
-    "baseMotion": 0.52,
+    "baseMotion": 0.517,
     "castTime": 0.0,
     "chargeStages": 0,
     "chargeTime": 0.0,
@@ -6812,7 +7007,7 @@
                 if (line.includes('매 타격마다') && line.includes('화상')) {
                     const m = line.match(/([\d.]+)%\s*추가\s*피해/);
                     const perHit = m ? parseFloat(m[1]) : 38.8;
-                    const hits = 11; // 폭주 총 11타 (10회 + 막타 1회)
+                    const hits = 2; // 클라 기준 화상 추가타 2회 (38.8% × 2)
                     conditionals.push({
                         reqState: '화상',
                         type: 'bonus_coeff',
@@ -6960,9 +7155,9 @@
                     } else if (stateName === '방어력 감소') {
                         ampPct = 0;
                     } else if (stateName === '치명타 피해 증가') {
-                        ampPct = pctVal || 10.0;
+                        ampPct = 0;
                     } else if (stateName === '받는 치명타 피해량 증가') {
-                        ampPct = pctVal || 30.0;
+                        ampPct = 0;
                     } else if (stateName === '도술 재사용 대기시간 감소') {
                         cdrPct = pctVal || 10.0;
                     } else if (['출혈', '화상', '감전'].includes(stateName)) {
@@ -7053,9 +7248,12 @@
                     chargeStages: Number(item.chargeStages) || 0,
                     chargeTime: Number(item.chargeTime) || 0,
                     motion: (item.motion !== undefined && item.motion !== null) ? Number(item.motion) : 0.3,
+                    chainMotion: (item.chainMotion !== undefined && item.chainMotion !== null) ? Number(item.chainMotion) : ((item.motion !== undefined && item.motion !== null) ? Number(item.motion) : 0.3),
+                    chainGap: (item.chainGap !== undefined && item.chainGap !== null) ? Number(item.chainGap) : 0.0,
                     maxCharges: Number(item.maxCharges) || 1,
                     chainCasts: Number(item.chainCasts) || 1,
                     chainCoeffs: Array.isArray(item.chainCoeffs) ? item.chainCoeffs.map(Number) : null,
+                    chainStepNames: Array.isArray(item.chainStepNames) ? item.chainStepNames.slice() : null,
                     coeff: Number(item.coeff) || 0,
                     hitInfo: item.hitInfo || '',
                     rawOption: item.optionsText || (item.options || []).join(' / '),
@@ -7167,19 +7365,29 @@
         let schoolEnhanceLevels = JSON.parse(localStorage.getItem('dokkaebi_school_lv_v6')) || {};
         // 3개 이상 채용한 계열이 2개 이상일 때 사용자가 선택한 궁극기 계열
         let selectedUltSchool = localStorage.getItem('dokkaebi_ult_school_v6') || null;
-        // 무기 종류 (sword: 72%, fan: 63%, staff: 60%, 0.65초)
+        // 무기 종류 & 전설 무기
         let currentWeaponType = localStorage.getItem('dokkaebi_weapon_v6') || 'sword';
+        let selectedLegendWeapon = localStorage.getItem('dokkaebi_legend_weapon_v1') || '';
+        if (selectedLegendWeapon && !LEGEND_WEAPONS[selectedLegendWeapon]) selectedLegendWeapon = '';
         let activeTreeName = localStorage.getItem('dokkaebi_active_tree_name_v6') || DEFAULT_PRESETS[0].name;
         let permanentStates = JSON.parse(localStorage.getItem('dokkaebi_perm_states_v6')) || {};
         let draggedIndex = null;
+
+        function getEquippedLegendWeapon() {
+            return selectedLegendWeapon ? (LEGEND_WEAPONS[selectedLegendWeapon] || null) : null;
+        }
 
         // =========================================================================
         // 3. 초기화 & 프리셋 상태 저장 + 궁극기 자동 편성 동기화
         // =========================================================================
         window.onload = function() {
             applyCustomOverridesToSkillDb();
+            const leg = getEquippedLegendWeapon();
+            if (leg) currentWeaponType = leg.weaponType;
             const wSel = document.getElementById('weaponTypeSelect');
             if (wSel) wSel.value = currentWeaponType;
+            const lSel = document.getElementById('legendWeaponSelect');
+            if (lSel) lSel.value = selectedLegendWeapon;
             syncUltimateInCycle(false);
             renderCategoryFilterBar();
             renderSchoolTabs();
@@ -7200,16 +7408,40 @@
             localStorage.setItem('dokkaebi_school_lv_v6', JSON.stringify(schoolEnhanceLevels));
             if (selectedUltSchool) localStorage.setItem('dokkaebi_ult_school_v6', selectedUltSchool);
             localStorage.setItem('dokkaebi_weapon_v6', currentWeaponType);
+            localStorage.setItem('dokkaebi_legend_weapon_v1', selectedLegendWeapon);
             localStorage.setItem('dokkaebi_active_tree_name_v6', activeTreeName);
             localStorage.setItem('dokkaebi_perm_states_v6', JSON.stringify(permanentStates));
             document.getElementById('activeTreeNameBadge').innerText = activeTreeName;
             document.getElementById('presetCountBadge').innerText = savedPresets.length;
         }
 
+        function onLegendWeaponChange() {
+            const lSel = document.getElementById('legendWeaponSelect');
+            selectedLegendWeapon = lSel ? lSel.value : '';
+            const leg = getEquippedLegendWeapon();
+            if (leg) {
+                currentWeaponType = leg.weaponType;
+                const wSel = document.getElementById('weaponTypeSelect');
+                if (wSel) wSel.value = currentWeaponType;
+            }
+            saveAllState();
+            renderSkillList();
+            renderCycle();
+            calculateDPS();
+        }
+
         function onWeaponTypeChange() {
             const wSel = document.getElementById('weaponTypeSelect');
             if (wSel) currentWeaponType = wSel.value;
+            const leg = getEquippedLegendWeapon();
+            if (leg && leg.weaponType !== currentWeaponType) {
+                selectedLegendWeapon = '';
+                const lSel = document.getElementById('legendWeaponSelect');
+                if (lSel) lSel.value = '';
+            }
             saveAllState();
+            renderSkillList();
+            renderCycle();
             calculateDPS();
         }
 
@@ -7303,8 +7535,10 @@
             const base = Number(sk.coeff) || 0;
             const enhPct = getSchoolEnhancePct(sk.school);
             const { btStagePct, bt6ExtraCoeff, bt6DmgBonusPct } = getSkillBreakthroughInfo(sk);
+            const leg = getEquippedLegendWeapon();
+            const legPct = (leg && leg.style === sk.school) ? leg.upPct : 0;
             const effectiveBase = base + bt6ExtraCoeff;
-            const mult = (1 + enhPct / 100.0) * (1 + btStagePct / 100.0) * (1 + bt6DmgBonusPct / 100.0);
+            const mult = (1 + enhPct / 100.0) * (1 + btStagePct / 100.0) * (1 + bt6DmgBonusPct / 100.0) * (1 + legPct / 100.0);
             return Number((effectiveBase * mult).toFixed(2));
         }
 
@@ -7312,11 +7546,14 @@
             if (!sk) return '';
             const enhPct = getSchoolEnhancePct(sk.school);
             const { btStage, btStagePct, isBt6, bt6ExtraCoeff, bt6DmgBonusPct } = getSkillBreakthroughInfo(sk);
+            const leg = getEquippedLegendWeapon();
+            const legPct = (leg && leg.style === sk.school) ? leg.upPct : 0;
             const parts = [`기본 ${sk.coeff}%`];
             if (isBt6 && bt6ExtraCoeff > 0) parts.push(`6✦ 추가 +${bt6ExtraCoeff}%`);
             if (enhPct > 0) parts.push(`계열강화 +${enhPct.toFixed(2)}%`);
             if (btStagePct > 0) parts.push(`${btStage}돌파 +${btStagePct}%`);
             if (isBt6 && bt6DmgBonusPct > 0) parts.push(`6✦ 증폭 +${bt6DmgBonusPct}%`);
+            if (legPct > 0) parts.push(`${leg.name} +${legPct}%`);
             return parts.join(' · ');
         }
 
@@ -7425,6 +7662,7 @@
             saveAllState();
             renderSkillList();
             renderCycle();
+            renderStateToggles();
             calculateDPS(true);
         }
 
@@ -7433,6 +7671,7 @@
             schoolEnhanceLevels[schoolId] = lv;
             saveAllState();
             renderSinsikAndBt6Banners();
+            renderStateToggles();
             renderSkillList();
             renderCycle();
             calculateDPS();
@@ -7442,6 +7681,7 @@
             schoolEnhanceLevels = {};
             saveAllState();
             renderSinsikAndBt6Banners();
+            renderStateToggles();
             renderSkillList();
             renderCycle();
             calculateDPS();
@@ -7511,13 +7751,13 @@
 
         function setSimDuration(sec) {
             simDurationSec = sec;
-            [180, 300, 600].forEach(s => {
+            [60, 180, 300, 600].forEach(s => {
                 const btn = document.getElementById('durBtn' + s);
                 if (!btn) return;
                 if (s === sec) {
-                    btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition bg-violet-600 text-white";
+                    btn.className = "px-2.5 py-1 rounded-md text-xs font-semibold transition bg-violet-600 text-white";
                 } else {
-                    btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition text-gray-400 hover:text-white";
+                    btn.className = "px-2.5 py-1 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white";
                 }
             });
             calculateDPS();
@@ -7650,9 +7890,10 @@
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <span class="text-base font-black text-white leading-tight">${equippedDosul.name}</span>
                                     <span class="px-2 py-0.5 rounded-md text-[11px] font-bold text-white leading-tight" style="background:${schoolMeta.color}">
-                                        ${styleSinsikDb[equippedDosul.school] ? `${schoolMeta.name} 신식` : `${schoolMeta.name} 궁극기`}
+                                        ${styleSinsikDb[equippedDosul.school] ? styleSinsikDb[equippedDosul.school].name : `${schoolMeta.name} 궁극기`}
                                     </span>
                                 </div>
+                                ${styleSinsikDb[equippedDosul.school] ? `<p class="text-[11px] text-gray-400 mt-1 leading-snug">${styleSinsikDb[equippedDosul.school].desc}</p>` : ''}
                             </div>
                         </div>
                         ${rightControlsHtml}
@@ -7752,7 +7993,8 @@
                 breakthroughStageMap: { ...breakthroughStageMap },
                 schoolEnhanceLevels: { ...schoolEnhanceLevels },
                 selectedUltSchool,
-                weaponType: currentWeaponType
+                weaponType: currentWeaponType,
+                legendWeapon: selectedLegendWeapon
             };
 
             if (existingIdx !== -1) {
@@ -7775,6 +8017,9 @@
             if (preset.breakthroughStageMap) breakthroughStageMap = { ...preset.breakthroughStageMap };
             if (preset.schoolEnhanceLevels) schoolEnhanceLevels = { ...preset.schoolEnhanceLevels };
             if (preset.selectedUltSchool) selectedUltSchool = preset.selectedUltSchool;
+            selectedLegendWeapon = (preset.legendWeapon && LEGEND_WEAPONS[preset.legendWeapon]) ? preset.legendWeapon : '';
+            const lSelP = document.getElementById('legendWeaponSelect');
+            if (lSelP) lSelP.value = selectedLegendWeapon;
             if (preset.weaponType) {
                 currentWeaponType = preset.weaponType;
                 const wSel = document.getElementById('weaponTypeSelect');
@@ -7865,7 +8110,8 @@
                 breakthroughStageMap,
                 schoolEnhanceLevels,
                 selectedUltSchool,
-                weaponType: currentWeaponType
+                weaponType: currentWeaponType,
+                legendWeapon: selectedLegendWeapon
             };
             const code = btoa(encodeURIComponent(JSON.stringify(payload)));
             document.getElementById('shareCodeTextarea').value = code;
@@ -7894,6 +8140,9 @@
                     if (decoded.breakthroughStageMap) breakthroughStageMap = decoded.breakthroughStageMap;
                     if (decoded.schoolEnhanceLevels) schoolEnhanceLevels = decoded.schoolEnhanceLevels;
                     if (decoded.selectedUltSchool) selectedUltSchool = decoded.selectedUltSchool;
+                    selectedLegendWeapon = (decoded.legendWeapon && LEGEND_WEAPONS[decoded.legendWeapon]) ? decoded.legendWeapon : '';
+                    const lSelS = document.getElementById('legendWeaponSelect');
+                    if (lSelS) lSelS.value = selectedLegendWeapon;
                     if (decoded.weaponType) {
                         currentWeaponType = decoded.weaponType;
                         const wSel = document.getElementById('weaponTypeSelect');
@@ -7970,16 +8219,33 @@
         }
 
         function getKnownBuffStates() {
-            return ["공격력 증가", "질풍", "원소", "기세", "정밀", "수호", "척살(체력조건)"];
+            return [
+                "공격력 증가", "주는 피해 증가", "용맹(50Lv·6✦)",
+                "질풍", "원소", "기세", "정밀", "수호"
+            ];
         }
 
         function getKnownDebuffStates() {
             return [
                 "충격", "파열", "파쇄", "관통", "낙인", "추적", "한기",
-                "출혈", "화상", "감전", "약화", "빙결", "마비", "속박",
-                "파열(받피증10%)", "파쇄(받피증10%)", "관통(방깎10%)", "추적(방깎10%)",
-                "받는 피해 증가", "방어력 감소"
+                "출혈", "화상", "감전", "약화", "강화 저주",
+                "빙결", "마비", "속박",
+                "파열(받는피해증가)", "파쇄(받는피해증가)", "관통(방어력감소)", "추적(방어력감소)",
+                "받는 피해 증가", "일섬:받는 피해 증가", "방어력 감소"
             ];
+        }
+
+        function getStateTogglePctLabel(st) {
+            const yongPct = getYongmaengAtkBuffPct();
+            const fPct = (v) => Number(Number(v).toFixed(2));
+            if (st === '공격력 증가') return ` +${fPct(yongPct)}%`;
+            if (st === '주는 피해 증가') return ' +10%';
+            if (st === '용맹(50Lv·6✦)') return ' 공+20%·주피+20%';
+            if (st === '받는 피해 증가') return ' +10%';
+            if (st === '일섬:받는 피해 증가') return ' +20%';
+            if (['파열(받는피해증가)', '파쇄(받는피해증가)'].includes(st)) return ' +10%';
+            if (['관통(방어력감소)', '추적(방어력감소)', '방어력 감소'].includes(st)) return ' -10%';
+            return '';
         }
 
         function renderStateToggles() {
@@ -8004,15 +8270,55 @@
                     ? 'bg-emerald-600/30 border-emerald-400 text-emerald-200'
                     : 'bg-rose-600/30 border-rose-400 text-rose-200';
                 const iconColor = isBuff ? 'text-emerald-400' : 'text-rose-400';
+                const pctTag = getStateTogglePctLabel(st);
                 btn.className = `px-2 py-0.5 rounded-md text-[11px] font-semibold transition border flex items-center gap-1 ${
                     active ? activeCls : 'bg-darkBg border-borderCol text-gray-400 hover:text-gray-200'
                 }`;
-                btn.innerHTML = `<i class="fa-solid ${active ? 'fa-check ' + iconColor : 'fa-plus text-gray-600'} text-[9px]"></i> ${st}`;
+                btn.innerHTML = `<i class="fa-solid ${active ? 'fa-check ' + iconColor : 'fa-plus text-gray-600'} text-[9px]"></i> ${st}${pctTag ? `<span class="opacity-85 num-clean">${pctTag}</span>` : ''}`;
                 return btn;
             };
 
-            getKnownBuffStates().forEach(st => buffBox.appendChild(buildBtn(st, true)));
-            getKnownDebuffStates().forEach(st => debuffBox.appendChild(buildBtn(st, false)));
+            const buffList = getKnownBuffStates();
+            const yongIdx = buffList.indexOf('용맹(50Lv·6✦)');
+            const firstRowBuffs = yongIdx >= 0 ? buffList.slice(0, yongIdx + 1) : buffList;
+            const secondRowBuffs = yongIdx >= 0 ? buffList.slice(yongIdx + 1) : [];
+
+            const wrapBuff = document.createElement('div');
+            wrapBuff.className = 'flex flex-col gap-1.5 w-full';
+
+            const rowBottom = document.createElement('div');
+            rowBottom.className = 'flex flex-wrap items-center gap-1.5';
+            firstRowBuffs.forEach(st => rowBottom.appendChild(buildBtn(st, true)));
+
+            const rowTop = document.createElement('div');
+            rowTop.className = 'flex flex-wrap items-center gap-1.5';
+            secondRowBuffs.forEach(st => rowTop.appendChild(buildBtn(st, true)));
+
+            if (secondRowBuffs.length > 0) wrapBuff.appendChild(rowTop);
+            wrapBuff.appendChild(rowBottom);
+            buffBox.appendChild(wrapBuff);
+
+            const debuffList = getKnownDebuffStates();
+            const splitIdx = debuffList.indexOf('파열(받는피해증가)');
+            const firstRowDebuffs = splitIdx >= 0 ? debuffList.slice(0, splitIdx) : debuffList;
+            const secondRowDebuffs = splitIdx >= 0 ? debuffList.slice(splitIdx) : [];
+
+            const wrapDebuff = document.createElement('div');
+            wrapDebuff.className = 'flex flex-col gap-1.5 w-full';
+
+            const debRow1 = document.createElement('div');
+            debRow1.className = 'flex flex-wrap items-center gap-1.5';
+            firstRowDebuffs.forEach(st => debRow1.appendChild(buildBtn(st, false)));
+            wrapDebuff.appendChild(debRow1);
+
+            if (secondRowDebuffs.length > 0) {
+                const debRow2 = document.createElement('div');
+                debRow2.className = 'flex flex-wrap items-center gap-1.5';
+                secondRowDebuffs.forEach(st => debRow2.appendChild(buildBtn(st, false)));
+                wrapDebuff.appendChild(debRow2);
+            }
+
+            debuffBox.appendChild(wrapDebuff);
         }
 
         // =========================================================================
@@ -8033,7 +8339,7 @@
             const container = document.getElementById('styleResourceToggles');
             if (!container) return;
             container.innerHTML = '';
-            
+
             const defs = [
                 { id: 'jeogyeokUlt3Stack', label: '저격 궁 항상 3스택(+75%)' }
             ];
@@ -8044,7 +8350,9 @@
                 btn.type = 'button';
                 btn.onclick = () => {
                     styleResourceToggles[def.id] = !styleResourceToggles[def.id];
-                    localStorage.setItem('dokkaebi_style_res_v10', JSON.stringify({ jeogyeokUlt3Stack: styleResourceToggles.jeogyeokUlt3Stack }));
+                    localStorage.setItem('dokkaebi_style_res_v10', JSON.stringify({
+                        jeogyeokUlt3Stack: styleResourceToggles.jeogyeokUlt3Stack
+                    }));
                     renderStyleResourceToggles();
                     calculateDPS();
                 };
@@ -8059,7 +8367,7 @@
 
             const infoSpan = document.createElement('span');
             infoSpan.className = 'text-[11px] text-gray-400 ml-1';
-            infoSpan.innerText = '(기본 적용: 절명 5스택 시작·5스택 도술 궁쿨 -6초 / 저격 화살촉 3개·연속조준 5스택 시작 / 도트딜 포함)';
+            infoSpan.innerText = '(기본 적용: 자동전투 텀 +0.125초 · 절명 5스택 시작·5스택 도술 궁쿨 -6초 · 저격 화살촉 3개·연속조준 5스택 시작 · 도트딜 포함)';
             container.appendChild(infoSpan);
         }
 
@@ -8106,11 +8414,27 @@
             let jeolmyeongSwords = (hasJeolmyeongInCycle && styleResourceToggles.jeolmyeongStartMax) ? 5 : 0;
             let pendingUltFlatCdrSec = 0;
 
+            // 나머지 10대 스타일 신식 자원 상태 변수
+            let gangtaGauge = 0, gangtaBurstUntil = -1;
+            let pamyeolGauge = 0, pamyeolBurstUntil = -1;
+            let yeontaStacks = 0, yeontaExpireAt = -1;
+            let gidongGauge = 0, gidongBurstUntil = -1;
+            let gimanTears = 0;
+            let jusulGauge = 0, lastJusulTime = 0;
+            let ganginGauge = 0, ganginBurstUntil = -1;
+            let cheoksalGauge = 0, cheoksalPurgeStacks = 0, cheoksalPurgeExpireAt = -1;
+            let heonsinHearts = 0;
+            let jeapLocks = 0, jeapCoolStacks = 0, jeapCoolExpireAt = -1, jeapDealtStacks = 0, jeapDealtExpireAt = -1;
+            let blueChainStacks = 0, blueChainExpireAt = -1;
+            let pendingSlotCdOps = [];
+            const activeLegendWeapon = getEquippedLegendWeapon();
+
 
 
             const DEBUFF_STATE_SET = new Set([
                 "충격", "파열", "파쇄", "관통", "낙인", "추적", "한기",
                 "출혈", "화상", "감전", "약화", "빙결", "마비", "속박",
+                "파열(받는피해증가)", "파쇄(받는피해증가)", "관통(방어력감소)", "추적(방어력감소)",
                 "파열(받피증10%)", "파쇄(받피증10%)", "관통(방깎10%)", "추적(방깎10%)",
                 "파열:받는 피해 증가", "파쇄:받는 피해 증가", "관통:방어력 감소", "추적:방어력 감소",
                 "충격:이동속도 감소", "한기:치유 효과 감소",
@@ -8191,10 +8515,24 @@
             Object.keys(permanentStates).forEach(st => {
                 if (permanentStates[st]) {
                     let defaultAmp = 0;
-                    if (['받는 피해 증가', '주는 피해 증가', '파열(받피증10%)', '파쇄(받피증10%)'].includes(st)) {
+                    let noteLabel = '상시 적용';
+                    if (st === '용맹(50Lv·6✦)') {
+                        defaultAmp = 20.0;
+                        noteLabel = '공격력 +20% (곱연산) · 주는 피해 +20% (상시)';
+                    } else if (st === '일섬:받는 피해 증가') {
+                        defaultAmp = 20.0;
+                        noteLabel = '대상 받는 피해 +20% (상시)';
+                    } else if (st === '받는 치명타 피해량 증가') {
+                        defaultAmp = 0;
+                        noteLabel = '받는 치명타 피해 +20% (치명타 미계산 · 가동률 표시)';
+                    } else if (['받는 피해 증가', '주는 피해 증가', '파열(받는피해증가)', '파쇄(받는피해증가)'].includes(st)) {
                         defaultAmp = 10.0;
+                        noteLabel = '상시 적용';
                     } else if (st === '공격력 증가') {
                         defaultAmp = yongmaengBuffPct;
+                        noteLabel = '곱연산 · 상시 적용';
+                    } else if (['관통(방어력감소)', '추적(방어력감소)', '방어력 감소'].includes(st)) {
+                        noteLabel = '방어력 -10% (상시)';
                     }
                     const isDeb = DEBUFF_STATE_SET.has(st);
                     activeStates[st] = {
@@ -8203,7 +8541,7 @@
                         cdrPct: 0,
                         isDebuff: isDeb
                     };
-                    recordStateInterval(st, 0, simDuration, isDeb, defaultAmp, true, '상시 적용');
+                    recordStateInterval(st, 0, simDuration, isDeb, defaultAmp, true, noteLabel);
                 }
             });
 
@@ -8278,30 +8616,86 @@
                 }
             }
 
-            // 특정 시각 기준 활성 버프/디버프 합연산 증폭(%) 계산
-            function getActiveBuffAdditivePctAt(atTime, excludeStatesSet = null) {
-                let pct = 0.0;
-                Object.keys(activeStates).forEach(st => {
+            // 받피증 중첩 그룹 규칙:
+            // 1) 파쇄/파열 받피증(파열:받는 피해 증가, 파쇄:받는 피해 증가, 파열(받피증10%), 파쇄(받피증10%))끼리는 최고값 1개만 적용
+            // 2) 일반 받피증 10~20%(받는 피해 증가, 일섬:받는 피해 증가 등)끼리도 최고값 1개만 적용
+            // 3) 그룹 1과 그룹 2는 서로 중첩 적용
+            function collectFilteredAmpEntries(stateKeys, excludeStatesSet = null) {
+                const atkMainGroup = []; // 일반 공격력 증가 / 용맹 공증 (동일 그룹 102110000 → 최대값 1개)
+                const pasaeGroup = []; // 파쇄/파열 받피증 (그룹 120009102 → 최대값 1개)
+                const takenAmpGroup = []; // 일반 받피증 10~20% (그룹 102620000 → 최대값 1개)
+                const otherEntries = [];
+
+                stateKeys.forEach(st => {
                     const stObj = activeStates[st];
-                    if (stObj.expireAt < atTime) {
+                    if (!stObj || !(stObj.ampPct > 0)) return;
+                    if (excludeStatesSet && excludeStatesSet.has(st)) return;
+                    if (st.includes('치명타 피해')) return;
+                    const val = Number(stObj.ampPct);
+                    if (st.includes('파쇄(') || st.includes('파쇄:') || st.includes('파열(') || st.includes('파열:')) {
+                        pasaeGroup.push({ st, val, kind: 'taken' });
+                    } else if (st === '푸른 사슬:받는 피해 증가') {
+                        otherEntries.push({ st, val, kind: 'taken' });
+                    } else if (st.includes('받는 피해 증가')) {
+                        takenAmpGroup.push({ st, val, kind: 'taken' });
+                    } else if (st === '공격력 증가') {
+                        atkMainGroup.push({ st, val, kind: 'atk' });
+                    } else if (st === '용맹(50Lv·6✦)') {
+                        atkMainGroup.push({ st: '용맹(50Lv·6✦) 공증', val: 20.0, kind: 'atk' });
+                        otherEntries.push({ st: '용맹(50Lv·6✦) 주피', val: 20.0, kind: 'dealt' });
+                    } else {
+                        otherEntries.push({ st, val, kind: 'dealt' });
+                    }
+                });
+
+                const picked = [...otherEntries];
+                [atkMainGroup, pasaeGroup, takenAmpGroup].forEach(grp => {
+                    if (grp.length > 0) {
+                        grp.sort((a, b) => b.val - a.val);
+                        picked.push(grp[0]);
+                    }
+                });
+                return picked;
+            }
+
+            // 특정 시각 기준 활성 버프/디버프 3분할 곱연산: (1 + 공격력%) × (1 + 주는피해%) × (1 + 받는피해%)
+            function getCombinedStateFactorAt(atTime, excludeStatesSet = null) {
+                const liveKeys = Object.keys(activeStates).filter(st => {
+                    if (activeStates[st].expireAt < atTime) {
                         delete activeStates[st];
-                        return;
+                        return false;
                     }
-                    if (stObj.ampPct > 0 && (!excludeStatesSet || !excludeStatesSet.has(st))) {
-                        pct += Number(stObj.ampPct);
-                    }
+                    return true;
+                });
+                let atkPct = 0.0;
+                let dealtPct = 0.0;
+                let takenPct = 0.0;
+                collectFilteredAmpEntries(liveKeys, excludeStatesSet).forEach(item => {
+                    if (item.kind === 'atk') atkPct += item.val;
+                    else if (item.kind === 'taken') takenPct += item.val;
+                    else dealtPct += item.val;
                 });
                 if (atTime > yonsokChojunExpireAt) {
                     yonsokChojunStacks = 0;
                 }
                 if (styleResourceToggles.yonsokChojunStack && yonsokChojunStacks > 0) {
-                    pct += yonsokChojunStacks * 5.0;
+                    dealtPct += yonsokChojunStacks * 5.0;
                 }
-                return pct;
+                return {
+                    atkPct,
+                    dealtPct,
+                    takenPct,
+                    mult: (1 + atkPct / 100.0) * (1 + dealtPct / 100.0) * (1 + takenPct / 100.0)
+                };
+            }
+
+            function getActiveBuffAdditivePctAt(atTime, excludeStatesSet = null) {
+                const f = getCombinedStateFactorAt(atTime, excludeStatesSet);
+                return Number(((f.mult - 1) * 100.0).toFixed(4));
             }
 
             // 약화(디버프) 및 도트 상태 적용/갱신 헬퍼
-            function applyDebuffEffectAt(eff, applyTime, expireEndTime, sourceSkill = '') {
+            function applyDebuffEffectAt(eff, applyTime, expireEndTime, sourceSkill = '', dotMultFactor = 1.0) {
                 const prev = activeStates[eff.state];
                 const newExpire = expireEndTime;
                 activeStates[eff.state] = {
@@ -8317,14 +8711,16 @@
                 recordStateInterval(eff.state, applyTime, newExpire, true, eff.ampPct || 0, false, dotNote, sourceSkill);
 
                 if (styleResourceToggles.includeDotDamage && eff.dotHitCoeff > 0) {
+                    const effTickCoeff = Number(eff.dotHitCoeff) * dotMultFactor;
                     if (eff.state === '강화 저주') {
                         const prevDot = activeDots[eff.state];
                         if (prevDot && prevDot.expireAt >= applyTime - 1e-6) {
                             prevDot.expireAt = Math.max(prevDot.expireAt, newExpire);
+                            prevDot.tickCoeff = Math.max(prevDot.tickCoeff, effTickCoeff);
                             prevDot.stacks = (prevDot.stacks || 1) + 1;
                             if (prevDot.stacks >= 5) {
                                 // 5중첩 도달 시 폭발 피해 (도트 항목으로 별도 집계)
-                                const burstBase = Number(eff.extraBurstCoeff || 358.2);
+                                const burstBase = Number(eff.extraBurstCoeff || 358.2) * dotMultFactor;
                                 const addPct = getActiveBuffAdditivePctAt(applyTime);
                                 const burstFinal = burstBase * (1 + addPct / 100.0);
                                 totalBaseCoeff += burstBase;
@@ -8340,22 +8736,22 @@
                                 state: eff.state,
                                 expireAt: newExpire,
                                 nextTickAt: applyTime + 1.0,
-                                tickCoeff: Number(eff.dotHitCoeff) || 7.0,
+                                tickCoeff: effTickCoeff || 7.0,
                                 stacks: 1,
-                                extraBurstCoeff: Number(eff.extraBurstCoeff || 358.2)
+                                extraBurstCoeff: Number(eff.extraBurstCoeff || 358.2) * dotMultFactor
                             };
                         }
                     } else {
                         const prevDot = activeDots[eff.state];
                         if (prevDot && prevDot.expireAt >= applyTime - 1e-6) {
                             prevDot.expireAt = Math.max(prevDot.expireAt, newExpire);
-                            prevDot.tickCoeff = Math.max(prevDot.tickCoeff, Number(eff.dotHitCoeff));
+                            prevDot.tickCoeff = Math.max(prevDot.tickCoeff, effTickCoeff);
                         } else {
                             activeDots[eff.state] = {
                                 state: eff.state,
                                 expireAt: newExpire,
                                 nextTickAt: applyTime + 1.0,
-                                tickCoeff: Number(eff.dotHitCoeff),
+                                tickCoeff: effTickCoeff,
                                 stacks: 1,
                                 extraBurstCoeff: 0
                             };
@@ -8400,8 +8796,8 @@
 
                     if (eventType === 'ground') {
                         const ev = scheduledGroundTicks.splice(groundIdx, 1)[0];
-                        const addPct = getActiveBuffAdditivePctAt(ev.time);
-                        const ampMult = ev.multFactor * (1 + addPct / 100.0);
+                        const stFact = getCombinedStateFactorAt(ev.time);
+                        const ampMult = ev.multFactor * stFact.mult;
                         const tickFinal = (ev.rawTickBase + ev.bonusTickBase) * ampMult;
 
                         totalBaseCoeff += ev.rawTickBase;
@@ -8411,7 +8807,7 @@
                             summaryMap[ev.skillName].finalSum += tickFinal;
                         }
                         (ev.debuffEffects || []).forEach(eff => {
-                            applyDebuffEffectAt(eff, ev.time, ev.time + Number(eff.duration || 5), ev.skillName);
+                            applyDebuffEffectAt(eff, ev.time, ev.time + Number(eff.duration || 5), ev.skillName, ev.dotMultFactor || 1.0);
                         });
                     } else if (eventType === 'dot') {
                         const d = activeDots[dotKey];
@@ -8454,14 +8850,21 @@
                     }
                 });
 
-                let totalDmgBonusPct = 0.0;
+                let atkBonusPct = 0.0;
+                let dealtBonusPct = 0.0;
+                let takenBonusPct = 0.0;
                 const triggeredBadges = [];
 
-                Object.keys(activeStates).forEach(st => {
-                    const stObj = activeStates[st];
-                    if (stObj.ampPct > 0) {
-                        totalDmgBonusPct += Number(stObj.ampPct);
-                        triggeredBadges.push(`[${st}] +${stObj.ampPct}%`);
+                collectFilteredAmpEntries(Object.keys(activeStates)).forEach(item => {
+                    if (item.kind === 'atk') {
+                        atkBonusPct += item.val;
+                        triggeredBadges.push(`[${item.st}] +${item.val}%`);
+                    } else if (item.kind === 'taken') {
+                        takenBonusPct += item.val;
+                        triggeredBadges.push(`[${item.st}] +${item.val}%`);
+                    } else {
+                        dealtBonusPct += item.val;
+                        triggeredBadges.push(`[${item.st}] +${item.val}%`);
                     }
                 });
                 if (hitTime > yonsokChojunExpireAt) {
@@ -8469,11 +8872,11 @@
                 }
                 if (styleResourceToggles.yonsokChojunStack && yonsokChojunStacks > 0) {
                     const chojunBonus = yonsokChojunStacks * 5.0;
-                    totalDmgBonusPct += chojunBonus;
+                    dealtBonusPct += chojunBonus;
                     triggeredBadges.push(`[연속조준 ${yonsokChojunStacks}중첩: +${chojunBonus}%]`);
                 }
 
-                const ampMultiplier = 1 + totalDmgBonusPct / 100.0;
+                const ampMultiplier = (1 + atkBonusPct / 100.0) * (1 + dealtBonusPct / 100.0) * (1 + takenBonusPct / 100.0);
                 const finalCoeff = rawBaseCoeff * ampMultiplier;
                 totalBaseCoeff += rawBaseCoeff;
                 totalFinalCoeff += finalCoeff;
@@ -8498,6 +8901,9 @@
                         appliedChips: [],
                         activeDebuffCount: Object.values(activeStates).filter(v => v.isDebuff && v.expireAt > hitTime).length,
                         activeBuffCount: Object.values(activeStates).filter(v => !v.isDebuff && v.ampPct > 0 && v.expireAt > hitTime).length,
+                        activeStateLanes: Object.entries(activeStates)
+                            .filter(([, v]) => v && v.expireAt > hitTime && (v.isDebuff || (v.ampPct || 0) > 0))
+                            .map(([st, v]) => ({ state: st, isDebuff: !!v.isDebuff, ampPct: Number(v.ampPct) || 0 })),
                         chainStep: 0,
                         chainTotal: 0
                     });
@@ -8537,7 +8943,14 @@
                 const sk = skillDb[skillName];
                 if (!sk) return { motion: 0.1, effectiveCd: 1.0 };
 
-                const motion = (sk.motion === 0) ? 0 : Math.max(0.05, Number(sk.motion) || 0.2);
+                const isGangtaInstantCharge = (activeUltSchool === 'gangta' && gangtaBurstUntil > startTime && sk.chargeStages > 0 && !chainMeta);
+                const motion = (chainMeta && chainMeta.overrideMotion !== undefined)
+                    ? Math.max(0.05, Number(chainMeta.overrideMotion))
+                    : ((sk.motion === 0)
+                        ? 0
+                        : (isGangtaInstantCharge
+                            ? Math.max(0.05, Number(sk.baseMotion) || 0.3)
+                            : Math.max(0.05, Number(sk.motion) || 0.2)));
                 let rawBaseCoeff = chainMeta ? Number(chainMeta.stepCoeff) : (Number(sk.coeff) || 0);
                 const isNonDamageStep = (chainMeta && rawBaseCoeff <= 0);
                 const hitTime = startTime + motion * 0.5;
@@ -8641,6 +9054,15 @@
                     triggeredBadges.push(`[${btStage}돌파 +${btStagePct}%]`);
                 }
 
+                // 전설 무기 피해량 +10% (곱연산)
+                const skillLegendMult = (activeLegendWeapon && activeLegendWeapon.style === sk.school)
+                    ? (1 + activeLegendWeapon.upPct / 100.0)
+                    : 1.0;
+                if (skillLegendMult > 1.0) {
+                    multFactor *= skillLegendMult;
+                    triggeredBadges.push(`[${activeLegendWeapon.name} +${activeLegendWeapon.upPct}%]`);
+                }
+
                 // 특별 도술 6✦ 고유 특수효과 적용
                 if (isBt6) {
                     if (bt6.dmgBonusPct > 0) {
@@ -8657,19 +9079,25 @@
                         buffAdditivePct += 20.0;
                         triggeredBadges.push(`[6✦ 속박 증뎀 +20%]`);
                     }
-
+                    if (skillName === '하늘의 심판' && pamyeolBurstUntil > hitTime) {
+                        multFactor *= 1.5;
+                        triggeredBadges.push(`[6✦ 요기범람 +50%]`);
+                    }
                 }
 
                 // =========================================================
-                // [신식효과 & 영력(검의 형상 / 화살촉) 시스템 적용]
+                // [12대 스타일 신식효과 & 영력 자원 시스템 적용]
                 // =========================================================
+                let gimanSelfHalfCd = false;
+                let jusulCurseBonusMult = 1.0;
+                const isPrimaryCast = (!chainMeta || chainMeta.step === 1);
+
                 if (activeUltSchool === 'jeolmyeong') {
                     if (sk.school === 'jeolmyeong' && sk.category === '도술') {
-                        // 암습(궁극기 4타): 검의 형상 3/4/5개 소모 시 타격당 계수 +55%/+90%/+125% 합산 (총 +220%/+360%/+500%)
                         const usedSwords = styleResourceToggles.jeolmyeongUltMaxLock ? 5 : jeolmyeongSwords;
                         let perHitAdd = 0;
                         if (usedSwords >= 5) perHitAdd = 125;
-                        else if (usedSwords === 4) perHitAdd = 90;
+                        else if (usedSwords === 4) perHitAdd = 75;
                         else if (usedSwords === 3) perHitAdd = 55;
 
                         if (perHitAdd > 0) {
@@ -8678,7 +9106,7 @@
                             triggeredBadges.push(`[절명신식: 검의형상 ${usedSwords}개 +${totalAddCoeff}%]`);
                             jeolmyeongSwords = Math.max(0, jeolmyeongSwords - usedSwords);
                         }
-                    } else if (sk.category !== '도술') {
+                    } else if (sk.category !== '도술' && isPrimaryCast) {
                         if (jeolmyeongSwords >= 5) {
                             pendingUltFlatCdrSec += 6.0;
                             triggeredBadges.push(`[절명신식: 5스택 도술 궁쿨 -6초]`);
@@ -8715,6 +9143,191 @@
                             }
                         }
                     }
+                } else if (activeUltSchool === 'gangta') {
+                    if (gangtaBurstUntil > 0 && startTime >= gangtaBurstUntil) {
+                        gangtaGauge = 0;
+                        gangtaBurstUntil = -1;
+                    }
+                    if (isGangtaInstantCharge) {
+                        triggeredBadges.push(`[강압: 즉시 최대차지]`);
+                    }
+                    if (isPrimaryCast && gangtaBurstUntil <= startTime) {
+                        const stageGain = (!isGangtaInstantCharge && sk.chargeStages > 0) ? (2 * sk.chargeStages) : 0;
+                        gangtaGauge = Math.min(100, gangtaGauge + 10 + stageGain);
+                    }
+                    const gangtaMultPct = gangtaGauge >= 100 ? 10 : (gangtaGauge >= 67 ? 7 : (gangtaGauge >= 32 ? 3 : 0));
+                    if (gangtaMultPct > 0) {
+                        multFactor *= (1 + gangtaMultPct / 100.0);
+                        triggeredBadges.push(`[강타신식: 영력 ${gangtaGauge} +${gangtaMultPct}%]`);
+                    }
+                    if (sk.school === 'gangta' && sk.category === '도술' && gangtaGauge >= 100 && gangtaBurstUntil <= startTime) {
+                        gangtaBurstUntil = startTime + 10.0;
+                        recordStateInterval('강압', startTime, gangtaBurstUntil, false, 0, false, '즉시 최대차지 · 일반/특별 쿨 초기화', skillName);
+                        pendingSlotCdOps.push({ target: 'nonUlt', ratio: 0.999, flatSec: 0 });
+                        triggeredBadges.push(`[강타신식: 강압 발동 · 쿨초기화]`);
+                    }
+                } else if (activeUltSchool === 'pamyeol') {
+                    if (pamyeolBurstUntil > 0 && startTime >= pamyeolBurstUntil) {
+                        pamyeolGauge = 0;
+                        pamyeolBurstUntil = -1;
+                    }
+                    if (isPrimaryCast && pamyeolBurstUntil <= startTime) {
+                        pamyeolGauge = Math.min(200, pamyeolGauge + 15);
+                        if (pamyeolGauge >= 200) {
+                            pamyeolBurstUntil = startTime + 30.0;
+                            activeStates['요기 범람'] = { expireAt: pamyeolBurstUntil, ampPct: 20, cdrPct: 0, isDebuff: false };
+                            recordStateInterval('요기 범람', startTime, pamyeolBurstUntil, false, 20, false, '주는 피해 +20% · 일반/특별 쿨 초기화', skillName);
+                            pendingSlotCdOps.push({ target: 'nonUlt', ratio: 0.999, flatSec: 0 });
+                            triggeredBadges.push(`[파멸신식: 요기 범람 발동 · 쿨초기화]`);
+                        }
+                    }
+                } else if (activeUltSchool === 'yeonta') {
+                    if (hitTime > yeontaExpireAt) yeontaStacks = 0;
+                    let skHitCount = isNonDamageStep ? 0 : 1;
+                    if (!isNonDamageStep && sk.hitInfo) {
+                        const mSimple = sk.hitInfo.match(/(\d+)\s*회/);
+                        if (mSimple) skHitCount = parseInt(mSimple[1], 10) || 1;
+                        else {
+                            const multiM = sk.hitInfo.match(/[×x]\s*(\d+)/g);
+                            if (multiM) skHitCount = multiM.reduce((a, s) => a + (parseInt(s.replace(/[^0-9]/g, ''), 10) || 0), 0) || 1;
+                        }
+                        if (chainMeta && chainMeta.total > 1) skHitCount = Math.max(1, Math.round(skHitCount / chainMeta.total));
+                    }
+                    if (skHitCount > 0) {
+                        let sumS = 0;
+                        for (let h = 0; h < skHitCount; h++) sumS += Math.min(50, yeontaStacks + h);
+                        const avgS = sumS / skHitCount;
+                        yeontaStacks = Math.min(50, yeontaStacks + skHitCount);
+                        yeontaExpireAt = startTime + motion + 3.0;
+                        recordStateInterval('격노', startTime, yeontaExpireAt, false, Number((yeontaStacks * 0.4).toFixed(1)), false, '주는 피해 +0.4%/중첩 (최대 +20%)', skillName);
+                        if (avgS > 0) {
+                            const ragePct = Number((avgS * 0.4).toFixed(2));
+                            buffAdditivePct += ragePct;
+                            triggeredBadges.push(`[연타신식: 격노 ${yeontaStacks}중첩 +${ragePct}%]`);
+                        }
+                    }
+                } else if (activeUltSchool === 'gidong') {
+                    if (gidongBurstUntil > 0 && startTime >= gidongBurstUntil) gidongBurstUntil = -1;
+                    if (isPrimaryCast && gidongBurstUntil <= startTime) {
+                        gidongGauge = Math.min(200, gidongGauge + 10);
+                        if (gidongGauge >= 200) {
+                            gidongGauge = 0;
+                            gidongBurstUntil = startTime + 10.0;
+                            recordStateInterval('연쇄', startTime, gidongBurstUntil, false, 0, false, '연속 쇄도 쿨 초기화 · 피해 +50%', skillName);
+                            pendingSlotCdOps.push({ target: 'ult', ratio: 1.0, flatSec: 0 });
+                            triggeredBadges.push(`[기동신식: 연쇄 발동 · 궁쿨 초기화]`);
+                        }
+                    }
+                    if (sk.school === 'gidong' && sk.category === '도술' && gidongBurstUntil > hitTime) {
+                        multFactor *= 1.5;
+                        triggeredBadges.push(`[기동신식: 연쇄 +50%]`);
+                    }
+                } else if (activeUltSchool === 'giman' && isPrimaryCast) {
+                    if (sk.category !== '도술' && gimanTears >= 2) {
+                        gimanTears = 0;
+                        gimanSelfHalfCd = true;
+                        triggeredBadges.push(`[기만신식: 눈물 2개 · 쿨 -50%]`);
+                    } else {
+                        gimanTears = Math.min(2, gimanTears + 1);
+                    }
+                } else if (activeUltSchool === 'jusul') {
+                    const dtJ = Math.max(0, startTime - lastJusulTime);
+                    const decayTicks = Math.floor((dtJ + 1e-6) / 1.0);
+                    if (decayTicks > 0) {
+                        jusulGauge = Math.max(0, jusulGauge - decayTicks * 4);
+                        lastJusulTime += decayTicks * 1.0;
+                    }
+                    if (isPrimaryCast) {
+                        jusulGauge = Math.min(100, jusulGauge + 8);
+                    }
+                    const orbs = jusulGauge >= 90 ? 3 : (jusulGauge >= 60 ? 2 : (jusulGauge >= 30 ? 1 : 0));
+                    if (orbs > 0) {
+                        if (isPrimaryCast) {
+                            const cutSec = Number((orbs * 0.1).toFixed(1));
+                            pendingSlotCdOps.push({ target: 'all', ratio: 0, flatSec: cutSec });
+                            triggeredBadges.push(`[주술신식: 구슬 ${orbs}개 · 쿨 -${cutSec}s]`);
+                        }
+                        if (skillName === '신내림') {
+                            jusulCurseBonusMult = 1 + orbs * 0.3;
+                            triggeredBadges.push(`[주술신식: 강화저주 +${orbs * 30}%]`);
+                        }
+                    }
+                } else if (activeUltSchool === 'gangin' && isPrimaryCast) {
+                    if (ganginBurstUntil > 0 && startTime >= ganginBurstUntil) {
+                        ganginGauge = 0;
+                        ganginBurstUntil = -1;
+                    }
+                    if (ganginBurstUntil <= startTime) {
+                        if (sk.school === 'gangin' && ganginGauge >= 100) {
+                            ganginGauge = 0;
+                            ganginBurstUntil = startTime + 10.0;
+                            recordStateInterval('강건', startTime, ganginBurstUntil, false, 0, false, '보호막 200% · 받는 피해 -25%', skillName);
+                            triggeredBadges.push(`[강인신식: 강건 발동]`);
+                        } else {
+                            ganginGauge = Math.min(100, ganginGauge + 5);
+                        }
+                    }
+                } else if (activeUltSchool === 'cheoksal') {
+                    if (sk.school === 'cheoksal' && isPrimaryCast) {
+                        recordStateInterval('척살태세', startTime, startTime + 10.0, false, 0, false, '이동 속도 +10%', skillName);
+                    }
+                    if (hitTime > cheoksalPurgeExpireAt) cheoksalPurgeStacks = 0;
+                    if (isPrimaryCast) {
+                        cheoksalGauge += 3;
+                        if (cheoksalGauge >= 100) {
+                            cheoksalGauge = 0;
+                            cheoksalPurgeStacks = Math.min(10, cheoksalPurgeStacks + 1);
+                            cheoksalPurgeExpireAt = startTime + 30.0;
+                            activeStates['척결'] = { expireAt: cheoksalPurgeExpireAt, ampPct: cheoksalPurgeStacks * 2, cdrPct: 0, isDebuff: false };
+                            recordStateInterval('척결', startTime, cheoksalPurgeExpireAt, false, cheoksalPurgeStacks * 2, false, '주는 피해 +2%/중첩 (최대 +20%)', skillName);
+                            pendingSlotCdOps.push({ target: 'nonUlt', ratio: 0.2, flatSec: 0 });
+                            pendingSlotCdOps.push({ target: 'ult', ratio: 0.1, flatSec: 0 });
+                            triggeredBadges.push(`[척살신식: 척결 ${cheoksalPurgeStacks}중첩 · 쿨감]`);
+                        }
+                    }
+                } else if (activeUltSchool === 'heonsin' && isPrimaryCast) {
+                    if (sk.school === 'heonsin' && heonsinHearts >= 3) {
+                        heonsinHearts = 0;
+                        if (skillName === '용맹의 기운') {
+                            const empAtk = Number((yongmaengBuffPct * 1.3).toFixed(2));
+                            if (activeStates['공격력 증가']) activeStates['공격력 증가'].ampPct = Math.max(activeStates['공격력 증가'].ampPct, empAtk);
+                            recordStateInterval('공격력 증가', startTime, startTime + 10.0, false, empAtk, false, '헌신 하트 강화 ×1.3', skillName);
+                            if (isBt6 && activeStates['주는 피해 증가']) {
+                                activeStates['주는 피해 증가'].ampPct = Math.max(activeStates['주는 피해 증가'].ampPct, empAtk);
+                                recordStateInterval('주는 피해 증가', startTime, startTime + 10.0, false, empAtk, false, '헌신 하트 강화 ×1.3', skillName);
+                            }
+                            triggeredBadges.push(`[헌신신식: 하트 강화(공격력 +${empAtk}%)]`);
+                        } else {
+                            triggeredBadges.push(`[헌신신식: 하트 강화]`);
+                        }
+                    } else {
+                        heonsinHearts = Math.min(3, heonsinHearts + 1);
+                    }
+                } else if (activeUltSchool === 'jeap') {
+                    if (hitTime > jeapCoolExpireAt) jeapCoolStacks = 0;
+                    if (hitTime > jeapDealtExpireAt) jeapDealtStacks = 0;
+                    if (hitTime > blueChainExpireAt) blueChainStacks = 0;
+
+                    if (sk.school === 'jeap' && sk.category === '도술' && jeapLocks >= 1) {
+                        jeapLocks -= 1;
+                        blueChainStacks = Math.min(9, blueChainStacks + 1);
+                        blueChainExpireAt = hitTime + 10.0;
+                        activeStates['푸른 사슬:받는 피해 증가'] = { expireAt: blueChainExpireAt, ampPct: blueChainStacks * 2, cdrPct: 0, isDebuff: true };
+                        recordStateInterval('푸른 사슬:받는 피해 증가', hitTime, blueChainExpireAt, true, blueChainStacks * 2, false, '받는 피해 +2%/중첩 (최대 +18%)', skillName);
+                        activeStates['푸른 사슬:속박'] = { expireAt: hitTime + 2.0, ampPct: 0, cdrPct: 0, isDebuff: true };
+                        recordStateInterval('푸른 사슬:속박', hitTime, hitTime + 2.0, true, 0, false, '속박 2초', skillName);
+                        triggeredBadges.push(`[제압신식: 푸른 사슬 ${blueChainStacks}중첩(+${blueChainStacks * 2}%)]`);
+                    } else if (isPrimaryCast) {
+                        jeapLocks = Math.min(3, jeapLocks + 1);
+                        jeapCoolStacks = Math.min(3, jeapCoolStacks + 1);
+                        jeapCoolExpireAt = startTime + 10.0;
+                        recordStateInterval('자물쇠:궁극기 쿨감', startTime, jeapCoolExpireAt, false, 0, false, `궁극기 쿨타임 -${jeapCoolStacks * 3}초`, skillName);
+                        jeapDealtStacks = Math.min(3, jeapDealtStacks + 1);
+                        jeapDealtExpireAt = startTime + 10.0;
+                        activeStates['자물쇠:주는 피해 증가'] = { expireAt: jeapDealtExpireAt, ampPct: jeapDealtStacks * 2, cdrPct: 0, isDebuff: false };
+                        recordStateInterval('자물쇠:주는 피해 증가', startTime, jeapDealtExpireAt, false, jeapDealtStacks * 2, false, '주는 피해 +2%/중첩 (최대 +6%)', skillName);
+                        triggeredBadges.push(`[제압신식: 자물쇠 ${jeapLocks}/3]`);
+                    }
                 }
 
                 // [연속 조준] 중첩 합연산 적용 (10초 지속)
@@ -8732,12 +9345,16 @@
                 // =========================================================
                 (sk.conditionals || []).forEach(cond => {
                     if (cond.type === 'dmg_amp_per_debuff') {
-                        const activeDebuffList = Object.keys(activeStates).filter(st => activeStates[st] && (activeStates[st].isDebuff === true || (activeStates[st].isDebuff !== false && DEBUFF_STATE_SET.has(st))));
-                        const debuffCount = activeDebuffList.length;
+                        const MARK_STATES = ['출혈', '화상', '감전', '약화'];
+                        const activeMarks = MARK_STATES.filter(st => {
+                            if (st === '약화') return !!(activeStates['약화'] || activeStates['강화 저주']);
+                            return !!activeStates[st];
+                        });
+                        const debuffCount = Math.min(4, activeMarks.length);
                         if (debuffCount > 0) {
                             const totalStackBonus = debuffCount * Number(cond.value);
-                            buffAdditivePct += totalStackBonus;
-                            triggeredBadges.push(`[약화 ${debuffCount}중첩] +${totalStackBonus}%`);
+                            multFactor *= (1 + totalStackBonus / 100.0);
+                            triggeredBadges.push(`[표식 ${debuffCount}종(${activeMarks.join('·')})] ×${(1 + totalStackBonus / 100.0).toFixed(2)}`);
                         }
                         return;
                     }
@@ -8774,16 +9391,24 @@
                     }
                 });
 
-                // 버프/디버프 형태의 피해 증가류 합연산 적용
-                Object.keys(activeStates).forEach(st => {
-                    const stObj = activeStates[st];
-                    if (stObj.ampPct > 0 && !consumedAmpStates.has(st)) {
-                        buffAdditivePct += Number(stObj.ampPct);
-                        triggeredBadges.push(`[${st}] +${stObj.ampPct}%`);
+                // 공격력 증가 × 주는 피해 증가 × 받는 피해 증가 3분할 곱연산 적용
+                let atkBonusPct = 0.0;
+                let takenBonusPct = 0.0;
+                collectFilteredAmpEntries(Object.keys(activeStates), consumedAmpStates).forEach(item => {
+                    if (item.kind === 'atk') {
+                        atkBonusPct += item.val;
+                        triggeredBadges.push(`[${item.st}] +${item.val}%`);
+                    } else if (item.kind === 'taken') {
+                        takenBonusPct += item.val;
+                        triggeredBadges.push(`[${item.st}] +${item.val}%`);
+                    } else {
+                        buffAdditivePct += item.val;
+                        triggeredBadges.push(`[${item.st}] +${item.val}%`);
                     }
                 });
 
-                const ampMultiplier = multFactor * (1 + buffAdditivePct / 100.0);
+                const stateMult = (1 + atkBonusPct / 100.0) * (1 + buffAdditivePct / 100.0) * (1 + takenBonusPct / 100.0);
+                const ampMultiplier = multFactor * stateMult;
                 const debuffEffects = (sk.effects || []).filter(eff => eff.type === 'debuff').slice();
                 if (isBt6) {
                     if (skillName === '꿰뚫는 저격') {
@@ -8791,7 +9416,7 @@
                     } else if (skillName === '일섬') {
                         debuffEffects.push({ type: 'debuff', state: '일섬:받는 피해 증가', duration: 5, ampPct: 20, cdrPct: 0, dotHitCoeff: 0, extraBurstCoeff: 0 });
                     } else if (skillName === '환상술') {
-                        debuffEffects.push({ type: 'debuff', state: '환상술:받는 치명타 피해 증가', duration: 5, ampPct: 20, cdrPct: 0, dotHitCoeff: 0, extraBurstCoeff: 0 });
+                        debuffEffects.push({ type: 'debuff', state: '환상술:받는 치명타 피해 증가', duration: 10, ampPct: 0, cdrPct: 0, dotHitCoeff: 0, extraBurstCoeff: 0 });
                     }
                 }
                 const groundHits = GROUND_DOT_SKILLS[skillName] || 0;
@@ -8813,8 +9438,9 @@
                         summaryMap[skillName].finalSum += firstTickFinal;
                     }
 
+                    const effGroundDotMult = skillLegendMult * (skillName === '신내림' ? jusulCurseBonusMult : 1.0);
                     debuffEffects.forEach(eff => {
-                        applyDebuffEffectAt(eff, hitTime, hitTime + Number(eff.duration || 5), skillName);
+                        applyDebuffEffectAt(eff, hitTime, hitTime + Number(eff.duration || 5), skillName, effGroundDotMult);
                     });
 
                     for (let h = 1; h < groundHits; h++) {
@@ -8829,6 +9455,7 @@
                                 rawTickBase,
                                 bonusTickBase,
                                 multFactor,
+                                dotMultFactor: effGroundDotMult,
                                 debuffEffects: tickDebuffs
                             });
                         }
@@ -8838,8 +9465,8 @@
                     logBaseCoeff = rawBaseCoeff;
                     logFinalCoeff = firstTickFinal * groundHits; // 로그에는 예상 총합 표시 (실제 집계는 0.5초마다 실시간 반영)
                 } else {
-                    // 일반/단발 스킬 (noSchoolEnhBonusCoeff는 계열강화 미적용 후 버프/디버프 증폭만 반영)
-                    const finalCoeff = ((rawBaseCoeff + bonusCoeff) * multFactor + noSchoolEnhBonusCoeff) * (1 + buffAdditivePct / 100.0);
+                    // 일반/단발 스킬: 3분할 상태 배율(stateMult) 및 절명 검의형상 전설무기 배율(skillLegendMult) 반영
+                    const finalCoeff = ((rawBaseCoeff + bonusCoeff) * multFactor + noSchoolEnhBonusCoeff * skillLegendMult) * stateMult;
                     totalBaseCoeff += rawBaseCoeff;
                     totalFinalCoeff += finalCoeff;
                     if (summaryMap[skillName]) {
@@ -8850,25 +9477,27 @@
                         summaryMap[skillName].finalSum += finalCoeff;
                     }
 
+                    const effDotMult = skillLegendMult * (skillName === '신내림' ? jusulCurseBonusMult : 1.0);
                     debuffEffects.forEach(eff => {
-                        applyDebuffEffectAt(eff, hitTime, startTime + motion + Number(eff.duration || 5), skillName);
+                        applyDebuffEffectAt(eff, hitTime, startTime + motion + Number(eff.duration || 5), skillName, effDotMult);
                         if (styleResourceToggles.includeDotDamage && eff.dotHitCoeff > 0) {
                             triggeredBadges.push(`[${eff.state} 1s 도트 부여]`);
                         }
                     });
 
-                    // 황천의 부름 6✦: 황천의 늪 장판 15회 추가 타격 (0.5초마다 55.23%)
+                    // 황천의 부름 6✦: 황천의 늪 장판 15회 추가 타격 (1초마다 55.23% · 계열강화×전설무기만 적용)
                     if (isBt6 && skillName === '황천의 부름') {
                         const swampTickBase = 55.23;
+                        const swampMult = (1 + schoolEnhPct / 100.0) * skillLegendMult;
                         for (let h = 1; h <= 15; h++) {
-                            const tTick = hitTime + 0.5 * h;
+                            const tTick = hitTime + 1.0 * h;
                             if (tTick <= simDuration + 1e-6) {
                                 scheduledGroundTicks.push({
                                     time: tTick,
                                     skillName,
                                     rawTickBase: swampTickBase,
                                     bonusTickBase: 0,
-                                    multFactor,
+                                    multFactor: swampMult,
                                     debuffEffects: []
                                 });
                             }
@@ -8898,7 +9527,13 @@
 
                 const totalCdrPct = Math.min(70, activeBuffCdrPct);
                 const cdrMultiplier = Math.max(0.2, 1 - totalCdrPct / 100.0);
-                const effectiveCd = Math.max(0.3, baseCd * cdrMultiplier);
+                let effectiveCd = Math.max(0.3, baseCd * cdrMultiplier);
+                if (gimanSelfHalfCd) {
+                    effectiveCd = Math.max(0.3, effectiveCd * 0.5);
+                }
+                if (sk.category === '도술' && jeapCoolStacks > 0 && startTime <= jeapCoolExpireAt) {
+                    effectiveCd = Math.max(0.3, effectiveCd - jeapCoolStacks * 3.0);
+                }
 
                 totalMotion += motion;
                 castCount++;
@@ -8962,12 +9597,16 @@
                         motion,
                         cd: effectiveCd,
                         finalCoeff: logFinalCoeff,
-                        ampMult: Number((1 + buffAdditivePct / 100.0).toFixed(3)),
+                        ampMult: Number(stateMult.toFixed(3)),
                         appliedChips,
                         activeDebuffCount: Object.values(activeStates).filter(v => v.isDebuff && v.expireAt > hitTime).length,
                         activeBuffCount: Object.values(activeStates).filter(v => !v.isDebuff && v.ampPct > 0 && v.expireAt > hitTime).length,
+                        activeStateLanes: Object.entries(activeStates)
+                            .filter(([, v]) => v && v.expireAt > hitTime && (v.isDebuff || (v.ampPct || 0) > 0))
+                            .map(([st, v]) => ({ state: st, isDebuff: !!v.isDebuff, ampPct: Number(v.ampPct) || 0 })),
                         chainStep: chainMeta ? chainMeta.step : 0,
-                        chainTotal: chainMeta ? chainMeta.total : 0
+                        chainTotal: chainMeta ? chainMeta.total : 0,
+                        chainStepName: (chainMeta && chainMeta.stepLabelName) ? chainMeta.stepLabelName : ''
                     });
 
                     if (activeUltSchool === 'jeogyeok') {
@@ -9000,7 +9639,8 @@
                         triggeredBadges,
                         activeSnapshot,
                         chainStep: chainMeta ? chainMeta.step : 0,
-                        chainTotal: chainMeta ? chainMeta.total : 0
+                        chainTotal: chainMeta ? chainMeta.total : 0,
+                        chainStepName: (chainMeta && chainMeta.stepLabelName) ? chainMeta.stepLabelName : ''
                     });
                 }
 
@@ -9045,6 +9685,9 @@
                     let stepTime = castTime;
                     let totalChainMotion = 0;
                     let firstEffectiveCd = slot.lastEffectiveCd;
+                    const step1Mot = (sk.baseMotion !== undefined && sk.baseMotion !== null) ? Number(sk.baseMotion) : Number(sk.motion || 0.3);
+                    const stepFollowMot = (sk.chainMotion !== undefined && sk.chainMotion !== null) ? Number(sk.chainMotion) : step1Mot;
+                    const cGap = Number(sk.chainGap || 0);
 
                     for (let step = 1; step <= chainCount; step++) {
                         if (stepTime >= simDuration) break;
@@ -9052,13 +9695,21 @@
                             ? Number(sk.chainCoeffs[step - 1])
                             : ((Number(sk.coeff) || 0) / chainCount);
                         const stepBadge = (step === 1) ? stackBadge : '';
+                        const curStepMotion = (step === 1) ? step1Mot : stepFollowMot;
+                        const stepLabelName = (step > 1 && Array.isArray(sk.chainStepNames) && sk.chainStepNames[step - 2])
+                            ? sk.chainStepNames[step - 2]
+                            : null;
                         const res = executeSkillCast(slot.name, stepTime, stepBadge, {
                             step,
                             total: chainCount,
-                            stepCoeff
+                            stepCoeff,
+                            overrideMotion: curStepMotion,
+                            stepLabelName
                         });
-                        stepTime += res.motion;
-                        totalChainMotion += res.motion;
+                        const gapWait = (step < chainCount) ? Math.max(0, cGap - res.motion) : 0;
+                        const advance = res.motion + gapWait;
+                        stepTime += advance;
+                        totalChainMotion += advance;
                         if (step === 1) firstEffectiveCd = res.effectiveCd;
                     }
 
@@ -9112,7 +9763,27 @@
                         }
                         pendingUltFlatCdrSec = 0;
                     }
-                    currentTime += motion;
+                    if (pendingSlotCdOps.length > 0) {
+                        pendingSlotCdOps.forEach(op => {
+                            slotStates.forEach(stSlot => {
+                                const stSk = skillDb[stSlot.name];
+                                if (!stSk) return;
+                                const isUlt = (stSk.category === '도술');
+                                const match = (op.target === 'all') || (op.target === 'ult' && isUlt) || (op.target === 'nonUlt' && !isUlt);
+                                if (match && stSlot.nextRechargeAt !== null && stSlot.nextRechargeAt > currentTime) {
+                                    if (op.ratio > 0) {
+                                        stSlot.nextRechargeAt = currentTime + (stSlot.nextRechargeAt - currentTime) * (1 - op.ratio);
+                                    }
+                                    if (op.flatSec > 0) {
+                                        stSlot.nextRechargeAt = Math.max(currentTime, stSlot.nextRechargeAt - op.flatSec);
+                                    }
+                                }
+                            });
+                        });
+                        pendingSlotCdOps = [];
+                        syncAllSlotRecharges(currentTime);
+                    }
+                    currentTime += motion + 0.125;
                 } else {
                     const { motion } = executeBasicAttack(currentTime);
                     lastCastIdx = -1;
@@ -9233,31 +9904,31 @@
                     if (item.dotState === '출혈') faIcon = 'fa-droplet text-rose-400';
                     else if (item.dotState === '감전') faIcon = 'fa-bolt text-yellow-400';
                     else if (item.dotState === '강화 저주') faIcon = 'fa-skull text-fuchsia-400';
-                    iconBoxHtml = `<div class="w-11 h-11 rounded-xl bg-orange-950/50 border border-orange-500/40 shrink-0 flex items-center justify-center shadow"><i class="fa-solid ${faIcon} text-lg"></i></div>`;
+                    iconBoxHtml = `<div class="w-9 h-9 rounded-lg bg-orange-950/50 border border-orange-500/40 shrink-0 flex items-center justify-center shadow"><i class="fa-solid ${faIcon} text-lg"></i></div>`;
                 } else if (isBasic) {
-                    iconBoxHtml = `<div class="w-11 h-11 rounded-xl bg-cardBg border border-borderCol shrink-0 flex items-center justify-center shadow"><i class="fa-solid fa-khanda text-amber-400 text-base"></i></div>`;
+                    iconBoxHtml = `<div class="w-9 h-9 rounded-lg bg-cardBg border border-borderCol shrink-0 flex items-center justify-center shadow"><i class="fa-solid fa-khanda text-amber-400 text-base"></i></div>`;
                 } else {
                     iconBoxHtml = `
-                        <div class="w-11 h-11 rounded-xl overflow-hidden bg-cardBg border border-borderCol shrink-0 flex items-center justify-center shadow">
+                        <div class="w-9 h-9 rounded-lg overflow-hidden bg-cardBg border border-borderCol shrink-0 flex items-center justify-center shadow">
                             <img src="${item.iconSrc}" data-fallback-idx="0" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${item.imageFile || ''}')">
                             <div class="hidden w-full h-full items-center justify-center text-xs font-extrabold text-white" style="background:${schoolMeta.color}44">${item.skillName.substring(0, 2)}</div>
                         </div>`;
                 }
 
                 const barStyleGrad = isDot
-                    ? 'linear-gradient(90deg, #f97316, #f43f5e)'
-                    : 'linear-gradient(90deg, #8b5cf6, #d946ef)';
+                    ? '#E06C75'
+                    : '#7F91F5';
                 const unitLabel = isDot ? '틱' : '회';
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-cardBg/70 transition";
                 tr.innerHTML = `
-                    <td class="py-2.5 px-3">
-                        <div class="flex items-center gap-3">
+                    <td class="py-2 px-3 whitespace-nowrap">
+                        <div class="flex items-center gap-2.5">
                             ${iconBoxHtml}
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-sm font-extrabold ${isDot ? 'text-orange-200' : 'text-white'}">${item.skillName}</span>
-                                <span class="${getCategoryBadgeClass(item.category)} px-1.5 py-0.5 rounded text-[10px] font-bold">${getCategoryLabel(item.category)}</span>
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="text-[13px] font-bold ${isDot ? 'text-rose-300' : 'text-gray-100'} whitespace-nowrap">${item.skillName}</span>
+                                <span class="${getCategoryBadgeClass(item.category)} px-1.5 py-0.5 rounded text-[10px] font-semibold shrink-0 whitespace-nowrap">${getCategoryLabel(item.category)}</span>
                             </div>
                         </div>
                     </td>
@@ -9296,8 +9967,22 @@
                     : 'linear-gradient(90deg, #10b981, #2dd4bf)';
                 const pctColor = item.isDebuff ? 'text-rose-300' : 'text-emerald-300';
 
+                const fmtPct = (v) => Number(Number(v).toFixed(2));
                 const effectParts = [];
-                if (item.ampPct > 0) effectParts.push(`피해 +${item.ampPct}%`);
+                if (item.state === '용맹(50Lv·6✦)') {
+                    effectParts.push('공격력 +20% · 주는 피해 +20%');
+                } else if (item.ampPct > 0) {
+                    const pStr = `${fmtPct(item.ampPct)}%`;
+                    if (item.state === '공격력 증가') {
+                        effectParts.push(`공격력 +${pStr}`);
+                    } else if (item.state.includes('받는 피해 증가') || item.state.includes('받피증')) {
+                        effectParts.push(`받는 피해 +${pStr}`);
+                    } else if (item.state === '주는 피해 증가') {
+                        effectParts.push(`주는 피해 +${pStr}`);
+                    } else {
+                        effectParts.push(`피해 +${pStr}`);
+                    }
+                }
                 if (item.note) effectParts.push(item.note);
                 const effectText = effectParts.length > 0 ? effectParts.join(' · ') : '시너지/유틸 상태';
 
@@ -9367,10 +10052,10 @@
                 if (hint) hint.innerText = `가로 스크롤 · 전체 ${Math.round(res.totalTime / 60)}분`;
                 renderGanttTimeline(root, res);
             } else if (timelineSubMode === 'chrono') {
-                if (hint) hint.innerText = `앞 200회 시전 기준`;
+                if (hint) hint.innerText = `전체 ${Math.round(res.totalTime / 60)}분 · 총 ${res.timelineCasts.length}회 시전`;
                 renderChronoTimeline(root, res);
             } else {
-                if (hint) hint.innerText = `앞 150회 도술 시전 순서`;
+                if (hint) hint.innerText = `전체 ${Math.round(res.totalTime / 60)}분 · 타임라인 ${res.timelineCasts.length}건`;
                 renderSingleLineTimeline(root, res);
             }
         }
@@ -9404,7 +10089,8 @@
                     const actW = Math.max(5, actDur * pxPerSec);
                     const showCd = (c.chainStep === 0 || c.chainStep === 1) && c.cd > c.motion;
                     const cdW = showCd ? Math.max(0, Math.min(viewSec - (c.startTime + c.motion), c.cd - c.motion) * pxPerSec) : 0;
-                    const tip = `${sName}${c.chainStep > 1 ? ` (후속타 ${c.chainStep}/${c.chainTotal})` : ''} · ${fmtMMSS(c.startTime, 1)} · ${c.finalCoeff.toFixed(1)}%`;
+                    const dispStepName = (c.chainStep > 1 && c.chainStepName) ? c.chainStepName : sName;
+                    const tip = `${dispStepName} · ${fmtMMSS(c.startTime, 1)} · ${c.finalCoeff.toFixed(1)}%`;
                     return `
                         ${prepW > 0 ? `<div class="absolute top-[7px] h-[18px] rounded-l bg-[#5f6ea8]" style="left:${left}px;width:${prepW}px" title="${tip} (준비 ${c.prepTime}s)"></div>` : ''}
                         <div class="absolute top-[7px] h-[18px] ${prepW > 0 ? 'rounded-r' : 'rounded'} bg-[#8ea4ff] shadow-sm" style="left:${left + prepW}px;width:${actW}px" title="${tip}"></div>
@@ -9413,10 +10099,10 @@
                 }).join('');
 
                 rowsHtml += `
-                    <div class="flex items-center border-b border-borderCol/35 h-8">
-                        <div class="w-12 shrink-0 flex items-center justify-center sticky left-0 z-20 bg-[#0e1017] border-r border-borderCol/60 h-full">
-                            <img src="${getSkillIconSrc(sk)}" class="w-6 h-6 rounded object-cover" title="${sName}" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')">
-                            <div class="hidden w-6 h-6 rounded bg-cardBg items-center justify-center text-[9px] font-bold text-gray-300">${sName.substring(0, 2)}</div>
+                    <div class="flex items-center border-b border-borderCol/40 h-10">
+                        <div class="w-14 shrink-0 flex items-center justify-center sticky left-0 z-20 bg-[#0e1017] border-r border-borderCol/60 h-full">
+                            <img src="${getSkillIconSrc(sk)}" class="w-8 h-8 rounded-md object-cover ring-1 ring-borderCol" title="${sName}" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')">
+                            <div class="hidden w-8 h-8 rounded-md bg-cardBg items-center justify-center text-[10px] font-bold text-gray-300">${sName.substring(0, 2)}</div>
                         </div>
                         <div class="relative h-full" style="width:${trackW}px">${gridLinesHtml}${bars}</div>
                     </div>
@@ -9484,12 +10170,12 @@
 
                 const srcIcons = Array.from(track.sources).slice(0, 2).map(sName => {
                     const sk = skillDb[sName];
-                    return sk ? `<img src="${getSkillIconSrc(sk)}" class="w-5 h-5 rounded object-cover" title="${sName}">` : '';
+                    return sk ? `<img src="${getSkillIconSrc(sk)}" class="w-7 h-7 rounded-md object-cover ring-1 ring-borderCol" title="${sName}">` : '';
                 }).join('');
 
                 rowsHtml += `
-                    <div class="flex items-center border-b border-borderCol/35 h-8">
-                        <div class="w-12 shrink-0 flex items-center justify-center gap-0.5 sticky left-0 z-20 bg-[#0e1017] border-r border-borderCol/60 h-full px-0.5">
+                    <div class="flex items-center border-b border-borderCol/40 h-10">
+                        <div class="w-14 shrink-0 flex items-center justify-center gap-0.5 sticky left-0 z-20 bg-[#0e1017] border-r border-borderCol/60 h-full px-0.5">
                             ${srcIcons || '<span class="text-[10px] text-gray-500">효과</span>'}
                         </div>
                         <div class="relative h-full" style="width:${trackW}px">${gridLinesHtml}${segsHtml}</div>
@@ -9505,7 +10191,7 @@
                     const maxV = pts[0].max || 3;
                     const ultSk = getEquippedDosulSkill();
                     const ultIconHtml = ultSk
-                        ? `<img src="${getSkillIconSrc(ultSk)}" class="w-6 h-6 rounded object-cover" title="${pts[0].label || '자원'}">`
+                        ? `<img src="${getSkillIconSrc(ultSk)}" class="w-8 h-8 rounded-md object-cover ring-1 ring-borderCol" title="${pts[0].label || '자원'}">`
                         : `<span class="text-[10px] font-bold text-indigo-300">자원</span>`;
                     const hSvg = 34;
                     const yOf = (v) => (hSvg - 4 - (v / maxV) * (hSvg - 8)).toFixed(1);
@@ -9522,8 +10208,8 @@
                     areaD += ` L ${trackW} ${yOf(prevVal)} L ${trackW} ${hSvg - 4} Z`;
 
                     resourceRowHtml = `
-                        <div class="flex items-center border-b border-borderCol/35 h-9">
-                            <div class="w-12 shrink-0 flex items-center justify-center sticky left-0 z-20 bg-[#0e1017] border-r border-borderCol/60 h-full">
+                        <div class="flex items-center border-b border-borderCol/40 h-11">
+                            <div class="w-14 shrink-0 flex items-center justify-center sticky left-0 z-20 bg-[#0e1017] border-r border-borderCol/60 h-full">
                                 ${ultIconHtml}
                             </div>
                             <div class="relative h-full" style="width:${trackW}px">
@@ -9540,9 +10226,9 @@
 
             root.innerHTML = `
                 <div class="overflow-x-auto border border-borderCol/60 rounded-xl bg-[#0e1017]">
-                    <div class="relative" style="min-width:${trackW + 48}px">
+                    <div class="relative" style="min-width:${trackW + 56}px">
                         <div class="flex h-6 border-b border-borderCol/60">
-                            <div class="w-12 shrink-0 sticky left-0 z-20 bg-[#0e1017] border-r border-borderCol/60"></div>
+                            <div class="w-14 shrink-0 sticky left-0 z-20 bg-[#0e1017] border-r border-borderCol/60"></div>
                             <div class="relative flex-1">${ticksHtml}</div>
                         </div>
                         ${rowsHtml}
@@ -9562,9 +10248,9 @@
             `;
         }
 
-        function renderChronoTimeline(root, res) {
+                function renderChronoTimeline(root, res) {
             const grouped = [];
-            res.timelineCasts.slice(0, 200).forEach(ev => {
+            res.timelineCasts.forEach(ev => {
                 const last = grouped[grouped.length - 1];
                 if (ev.type === 'basic' && last && last.type === 'basic') {
                     last.count++;
@@ -9578,7 +10264,8 @@
 
             const rowsHtml = grouped.map(ev => {
                 const sk = ev.type === 'skill' ? skillDb[ev.skillName] : null;
-                const isFollowUp = (ev.chainStep && ev.chainStep > 1);
+                const isFollowUp = !!(ev.chainStep && ev.chainStep > 1);
+                const chronoStepTitle = isFollowUp ? (ev.chainStepName || ev.skillName) : ev.skillName;
                 const linesHtml =
                     Array(Math.min(4, ev.activeDebuffCount || 0)).fill('<span class="w-[2px] self-stretch bg-rose-500/80 rounded-full"></span>').join('') +
                     Array(Math.min(4, ev.activeBuffCount || 0)).fill('<span class="w-[2px] self-stretch bg-indigo-400/80 rounded-full"></span>').join('');
@@ -9593,16 +10280,15 @@
                 const titleHtml = ev.type === 'basic'
                     ? `<span class="text-xs font-bold text-gray-300">기본 공격 ×${ev.count}</span>`
                     : `<div class="flex items-center gap-1.5 flex-wrap">
-                           <span class="text-xs font-extrabold ${isFollowUp ? 'text-sky-200' : 'text-white'}">${isFollowUp ? '↳ ' : ''}${ev.skillName}</span>
-                           ${isFollowUp ? `<span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-400/40">후속타 ${ev.chainStep}/${ev.chainTotal}</span>` : ''}
+                           <span class="text-xs font-extrabold ${isFollowUp ? 'text-sky-200' : 'text-white'}">${isFollowUp ? '↳ ' : ''}${chronoStepTitle}</span>
                        </div>`;
 
                 return `
                     <div class="flex items-stretch gap-3 px-2 py-2 border-b border-borderCol/35 ${isFollowUp ? 'bg-sky-950/15' : ''} hover:bg-cardBg/40 transition">
                         <div class="w-9 shrink-0 flex items-stretch gap-1 justify-end pr-0.5">${linesHtml}</div>
                         <div class="w-11 shrink-0 text-xs text-gray-500 num-clean self-center">${fmtMMSS(ev.startTime, 1)}</div>
-                        <div class="w-8 h-8 rounded-lg overflow-hidden bg-cardBg border border-borderCol shrink-0 self-center flex items-center justify-center">
-                            ${sk ? `<img src="${getSkillIconSrc(sk)}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')"><div class="hidden w-full h-full items-center justify-center text-[10px] font-bold text-gray-300">${ev.skillName.substring(0, 2)}</div>` : `<span class="text-[10px] font-bold text-gray-400">${wShort}</span>`}
+                        <div class="w-10 h-10 rounded-lg overflow-hidden bg-cardBg border border-borderCol shrink-0 self-center flex items-center justify-center">
+                            ${sk ? `<img src="${getSkillIconSrc(sk)}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')"><div class="hidden w-full h-full items-center justify-center text-[10px] font-bold text-gray-300">${ev.skillName.substring(0, 2)}</div>` : `<span class="text-xs font-extrabold text-gray-200 tracking-tight">기본</span>`}
                         </div>
                         <div class="flex-1 min-w-0 self-center">
                             ${titleHtml}
@@ -9619,22 +10305,66 @@
             root.innerHTML = `<div class="max-h-[620px] overflow-y-auto">${rowsHtml}</div>`;
         }
 
-        function renderSingleLineTimeline(root, res) {
-            const items = res.timelineCasts.filter(c => c.type === 'skill').slice(0, 150).map(ev => {
+function renderSingleLineTimeline(root, res) {
+            const grouped = [];
+            res.timelineCasts.forEach(ev => {
+                if (ev.type === 'basic') {
+                    const prev = grouped[grouped.length - 1];
+                    if (prev && prev.type === 'basic') {
+                        prev.count += 1;
+                        prev.endTime = ev.endTime;
+                        prev.totalCoeff += ev.finalCoeff;
+                    } else {
+                        grouped.push({
+                            type: 'basic',
+                            skillName: ev.skillName,
+                            startTime: ev.startTime,
+                            endTime: ev.endTime,
+                            count: 1,
+                            totalCoeff: ev.finalCoeff
+                        });
+                    }
+                } else {
+                    grouped.push({
+                        type: 'skill',
+                        ev
+                    });
+                }
+            });
+
+            const items = grouped.map(item => {
+                if (item.type === 'basic') {
+                    const countBadge = item.count > 1
+                        ? `<span class="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 rounded-full bg-[#2c3347] border border-gray-500/70 text-[10px] font-extrabold text-gray-100 num-clean">×${item.count}</span>`
+                        : '';
+                    const tip = `${item.skillName}${item.count > 1 ? ` ${item.count}연속` : ''} · ${fmtMMSS(item.startTime, 1)}~${fmtMMSS(item.endTime, 1)} · ${item.totalCoeff.toFixed(1)}%`;
+                    return `
+                        <div class="flex flex-col items-center gap-0.5 shrink-0" title="${tip}">
+                            <div class="relative w-11 h-11 rounded-xl border border-borderCol/80 bg-[#171b24] flex items-center justify-center text-gray-200">
+                                <span class="text-xs font-extrabold tracking-tight">기본</span>
+                                ${countBadge}
+                            </div>
+                            <span class="text-[9px] text-gray-500 num-clean">${fmtMMSS(item.startTime)}</span>
+                        </div>
+                    `;
+                }
+
+                const ev = item.ev;
                 const sk = skillDb[ev.skillName];
                 if (!sk) return '';
-                const isFollowUp = (ev.chainStep && ev.chainStep > 1);
+                const isFollowUp = !!(ev.chainStep && ev.chainStep > 1);
+                const singleTitle = isFollowUp ? (ev.chainStepName || ev.skillName) : ev.skillName;
                 return `
-                    <div class="flex flex-col items-center gap-0.5 shrink-0" title="${ev.skillName}${isFollowUp ? ` (후속타 ${ev.chainStep}/${ev.chainTotal})` : ''} · ${fmtMMSS(ev.startTime, 1)} · ${ev.finalCoeff.toFixed(1)}%">
+                    <div class="flex flex-col items-center gap-0.5 shrink-0" title="${singleTitle} · ${fmtMMSS(ev.startTime, 1)} · ${ev.finalCoeff.toFixed(1)}%">
                         <div class="relative">
-                            <img src="${getSkillIconSrc(sk)}" class="w-8 h-8 rounded-lg border ${isFollowUp ? 'border-sky-400/70' : 'border-borderCol'} object-cover">
+                            <img src="${getSkillIconSrc(sk)}" class="w-11 h-11 rounded-xl border ${isFollowUp ? 'border-sky-400/70' : 'border-borderCol'} object-cover">
                             ${isFollowUp ? `<span class="absolute -bottom-1 -right-1 px-1 rounded bg-sky-600 text-[8px] font-black text-white">${ev.chainStep}</span>` : ''}
                         </div>
                         <span class="text-[9px] text-gray-500 num-clean">${fmtMMSS(ev.startTime)}</span>
                     </div>
                 `;
             }).join('');
-            root.innerHTML = `<div class="flex flex-wrap gap-2 p-2 max-h-[460px] overflow-y-auto">${items}</div>`;
+            root.innerHTML = `<div class="flex flex-wrap gap-2 p-2 max-h-[620px] overflow-y-auto">${items}</div>`;
         }
 
         function getPermutationsExact(arr) {
@@ -10227,7 +10957,7 @@
 
             if (cycle.length === 0) {
                 container.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-10 text-gray-500 border border-dashed border-borderCol rounded-xl">
+                    <div class="flex flex-1 flex-col items-center justify-center text-gray-500 border border-dashed border-borderCol rounded-xl">
                         <i class="fa-solid fa-hand-pointer text-xl mb-2 opacity-50"></i>
                         <p class="text-xs font-semibold">우측 도감에서 도술을 클릭해 추가하세요 (최대 8개 + 궁극기 1개)</p>
                     </div>
@@ -10244,7 +10974,7 @@
                 const btStage = !isDosul ? Math.max(0, Math.min(10, parseInt(breakthroughStageMap[name], 10) || 0)) : 0;
 
                 const row = document.createElement('div');
-                row.className = "group flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-[#161922] hover:bg-[#1c202c] border border-borderCol/80 hover:border-violet-500/45 transition select-none cursor-grab active:cursor-grabbing";
+                row.className = "group h-[66px] shrink-0 flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-[#161922] hover:bg-[#1c202c] border border-borderCol/80 hover:border-violet-500/45 transition select-none cursor-grab active:cursor-grabbing";
                 row.draggable = true;
 
                 row.addEventListener('dragstart', (e) => {
