@@ -6722,7 +6722,7 @@
                         reqState: '화상',
                         type: 'bonus_coeff',
                         value: Number((perHit * hits).toFixed(2)),
-                        label: `화상 매타격 추뎀(${perHit}%×${hits}회)`
+                        label: '화상'
                     });
                     return;
                 }
@@ -6777,7 +6777,7 @@
                             reqState: st,
                             type: 'bonus_coeff',
                             value: totalVal,
-                            label: totalHits > 1 ? `${st} 매타격 추뎀(${val}%×${totalHits}회)` : `${st} 추뎀`
+                            label: st
                         });
                     } else {
                         conditionals.push({
@@ -8507,7 +8507,7 @@
                         if (perHitAdd > 0) {
                             const totalAddCoeff = perHitAdd * 4;
                             noSchoolEnhBonusCoeff += totalAddCoeff;
-                            triggeredBadges.push(`[절명신식: 검의형상 ${usedSwords}개 (+${perHitAdd}%×4 = +${totalAddCoeff}%, 계열강화 미적용)]`);
+                            triggeredBadges.push(`[절명신식: 검의형상 ${usedSwords}개 +${totalAddCoeff}%]`);
                             jeolmyeongSwords = Math.max(0, jeolmyeongSwords - usedSwords);
                         }
                     } else if (sk.category !== '도술') {
@@ -8538,7 +8538,7 @@
                         if (jeogyeokArrows >= 1) {
                             jeogyeokArrows--;
                             multFactor *= (1 + 45 / 100.0);
-                            triggeredBadges.push(`[저격신식: 화살촉 소모 +45% (잔여 ${jeogyeokArrows})]`);
+                            triggeredBadges.push(`[저격신식: 화살촉 +45%]`);
                             if (styleResourceToggles.yonsokChojunStack) {
                                 if (hitTime > yonsokChojunExpireAt) yonsokChojunStacks = 0;
                                 yonsokChojunStacks = Math.min(5, yonsokChojunStacks + 1);
@@ -8569,14 +8569,14 @@
                         if (debuffCount > 0) {
                             const totalStackBonus = debuffCount * Number(cond.value);
                             buffAdditivePct += totalStackBonus;
-                            triggeredBadges.push(`[약화/상태이상 ${debuffCount}중첩(${activeDebuffList.join('·')})] +${totalStackBonus}%`);
+                            triggeredBadges.push(`[약화 ${debuffCount}중첩] +${totalStackBonus}%`);
                         }
                         return;
                     }
                     if (activeStates[cond.reqState]) {
                         if (cond.type === 'bonus_coeff') {
                             bonusCoeff += Number(cond.value);
-                            triggeredBadges.push(`[${cond.label || cond.reqState}] 추뎀 +${cond.value}%`);
+                            triggeredBadges.push(`[${cond.reqState}] 추뎀 +${cond.value}%`);
                         } else if (cond.type === 'dmg_amp') {
                             buffAdditivePct += Number(cond.value);
                             consumedAmpStates.add(cond.reqState);
@@ -8700,7 +8700,7 @@
                                 });
                             }
                         }
-                        triggeredBadges.push(`[6✦ 황천의늪 0.5초×15틱(+828.45%)]`);
+                        triggeredBadges.push(`[6✦ 황천의늪 +828.45%]`);
                     }
 
                     logBaseCoeff = rawBaseCoeff;
