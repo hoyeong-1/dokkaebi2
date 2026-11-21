@@ -674,6 +674,40 @@
                 <button type="button" onclick="closeRecommendModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
+            <!-- Breakthrough Recommendation Mode & Custom Budget Config -->
+            <div class="bg-cardBg border border-borderCol rounded-xl p-3 mb-3 space-y-2.5">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="inline-flex rounded-lg bg-darkBg p-0.5 border border-borderCol">
+                        <button type="button" id="recModeBtn_current" onclick="setRecommendMode('current')"
+                                class="px-2.5 py-1 rounded-md text-xs font-bold transition bg-violet-600 text-white">
+                            현재 도감 돌파 기준
+                        </button>
+                        <button type="button" id="recModeBtn_custom" onclick="setRecommendMode('custom')"
+                                class="px-2.5 py-1 rounded-md text-xs font-bold transition text-gray-400 hover:text-white">
+                            돌파 조건 지정
+                        </button>
+                    </div>
+                    <button type="button" onclick="recomputeRecommendedBuilds()"
+                            class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate"></i> 추천 계산
+                    </button>
+                </div>
+
+                <div id="recCustomConfigBox" class="hidden space-y-2 pt-2 border-t border-borderCol/70">
+                    <div class="flex items-center justify-between text-[11px] text-gray-400">
+                        <span>특별/일반 도술별 돌파 단계와 개수를 지정해 최적 빌드를 탐색합니다. (최대 8슬롯)</span>
+                    </div>
+                    <div id="recBtRulesContainer" class="space-y-1.5"></div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <button type="button" onclick="addRecommendBtRule()"
+                                class="px-2.5 py-1 text-[11px] font-bold text-gray-200 bg-darkBg hover:bg-[#232836] border border-borderCol rounded-lg transition">
+                            + 조건 추가
+                        </button>
+                        <span id="recBtRuleSummary" class="text-[11px] font-bold text-gray-300 num-clean">지정 합계: 8 / 8개</span>
+                    </div>
+                </div>
+            </div>
+
             <div id="recommendListContainer" class="flex-1 overflow-y-auto space-y-3 pr-1"></div>
 
             <div class="flex justify-end mt-4 pt-3 border-t border-borderCol">
@@ -1273,6 +1307,11 @@
         let bt6ActiveMap = JSON.parse(localStorage.getItem('dokkaebi_bt6_map_v6')) || {};
         let breakthroughStageMap = JSON.parse(localStorage.getItem('dokkaebi_bt_stage_v6')) || {};
         let recommendExcludedMap = JSON.parse(localStorage.getItem('dokkaebi_rec_excluded_v1')) || {};
+        let recommendMode = localStorage.getItem('dokkaebi_rec_mode_v1') || 'current';
+        let recommendBtRules = JSON.parse(localStorage.getItem('dokkaebi_rec_bt_rules_v1')) || [
+            { category: '특별', stage: 6, count: 2 },
+            { category: '일반', stage: 0, count: 6 }
+        ];
         let schoolEnhanceLevels = JSON.parse(localStorage.getItem('dokkaebi_school_lv_v6')) || {};
         let selectedUltSchool = localStorage.getItem('dokkaebi_ult_school_v6') || null;
         let currentWeaponType = localStorage.getItem('dokkaebi_weapon_v6') || 'sword';
@@ -1394,6 +1433,8 @@
             localStorage.setItem('dokkaebi_bt6_map_v6', JSON.stringify(bt6ActiveMap));
             localStorage.setItem('dokkaebi_bt_stage_v6', JSON.stringify(breakthroughStageMap));
             localStorage.setItem('dokkaebi_rec_excluded_v1', JSON.stringify(recommendExcludedMap));
+            localStorage.setItem('dokkaebi_rec_mode_v1', recommendMode);
+            localStorage.setItem('dokkaebi_rec_bt_rules_v1', JSON.stringify(recommendBtRules));
             localStorage.setItem('dokkaebi_school_lv_v6', JSON.stringify(schoolEnhanceLevels));
             if (selectedUltSchool) localStorage.setItem('dokkaebi_ult_school_v6', selectedUltSchool);
             localStorage.setItem('dokkaebi_weapon_v6', currentWeaponType);
@@ -2546,7 +2587,7 @@
                 }
                 const entry = stateUptimeMap[stateName];
                 if (ampPct > entry.ampPct) entry.ampPct = Number(ampPct);
-                if (extraNote && !entry.note) entry.note = extraNote;
+                if (extraNote && (!entry.note || stateName === '약화')) entry.note = extraNote;
                 if (isPermanent) entry.isPermanent = true;
                 else entry.applyCount++;
                 entry.intervals.push([s, e]);
@@ -2621,6 +2662,7 @@
             });
 
             // 1초 간격 도트 피해(출혈/화상/감전/강화 저주) & 0.5초 간격 장판 지속 타격 예약 관리
+            let maxWeakStacks = 0;
             const activeDots = {}; // key: stateName -> { state, expireAt, nextTickAt, tickCoeff, stacks, extraBurstCoeff }
             const scheduledGroundTicks = []; // { time, skillName, rawTickBase, bonusTickBase, multFactor, debuffEffects }
 
@@ -2841,9 +2883,14 @@
                     isDebuff: true
                 };
 
+                if (eff.state === '약화') {
+                    if (nextStacks > maxWeakStacks) maxWeakStacks = nextStacks;
+                }
                 const dotNote = (eff.dotHitCoeff > 0)
                     ? (eff.state === '강화 저주' ? '1초 도트·5중첩 폭발' : `초당 ${eff.dotHitCoeff}% 도트`)
-                    : (eff.cdrPct > 0 ? `쿨감 ${eff.cdrPct}%` : '');
+                    : (eff.state === '약화'
+                        ? `치명타 저항 -1/스택 (최대 도달 ${maxWeakStacks}/100스택)`
+                        : (eff.cdrPct > 0 ? `쿨감 ${eff.cdrPct}%` : ''));
                 recordStateInterval(eff.state, applyTime, newExpire, true, eff.ampPct || 0, false, dotNote, sourceSkill);
 
                 if (styleResourceToggles.includeDotDamage && eff.dotHitCoeff > 0) {
@@ -3594,6 +3641,9 @@
                     const defEffPct = Number(((calcAtkDefRelativeMult(0, dcSkill.defRedPct) - 1) * 100).toFixed(2));
                     triggeredBadges.push(`[방깎 -${dcSkill.defRedPct}%: +${defEffPct}%]`);
                 }
+                if (dcSkill.critResRed > 0) {
+                    triggeredBadges.push(`[약화 ${dcSkill.critResRed}스택: 치저 -${dcSkill.critResRed}]`);
+                }
                 if (dcSkill.isGuaranteedCrit) {
                     triggeredBadges.push(`[확정치명 ×${critMultSkill.toFixed(2)}]`);
                 } else if (dcSkill.critDmgBonusPct > 0 && calcCritRate(dcSkill.critHitBonus, dcSkill.critResRed, false) > 0) {
@@ -3753,10 +3803,16 @@
                             appliedChips.push({ label: `${valStr} ~${expStr}`, kind: eff.ampPct > 0 ? 'buff' : 'etc' });
                         } else {
                             let valStr = eff.state;
-                            if (eff.dotHitCoeff > 0) valStr = `${eff.state}`;
+                            let isKeyDebuff = (eff.ampPct > 0 || eff.dotHitCoeff > 0 || eff.critDmgPct > 0);
+                            if (eff.state === '약화') {
+                                const curSt = activeStates['약화'] ? (activeStates['약화'].stacks || 1) : 1;
+                                valStr = `약화 ${curSt}스택(치저-${curSt})`;
+                                isKeyDebuff = true;
+                            } else if (eff.dotHitCoeff > 0) valStr = `${eff.state}`;
                             else if (eff.ampPct > 0) valStr = `${eff.state} +${eff.ampPct}%`;
+                            else if (eff.critDmgPct > 0) valStr = `${eff.state} +${eff.critDmgPct}%`;
                             else valStr = `${eff.state}`;
-                            appliedChips.push({ label: `${valStr} ~${expStr}`, kind: (eff.ampPct > 0 || eff.dotHitCoeff > 0) ? 'debuff' : 'etc' });
+                            appliedChips.push({ label: `${valStr} ~${expStr}`, kind: isKeyDebuff ? 'debuff' : 'etc' });
                         }
                     });
                     if (isBt6) {
@@ -4935,23 +4991,426 @@ function renderSingleLineTimeline(root, res) {
             showToast('빌드 추천 제외 설정이 모두 해제되었습니다.');
         }
 
-        function getSingleSkillScore(sk) {
+        function withTemporaryBtMap(tempMap, fn) {
+            const prevMap = breakthroughStageMap;
+            breakthroughStageMap = tempMap;
+            try {
+                return fn();
+            } finally {
+                breakthroughStageMap = prevMap;
+            }
+        }
+
+        function getSingleSkillScore(sk, overrideStage = null) {
             if (!sk || sk.category === '도술') return -1;
-            const coeff = getSkillEnhancedCoeff(sk);
-            const { btCdrSec } = getSkillBreakthroughInfo(sk);
-            const cd = Math.max(0.5, (Number(sk.cooldown) || 5) - btCdrSec);
-            let score = coeff / cd;
-            // 핵심 버프/디버프/시너지 보유 스킬 가산점
-            const hasAmpEffect = (sk.effects || []).some(e => (e.ampPct || 0) > 0 || (e.dotHitCoeff || 0) > 0 || (e.cdrPct || 0) > 0);
-            const hasTrig = (sk.conditionals || []).some(c => c.type === 'trigger_state' && (c.ampPct || 0) > 0);
-            if (hasAmpEffect) score += 18;
-            if (hasTrig) score += 12;
-            if (sk.name === '용맹의 기운') score += 35;
-            if (sk.name === '은신') score += 15;
-            return score;
+            const calc = () => {
+                const coeff = getSkillEnhancedCoeff(sk);
+                const { btCdrSec, isBt6 } = getSkillBreakthroughInfo(sk);
+                const cd = Math.max(0.5, (Number(sk.cooldown) || 5) - btCdrSec);
+                let score = coeff / cd;
+                // 핵심 버프/디버프/시너지 보유 스킬 가산점
+                const hasAmpEffect = (sk.effects || []).some(e => (e.ampPct || 0) > 0 || (e.dotHitCoeff || 0) > 0 || (e.cdrPct || 0) > 0);
+                const hasTrig = (sk.conditionals || []).some(c => c.type === 'trigger_state' && (c.ampPct || 0) > 0);
+                if (hasAmpEffect) score += 18;
+                if (hasTrig) score += 12;
+                if (sk.name === '용맹의 기운') score += isBt6 ? 70 : 35;
+                if (sk.name === '은신') score += isBt6 ? 45 : 15;
+                if (isBt6 && (sk.name === '일섬' || sk.name === '환상술' || sk.name === '꿰뚫는 저격' || sk.name === '황천의 부름')) score += 35;
+                return score;
+            };
+            if (overrideStage !== null && overrideStage !== undefined) {
+                return withTemporaryBtMap({ [sk.name]: overrideStage }, calc);
+            }
+            return calc();
+        }
+
+        function getParsedRecommendBudget() {
+            const specialSlots = [];
+            const normalSlots = [];
+            (recommendBtRules || []).forEach(r => {
+                const cat = r.category === '특별' ? '특별' : '일반';
+                const stage = Math.max(0, Math.min(10, parseInt(r.stage, 10) || 0));
+                const count = Math.max(0, Math.min(8, parseInt(r.count, 10) || 0));
+                for (let i = 0; i < count; i++) {
+                    if (cat === '특별') specialSlots.push(stage);
+                    else normalSlots.push(stage);
+                }
+            });
+            specialSlots.sort((a, b) => b - a);
+            normalSlots.sort((a, b) => b - a);
+            const totalSlots = specialSlots.length + normalSlots.length;
+            if (totalSlots > 8) {
+                return {
+                    valid: false,
+                    totalSlots,
+                    error: `지정된 도술 개수 합계가 8개를 초과했습니다. (현재 ${totalSlots}개)`
+                };
+            }
+            return {
+                valid: true,
+                totalSlots,
+                specialSlots,
+                normalSlots,
+                reqSpecial: specialSlots.length,
+                reqNormal: normalSlots.length,
+                freeSlots: 8 - totalSlots
+            };
+        }
+
+        function assignBtMapForDeck(skillNames, specialSlots, normalSlots) {
+            const specials = [];
+            const normals = [];
+            skillNames.forEach(n => {
+                const sk = skillDb[n];
+                if (!sk || sk.category === '도술') return;
+                if (sk.category === '특별') specials.push(sk);
+                else normals.push(sk);
+            });
+
+            const maxSpStage = specialSlots.length > 0 ? specialSlots[0] : 0;
+            const maxNmStage = normalSlots.length > 0 ? normalSlots[0] : 0;
+
+            specials.sort((a, b) => {
+                const gainA = getSingleSkillScore(a, maxSpStage) - getSingleSkillScore(a, 0);
+                const gainB = getSingleSkillScore(b, maxSpStage) - getSingleSkillScore(b, 0);
+                if (Math.abs(gainB - gainA) > 1e-6) return gainB - gainA;
+                return getSingleSkillScore(b, maxSpStage) - getSingleSkillScore(a, maxSpStage);
+            });
+
+            normals.sort((a, b) => {
+                const gainA = getSingleSkillScore(a, maxNmStage) - getSingleSkillScore(a, 0);
+                const gainB = getSingleSkillScore(b, maxNmStage) - getSingleSkillScore(b, 0);
+                if (Math.abs(gainB - gainA) > 1e-6) return gainB - gainA;
+                return getSingleSkillScore(b, maxNmStage) - getSingleSkillScore(a, maxNmStage);
+            });
+
+            const btMap = {};
+            specials.forEach((sk, i) => {
+                btMap[sk.name] = i < specialSlots.length ? specialSlots[i] : 0;
+            });
+            normals.forEach((sk, i) => {
+                btMap[sk.name] = i < normalSlots.length ? normalSlots[i] : 0;
+            });
+            return btMap;
+        }
+
+        function renderRecommendConfigUI() {
+            const btnCur = document.getElementById('recModeBtn_current');
+            const btnCus = document.getElementById('recModeBtn_custom');
+            const customBox = document.getElementById('recCustomConfigBox');
+            const rulesContainer = document.getElementById('recBtRulesContainer');
+            const summaryEl = document.getElementById('recBtRuleSummary');
+            if (!btnCur || !btnCus || !customBox || !rulesContainer || !summaryEl) return;
+
+            const isCustom = recommendMode === 'custom';
+            btnCur.className = `px-2.5 py-1 rounded-md text-xs font-bold transition ${!isCustom ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'}`;
+            btnCus.className = `px-2.5 py-1 rounded-md text-xs font-bold transition ${isCustom ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'}`;
+            customBox.classList.toggle('hidden', !isCustom);
+
+            rulesContainer.innerHTML = '';
+            recommendBtRules.forEach((rule, idx) => {
+                const row = document.createElement('div');
+                row.className = 'flex flex-wrap items-center gap-2 bg-darkBg/80 border border-borderCol rounded-lg px-2.5 py-1.5';
+                row.innerHTML = `
+                    <select onchange="updateRecommendBtRule(${idx}, 'category', this.value)"
+                            class="bg-cardBg border border-borderCol rounded-lg px-2 py-1 text-xs font-bold ${rule.category === '특별' ? 'text-indigo-300' : 'text-gray-200'} focus:outline-none cursor-pointer">
+                        <option value="특별" class="bg-panelBg text-white" ${rule.category === '특별' ? 'selected' : ''}>특별 도술</option>
+                        <option value="일반" class="bg-panelBg text-white" ${rule.category === '일반' ? 'selected' : ''}>일반 도술</option>
+                    </select>
+                    <div class="flex items-center gap-1 bg-cardBg border border-borderCol rounded-lg px-2 py-1">
+                        <input type="number" min="0" max="10" step="1" value="${rule.stage}"
+                               onfocus="this.select()"
+                               oninput="updateRecommendBtRule(${idx}, 'stage', this.value)"
+                               class="w-9 bg-transparent text-right text-xs font-extrabold text-amber-300 num-clean no-spinner focus:outline-none">
+                        <span class="text-[11px] text-gray-400 font-semibold">돌파</span>
+                    </div>
+                    <div class="flex items-center gap-1 bg-cardBg border border-borderCol rounded-lg px-2 py-1">
+                        <input type="number" min="0" max="8" step="1" value="${rule.count}"
+                               onfocus="this.select()"
+                               oninput="updateRecommendBtRule(${idx}, 'count', this.value)"
+                               class="w-8 bg-transparent text-right text-xs font-extrabold text-white num-clean no-spinner focus:outline-none">
+                        <span class="text-[11px] text-gray-400 font-semibold">개</span>
+                    </div>
+                    ${recommendBtRules.length > 1 ? `
+                        <button type="button" onclick="removeRecommendBtRule(${idx})"
+                                class="ml-auto text-gray-500 hover:text-rose-400 px-1.5 py-0.5 text-xs transition" title="조건 삭제">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    ` : ''}
+                `;
+                rulesContainer.appendChild(row);
+            });
+
+            const budget = getParsedRecommendBudget();
+            if (!budget.valid) {
+                summaryEl.className = 'text-[11px] font-bold text-rose-400 num-clean';
+                summaryEl.innerText = `합계 ${budget.totalSlots} / 8개 (8개 이하로 줄여주세요)`;
+            } else if (budget.freeSlots > 0) {
+                summaryEl.className = 'text-[11px] font-bold text-gray-300 num-clean';
+                summaryEl.innerText = `지정 ${budget.totalSlots} / 8개 (남은 ${budget.freeSlots}슬롯: 0돌파 자동)`;
+            } else {
+                summaryEl.className = 'text-[11px] font-bold text-emerald-400 num-clean';
+                summaryEl.innerText = `지정 합계: 8 / 8개 (특별 ${budget.reqSpecial} · 일반 ${budget.reqNormal})`;
+            }
+        }
+
+        function setRecommendMode(mode) {
+            recommendMode = mode === 'custom' ? 'custom' : 'current';
+            saveAllState();
+            renderRecommendConfigUI();
+            recomputeRecommendedBuilds();
+        }
+
+        function updateRecommendBtRule(idx, field, val) {
+            if (!recommendBtRules[idx]) return;
+            if (field === 'category') {
+                recommendBtRules[idx].category = val === '특별' ? '특별' : '일반';
+                saveAllState();
+                renderRecommendConfigUI();
+                return;
+            }
+            let num = parseInt(val, 10);
+            if (isNaN(num)) num = 0;
+            if (field === 'stage') num = Math.max(0, Math.min(10, num));
+            if (field === 'count') num = Math.max(0, Math.min(8, num));
+            recommendBtRules[idx][field] = num;
+            saveAllState();
+            // 요약 배지만 즉시 갱신 (입력 중 포커스 유지)
+            const summaryEl = document.getElementById('recBtRuleSummary');
+            if (summaryEl) {
+                const budget = getParsedRecommendBudget();
+                if (!budget.valid) {
+                    summaryEl.className = 'text-[11px] font-bold text-rose-400 num-clean';
+                    summaryEl.innerText = `합계 ${budget.totalSlots} / 8개 (8개 이하로 줄여주세요)`;
+                } else if (budget.freeSlots > 0) {
+                    summaryEl.className = 'text-[11px] font-bold text-gray-300 num-clean';
+                    summaryEl.innerText = `지정 ${budget.totalSlots} / 8개 (남은 ${budget.freeSlots}슬롯: 0돌파 자동)`;
+                } else {
+                    summaryEl.className = 'text-[11px] font-bold text-emerald-400 num-clean';
+                    summaryEl.innerText = `지정 합계: 8 / 8개 (특별 ${budget.reqSpecial} · 일반 ${budget.reqNormal})`;
+                }
+            }
+        }
+
+        function addRecommendBtRule() {
+            const budget = getParsedRecommendBudget();
+            const rem = Math.max(0, 8 - budget.totalSlots);
+            recommendBtRules.push({ category: '일반', stage: 0, count: rem });
+            saveAllState();
+            renderRecommendConfigUI();
+        }
+
+        function removeRecommendBtRule(idx) {
+            if (recommendBtRules.length <= 1) return;
+            recommendBtRules.splice(idx, 1);
+            saveAllState();
+            renderRecommendConfigUI();
+        }
+
+        function computeRecommendedBuildsWithBudget(budget) {
+            const { specialSlots, normalSlots, reqSpecial, reqNormal, freeSlots } = budget;
+            const maxSpecialCap = reqSpecial + freeSlots;
+            const maxNormalCap = reqNormal + freeSlots;
+            const maxSpStage = specialSlots.length > 0 ? specialSlots[0] : 0;
+            const maxNmStage = normalSlots.length > 0 ? normalSlots[0] : 0;
+
+            const allEligible = Object.values(skillDb).filter(sk => sk.category !== '도술' && !recommendExcludedMap[sk.name]);
+            const allSpecials = allEligible
+                .filter(sk => sk.category === '특별')
+                .map(sk => ({ name: sk.name, school: sk.school, category: '특별', score: getSingleSkillScore(sk, maxSpStage) }))
+                .sort((a, b) => b.score - a.score);
+            const allNormals = allEligible
+                .filter(sk => sk.category === '일반')
+                .map(sk => ({ name: sk.name, school: sk.school, category: '일반', score: getSingleSkillScore(sk, maxNmStage) }))
+                .sort((a, b) => b.score - a.score);
+
+            if (allSpecials.length < reqSpecial || allNormals.length < reqNormal) return [];
+
+            const coreSynergyNames = [
+                '용맹의 기운', '내려찍기', '환영 참격', '심장 절단', '삼단 찌르기',
+                '꿰뚫는 저격', '요혼격', '화염구', '번개 폭풍', '연쇄 번개',
+                '화염 분출', '주먹 지르기', '삼묵법', '일섬', '환상술',
+                '묵직한 주먹', '은신', '월식', '쌍검 가르기', '황천의 부름'
+            ];
+            const globalPoolSet = new Set([
+                ...(maxSpecialCap > 0 ? allSpecials.map(x => x.name) : []),
+                ...(maxNormalCap > 0 ? allNormals.slice(0, 24).map(x => x.name) : [])
+            ]);
+            coreSynergyNames.forEach(n => {
+                const sk = skillDb[n];
+                if (!sk || sk.category === '도술' || recommendExcludedMap[n]) return;
+                if (sk.category === '특별' && maxSpecialCap <= 0) return;
+                if (sk.category === '일반' && maxNormalCap <= 0) return;
+                globalPoolSet.add(n);
+            });
+
+            const evalDur = 120;
+            const results = [];
+            const schoolList = SCHOOLS.filter(s => s.id !== 'all');
+
+            schoolList.forEach(scMeta => {
+                const scId = scMeta.id;
+                const ultSkill = getUltimateSkillForSchool(scId);
+                if (!ultSkill || recommendExcludedMap[ultSkill.name]) return;
+
+                const schoolSpecials = allSpecials.filter(x => x.school === scId);
+                const schoolNormals = allNormals.filter(x => x.school === scId);
+                const maxSchoolPickable = Math.min(schoolSpecials.length, maxSpecialCap) + Math.min(schoolNormals.length, maxNormalCap);
+                if (maxSchoolPickable < 3) return;
+
+                // 1) 해당 계열 상위 3개 시드 선택 (카테고리 상한 및 잔여 필수 조건 준수)
+                const schoolAll = [
+                    ...(maxSpecialCap > 0 ? schoolSpecials : []),
+                    ...(maxNormalCap > 0 ? schoolNormals : [])
+                ].sort((a, b) => b.score - a.score);
+
+                let picked = [];
+                let cS = 0, cN = 0;
+                for (const item of schoolAll) {
+                    if (picked.length >= 3) break;
+                    const remAfter = 8 - (picked.length + 1);
+                    if (item.category === '특별') {
+                        if (cS >= maxSpecialCap) continue;
+                        if (Math.max(0, reqNormal - cN) > remAfter) continue;
+                        picked.push(item.name);
+                        cS++;
+                    } else {
+                        if (cN >= maxNormalCap) continue;
+                        if (Math.max(0, reqSpecial - cS) > remAfter) continue;
+                        picked.push(item.name);
+                        cN++;
+                    }
+                }
+                if (picked.length < 3) return;
+
+                const pickedSet = new Set(picked);
+                const candidatePool = Array.from(new Set([
+                    ...globalPoolSet,
+                    ...(maxSpecialCap > 0 ? schoolSpecials.map(x => x.name) : []),
+                    ...(maxNormalCap > 0 ? schoolNormals.map(x => x.name) : [])
+                ]));
+
+                // 2) 나머지 슬롯 탐욕적(Greedy) 선택
+                while (picked.length < 8) {
+                    const remAfter = 8 - (picked.length + 1);
+                    const needS = Math.max(0, reqSpecial - cS);
+                    const needN = Math.max(0, reqNormal - cN);
+                    const allowSpecial = (cS < maxSpecialCap) && (needN <= remAfter);
+                    const allowNormal = (cN < maxNormalCap) && (needS <= remAfter);
+
+                    let bestSkill = null;
+                    let bestDps = -1;
+                    for (const candName of candidatePool) {
+                        if (pickedSet.has(candName)) continue;
+                        const cSk = skillDb[candName];
+                        if (!cSk) continue;
+                        if (cSk.category === '특별' && !allowSpecial) continue;
+                        if (cSk.category === '일반' && !allowNormal) continue;
+
+                        const testPicked = [...picked, candName];
+                        const testBtMap = assignBtMapForDeck(testPicked, specialSlots, normalSlots);
+                        const sim = withTemporaryBtMap(testBtMap, () => runSimulationForOrder([...testPicked, ultSkill.name], false, evalDur));
+                        if (sim.dps > bestDps) {
+                            bestDps = sim.dps;
+                            bestSkill = candName;
+                        }
+                    }
+                    if (!bestSkill) break;
+                    picked.push(bestSkill);
+                    pickedSet.add(bestSkill);
+                    if (skillDb[bestSkill]?.category === '특별') cS++;
+                    else cN++;
+                }
+
+                if (picked.length < 8 || cS < reqSpecial || cN < reqNormal) return;
+
+                // 3) 1:1 교체(Replacement) 정밀 탐색 (계열 >= 3 및 카테고리 개수 제약 유지)
+                let curBtMap = assignBtMapForDeck(picked, specialSlots, normalSlots);
+                let curOrderRes = withTemporaryBtMap(curBtMap, () => localSearchOrder([...picked, ultSkill.name], evalDur, 3));
+                let curBestDps = curOrderRes.dps;
+                picked = curOrderRes.order.filter(n => n !== ultSkill.name);
+
+                for (let round = 0; round < 2; round++) {
+                    let replaced = false;
+                    for (let idx = 0; idx < picked.length; idx++) {
+                        const sameSchoolCountWithout = picked.filter((n, k) => k !== idx && skillDb[n]?.school === scId).length;
+                        const sWithout = picked.filter((n, k) => k !== idx && skillDb[n]?.category === '특별').length;
+                        const nWithout = picked.filter((n, k) => k !== idx && skillDb[n]?.category === '일반').length;
+                        let bestIn = null;
+                        let bestSwapDps = curBestDps;
+
+                        for (const candName of candidatePool) {
+                            if (picked.includes(candName)) continue;
+                            const cSk = skillDb[candName];
+                            if (!cSk) continue;
+                            if (sameSchoolCountWithout < 3 && cSk.school !== scId) continue;
+                            const newS = sWithout + (cSk.category === '특별' ? 1 : 0);
+                            const newN = nWithout + (cSk.category === '일반' ? 1 : 0);
+                            if (newS < reqSpecial || newS > maxSpecialCap || newN < reqNormal || newN > maxNormalCap) continue;
+
+                            const testPicked = picked.slice();
+                            testPicked[idx] = candName;
+                            const testBtMap = assignBtMapForDeck(testPicked, specialSlots, normalSlots);
+                            const sim = withTemporaryBtMap(testBtMap, () => runSimulationForOrder([...testPicked, ultSkill.name], false, evalDur));
+                            if (sim.dps > bestSwapDps + 0.1) {
+                                bestSwapDps = sim.dps;
+                                bestIn = candName;
+                            }
+                        }
+
+                        if (bestIn) {
+                            picked[idx] = bestIn;
+                            curBestDps = bestSwapDps;
+                            replaced = true;
+                        }
+                    }
+                    if (!replaced) break;
+                }
+
+                // 4) 1차 전체 순서 최적화 후 실제 시뮬 시간으로 평가
+                const finalBtMap = assignBtMapForDeck(picked, specialSlots, normalSlots);
+                const opt1 = withTemporaryBtMap(finalBtMap, () => optimizeOrderFull([...picked, ultSkill.name], evalDur, 4));
+                const finalSim = withTemporaryBtMap(finalBtMap, () => runSimulationForOrder(opt1.order, false));
+
+                results.push({
+                    schoolId: scId,
+                    schoolName: scMeta.name,
+                    schoolColor: scMeta.color,
+                    ultName: ultSkill.name,
+                    deck: opt1.order,
+                    dps: finalSim.dps,
+                    baseDps: finalSim.baseDps,
+                    synergyPct: finalSim.synergyPct,
+                    assignedBtMap: finalBtMap,
+                    isCustomBudget: true
+                });
+            });
+
+            results.sort((a, b) => b.dps - a.dps);
+            const top3 = results.slice(0, 3);
+
+            // 5) 최종 Top 3는 실제 시뮬 시간(simDurationSec) 기준으로 순서 정밀 재최적화
+            top3.forEach(b => {
+                const btMap = b.assignedBtMap || {};
+                const refined = withTemporaryBtMap(btMap, () => optimizeOrderFull(b.deck, null, 6));
+                const refinedSim = withTemporaryBtMap(btMap, () => runSimulationForOrder(refined.order, false));
+                b.deck = refined.order;
+                b.dps = refinedSim.dps;
+                b.baseDps = refinedSim.baseDps;
+                b.synergyPct = refinedSim.synergyPct;
+            });
+
+            top3.sort((a, b) => b.dps - a.dps);
+            return top3;
         }
 
         function computeRecommendedBuilds() {
+            if (recommendMode === 'custom') {
+                const budget = getParsedRecommendBudget();
+                if (!budget.valid) return [];
+                return computeRecommendedBuildsWithBudget(budget);
+            }
+
             const allNormalSkills = Object.values(skillDb).filter(sk => sk.category !== '도술' && !recommendExcludedMap[sk.name]);
             const scoredAll = allNormalSkills
                 .map(sk => ({ name: sk.name, school: sk.school, score: getSingleSkillScore(sk) }))
@@ -5069,11 +5528,9 @@ function renderSingleLineTimeline(root, res) {
             return top3;
         }
 
-        function openRecommendModal() {
-            const modal = document.getElementById('recommendModal');
+        function recomputeRecommendedBuilds() {
             const container = document.getElementById('recommendListContainer');
             const infoEl = document.getElementById('recommendContextInfo');
-            modal.classList.remove('hidden');
 
             // 현재 강화/돌파 요약 표시
             const enhList = SCHOOLS.filter(s => s.id !== 'all')
@@ -5082,16 +5539,32 @@ function renderSingleLineTimeline(root, res) {
                 .sort((a, b) => b.lv - a.lv)
                 .slice(0, 4)
                 .map(x => `${x.name} Lv.${x.lv}`);
-            const btCount = Object.values(breakthroughStageMap).filter(v => (parseInt(v, 10) || 0) > 0).length;
             const exCount = getRecommendExcludedCount();
             const wName = (WEAPON_TYPES[currentWeaponType] || WEAPON_TYPES.sword).weaponLabel || '검/도';
             const mins = Math.round((simDurationSec || 300) / 60);
-            infoEl.innerText = `${enhList.length > 0 ? enhList.join(' · ') : '계열 강화 Lv.0'} | 돌파 설정 ${btCount}종${exCount > 0 ? ` | 추천 제외 ${exCount}종` : ''} | ${wName} · ${mins}분 기준`;
+
+            let btSummaryStr = '';
+            if (recommendMode === 'custom') {
+                const budget = getParsedRecommendBudget();
+                if (!budget.valid) {
+                    container.innerHTML = `<div class="text-center py-8 text-xs text-rose-400 font-bold">${budget.error}</div>`;
+                    return;
+                }
+                const ruleParts = recommendBtRules
+                    .filter(r => (parseInt(r.count, 10) || 0) > 0)
+                    .map(r => `${r.category} ${r.stage}돌×${r.count}`);
+                btSummaryStr = ruleParts.length > 0 ? `조건: ${ruleParts.join(', ')}` : '조건: 전체 0돌파';
+            } else {
+                const btCount = Object.values(breakthroughStageMap).filter(v => (parseInt(v, 10) || 0) > 0).length;
+                btSummaryStr = `돌파 설정 ${btCount}종`;
+            }
+
+            infoEl.innerText = `${enhList.length > 0 ? enhList.join(' · ') : '계열 강화 Lv.0'} | ${btSummaryStr}${exCount > 0 ? ` | 추천 제외 ${exCount}종` : ''} | ${wName} · ${mins}분 기준`;
 
             container.innerHTML = `
                 <div class="py-10 text-center text-xs text-gray-400">
                     <i class="fa-solid fa-spinner fa-spin text-emerald-400 text-lg mb-2 block"></i>
-                    현재 도술 레벨과 돌파 단계 기준으로 최적 빌드를 계산 중입니다...
+                    ${recommendMode === 'custom' ? '지정한 돌파 조건 기준으로 최적 빌드를 계산 중입니다...' : '현재 도술 레벨과 돌파 단계 기준으로 최적 빌드를 계산 중입니다...'}
                 </div>
             `;
 
@@ -5099,6 +5572,13 @@ function renderSingleLineTimeline(root, res) {
                 lastRecommendedBuilds = computeRecommendedBuilds();
                 renderRecommendedBuilds(lastRecommendedBuilds);
             }, 30);
+        }
+
+        function openRecommendModal() {
+            const modal = document.getElementById('recommendModal');
+            modal.classList.remove('hidden');
+            renderRecommendConfigUI();
+            recomputeRecommendedBuilds();
         }
 
         function closeRecommendModal() {
@@ -5110,14 +5590,26 @@ function renderSingleLineTimeline(root, res) {
             if (!b) return;
             selectedUltSchool = b.schoolId;
             cycle = [...b.deck];
+            if (b.isCustomBudget && b.assignedBtMap) {
+                b.deck.forEach(sName => {
+                    const sk = skillDb[sName];
+                    if (!sk || sk.category === '도술') return;
+                    const lv = Math.max(0, Math.min(10, parseInt(b.assignedBtMap[sName], 10) || 0));
+                    breakthroughStageMap[sName] = lv;
+                    if (sk.category === '특별') {
+                        bt6ActiveMap[sName] = (lv >= 6);
+                    }
+                });
+            }
             activeTreeName = `추천 ${idx + 1}위 (${b.schoolName} · ${b.ultName})`;
             syncUltimateInCycle(false);
             saveAllState();
             renderQuickPresetBar();
+            renderSkillList();
             renderCycle();
             calculateDPS();
             closeRecommendModal();
-            showToast(`추천 ${idx + 1}위 [${b.schoolName}] 빌드가 적용되었습니다! (DPS ${b.dps.toFixed(2)}%/초)`);
+            showToast(`추천 ${idx + 1}위 [${b.schoolName}] 빌드가 적용되었습니다!${b.isCustomBudget ? ' (지정 돌파 반영)' : ''} (DPS ${b.dps.toFixed(2)}%/초)`);
         }
 
         function renderRecommendedBuilds(builds) {
@@ -5126,7 +5618,7 @@ function renderSingleLineTimeline(root, res) {
 
             if (!builds || builds.length === 0) {
                 const exCount = getRecommendExcludedCount();
-                container.innerHTML = `<div class="text-center py-8 text-xs text-gray-500">추천 빌드를 생성할 수 없습니다.${exCount > 0 ? '<br><span class="text-rose-300/90 mt-1 inline-block">추천 제외된 도술이 너무 많아 동일 계열 3개 이상 조건을 만족하지 못했습니다.</span>' : ''}</div>`;
+                container.innerHTML = `<div class="text-center py-8 text-xs text-gray-500">추천 빌드를 생성할 수 없습니다.${exCount > 0 ? '<br><span class="text-rose-300/90 mt-1 inline-block">추천 제외된 도술 또는 돌파 개수 조건으로 인해 동일 계열 3개 이상 조합을 만들 수 없습니다.</span>' : ''}</div>`;
                 return;
             }
 
@@ -5146,14 +5638,21 @@ function renderSingleLineTimeline(root, res) {
                     const sk = skillDb[sName];
                     if (!sk) return '';
                     const isUlt = sk.category === '도술';
-                    const btLv = isUlt ? 0 : (parseInt(breakthroughStageMap[sName], 10) || 0);
+                    const btLv = isUlt
+                        ? 0
+                        : (b.isCustomBudget && b.assignedBtMap
+                            ? (parseInt(b.assignedBtMap[sName], 10) || 0)
+                            : (parseInt(breakthroughStageMap[sName], 10) || 0));
+                    const starHtml = (!isUlt && sk.category === '특별' && btLv >= 6)
+                        ? `<img src="${BT6_STAR_ICON_SRC}" alt="6돌파" class="bt6-star-badge w-3 h-3">`
+                        : '';
                     return `
                         <div class="flex items-center gap-1.5 bg-darkBg/90 border ${isUlt ? 'border-amber-500/60' : 'border-borderCol'} rounded-lg px-2 py-1 min-w-0">
                             <span class="text-[10px] font-bold text-gray-500 num-clean">${sIdx + 1}</span>
                             ${isUlt
                                 ? `<div class="ult-hex-frame ult-hex-sm w-6 h-6"><div class="ult-hex-inner"><img src="${getSkillIconSrc(sk)}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')"><div class="hidden w-full h-full items-center justify-center text-[9px] font-bold text-amber-300">${sName.substring(0, 2)}</div></div></div>`
-                                : `<div class="relative shrink-0"><div class="w-6 h-6 rounded-md overflow-hidden bg-cardBg flex items-center justify-center"><img src="${getSkillIconSrc(sk)}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')"><div class="hidden w-full h-full items-center justify-center text-[9px] font-bold text-white">${sName.substring(0, 2)}</div></div>${getBt6StarHtml(sk, 'w-3 h-3')}</div>`}
-                            <span class="text-[11px] font-bold ${isUlt ? 'text-amber-300' : 'text-gray-100'} truncate">${sName}</span>
+                                : `<div class="relative shrink-0"><div class="w-6 h-6 rounded-md overflow-hidden bg-cardBg flex items-center justify-center"><img src="${getSkillIconSrc(sk)}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')"><div class="hidden w-full h-full items-center justify-center text-[9px] font-bold text-white">${sName.substring(0, 2)}</div></div>${starHtml}</div>`}
+                            <span class="text-[11px] font-bold ${isUlt ? 'text-amber-300' : (sk.category === '특별' ? 'text-indigo-200' : 'text-gray-100')} truncate">${sName}</span>
                             ${btLv > 0 ? `<span class="text-[9px] font-bold text-amber-400 shrink-0">${btLv}돌</span>` : ''}
                         </div>
                     `;
@@ -5173,8 +5672,8 @@ function renderSingleLineTimeline(root, res) {
                                 <div class="text-base font-black text-emerald-400 leading-tight">${b.dps.toFixed(2)} <span class="text-[10px] font-normal text-gray-400">%/초</span></div>
                                 <div class="text-[10px] text-amber-300/90">시너지·돌파 +${b.synergyPct.toFixed(1)}%</div>
                             </div>
-                            <button type="button" onclick="applyRecommendedBuild(${idx})" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold transition shadow-md shrink-0">
-                                적용
+                            <button type="button" onclick="applyRecommendedBuild(${idx})" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold transition shadow-md shrink-0" title="${b.isCustomBudget ? '추천 빌드와 지정된 돌파 단계를 함께 적용합니다' : '추천 빌드를 적용합니다'}">
+                                ${b.isCustomBudget ? '적용 (돌파 포함)' : '적용'}
                             </button>
                         </div>
                     </div>
