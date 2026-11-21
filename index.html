@@ -485,13 +485,19 @@
                 </div>
 
                 <!-- Category Filter Bar (전체 / 일반 / 특별 / 도술) -->
-                <div class="flex items-center justify-between gap-2 mb-2.5 pb-2 border-b border-borderCol">
-                    <div class="flex items-center gap-1.5" id="categoryFilterBar">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5 pb-2 border-b border-borderCol">
+                    <div class="flex items-center gap-1.5 flex-wrap" id="categoryFilterBar">
                         <button type="button" onclick="setCategoryFilter('all')" id="catBtn_all" class="px-2.5 py-1 rounded-lg text-xs font-bold tab-active border border-borderCol">전체 (102)</button>
                         <button type="button" onclick="setCategoryFilter('일반')" id="catBtn_일반" class="px-2.5 py-1 rounded-lg text-xs font-bold cat-normal">일반</button>
                         <button type="button" onclick="setCategoryFilter('특별')" id="catBtn_특별" class="px-2.5 py-1 rounded-lg text-xs font-bold cat-special">특별 (6돌파)</button>
                         <button type="button" onclick="setCategoryFilter('도술')" id="catBtn_도술" class="px-2.5 py-1 rounded-lg text-xs font-bold cat-dosul">궁극기</button>
                         <button type="button" onclick="setCategoryFilter('신식')" id="catBtn_신식" class="px-2.5 py-1 rounded-lg text-xs font-bold cat-dosul">신식</button>
+                    </div>
+                    <div id="recExcludeSummaryBar" class="hidden items-center gap-1.5 shrink-0">
+                        <span id="recExcludeCountBadge" class="text-[11px] font-bold text-rose-300 bg-rose-950/40 border border-rose-500/40 px-2 py-0.5 rounded-lg num-clean">추천 제외 0종</span>
+                        <button type="button" onclick="clearAllRecommendExcludes()" class="text-[11px] font-bold text-gray-300 hover:text-white bg-cardBg hover:bg-[#232836] border border-borderCol px-2 py-0.5 rounded-lg transition" title="빌드 추천 제외 설정을 모두 해제합니다">
+                            해제
+                        </button>
                     </div>
                 </div>
 
@@ -1266,6 +1272,7 @@
         let cycle = JSON.parse(localStorage.getItem('dokkaebi_cycle_v6')) || [...DEFAULT_PRESETS[0].cycle];
         let bt6ActiveMap = JSON.parse(localStorage.getItem('dokkaebi_bt6_map_v6')) || {};
         let breakthroughStageMap = JSON.parse(localStorage.getItem('dokkaebi_bt_stage_v6')) || {};
+        let recommendExcludedMap = JSON.parse(localStorage.getItem('dokkaebi_rec_excluded_v1')) || {};
         let schoolEnhanceLevels = JSON.parse(localStorage.getItem('dokkaebi_school_lv_v6')) || {};
         let selectedUltSchool = localStorage.getItem('dokkaebi_ult_school_v6') || null;
         let currentWeaponType = localStorage.getItem('dokkaebi_weapon_v6') || 'sword';
@@ -1375,6 +1382,7 @@
             renderQuickPresetBar();
             renderStateToggles();
             renderStyleResourceToggles();
+            updateRecommendExcludeSummary();
             renderSkillList();
             renderCycle();
             calculateDPS();
@@ -1385,6 +1393,7 @@
             localStorage.setItem('dokkaebi_cycle_v6', JSON.stringify(cycle));
             localStorage.setItem('dokkaebi_bt6_map_v6', JSON.stringify(bt6ActiveMap));
             localStorage.setItem('dokkaebi_bt_stage_v6', JSON.stringify(breakthroughStageMap));
+            localStorage.setItem('dokkaebi_rec_excluded_v1', JSON.stringify(recommendExcludedMap));
             localStorage.setItem('dokkaebi_school_lv_v6', JSON.stringify(schoolEnhanceLevels));
             if (selectedUltSchool) localStorage.setItem('dokkaebi_ult_school_v6', selectedUltSchool);
             localStorage.setItem('dokkaebi_weapon_v6', currentWeaponType);
@@ -4886,6 +4895,46 @@ function renderSingleLineTimeline(root, res) {
         // =========================================================================
         let lastRecommendedBuilds = [];
 
+        function getRecommendExcludedCount() {
+            return Object.keys(recommendExcludedMap).filter(k => !!recommendExcludedMap[k] && !!skillDb[k]).length;
+        }
+
+        function updateRecommendExcludeSummary() {
+            const bar = document.getElementById('recExcludeSummaryBar');
+            const badge = document.getElementById('recExcludeCountBadge');
+            if (!bar || !badge) return;
+            const cnt = getRecommendExcludedCount();
+            if (cnt > 0) {
+                badge.innerText = `추천 제외 ${cnt}종`;
+                bar.classList.remove('hidden');
+                bar.classList.add('flex');
+            } else {
+                bar.classList.add('hidden');
+                bar.classList.remove('flex');
+            }
+        }
+
+        function toggleRecommendExclude(skillName, checkboxEl, event) {
+            if (event) event.stopPropagation();
+            const isExcluded = !!(checkboxEl && checkboxEl.checked);
+            if (isExcluded) {
+                recommendExcludedMap[skillName] = true;
+            } else {
+                delete recommendExcludedMap[skillName];
+            }
+            saveAllState();
+            updateRecommendExcludeSummary();
+            renderSkillList();
+        }
+
+        function clearAllRecommendExcludes() {
+            recommendExcludedMap = {};
+            saveAllState();
+            updateRecommendExcludeSummary();
+            renderSkillList();
+            showToast('빌드 추천 제외 설정이 모두 해제되었습니다.');
+        }
+
         function getSingleSkillScore(sk) {
             if (!sk || sk.category === '도술') return -1;
             const coeff = getSkillEnhancedCoeff(sk);
@@ -4903,12 +4952,12 @@ function renderSingleLineTimeline(root, res) {
         }
 
         function computeRecommendedBuilds() {
-            const allNormalSkills = Object.values(skillDb).filter(sk => sk.category !== '도술');
+            const allNormalSkills = Object.values(skillDb).filter(sk => sk.category !== '도술' && !recommendExcludedMap[sk.name]);
             const scoredAll = allNormalSkills
                 .map(sk => ({ name: sk.name, school: sk.school, score: getSingleSkillScore(sk) }))
                 .sort((a, b) => b.score - a.score);
 
-            // 글로벌 후보 풀: 효율 상위 24개 + 핵심 시너지/버프/디버프/연계 스킬
+            // 글로벌 후보 풀: 효율 상위 24개 + 핵심 시너지/버프/디버프/연계 스킬 (추천 제외 도술 필터링)
             const coreSynergyNames = [
                 '용맹의 기운', '내려찍기', '환영 참격', '심장 절단', '삼단 찌르기',
                 '꿰뚫는 저격', '요혼격', '화염구', '번개 폭풍', '연쇄 번개',
@@ -4916,7 +4965,7 @@ function renderSingleLineTimeline(root, res) {
                 '묵직한 주먹', '은신', '월식', '쌍검 가르기', '황천의 부름'
             ];
             const globalPoolSet = new Set(scoredAll.slice(0, 24).map(x => x.name));
-            coreSynergyNames.forEach(n => { if (skillDb[n] && skillDb[n].category !== '도술') globalPoolSet.add(n); });
+            coreSynergyNames.forEach(n => { if (skillDb[n] && skillDb[n].category !== '도술' && !recommendExcludedMap[n]) globalPoolSet.add(n); });
 
             const evalDur = 120;
             const results = [];
@@ -4925,7 +4974,7 @@ function renderSingleLineTimeline(root, res) {
             schoolList.forEach(scMeta => {
                 const scId = scMeta.id;
                 const ultSkill = getUltimateSkillForSchool(scId);
-                if (!ultSkill) return;
+                if (!ultSkill || recommendExcludedMap[ultSkill.name]) return;
 
                 const schoolNormals = scoredAll.filter(x => x.school === scId);
                 if (schoolNormals.length < 3) return;
@@ -5034,9 +5083,10 @@ function renderSingleLineTimeline(root, res) {
                 .slice(0, 4)
                 .map(x => `${x.name} Lv.${x.lv}`);
             const btCount = Object.values(breakthroughStageMap).filter(v => (parseInt(v, 10) || 0) > 0).length;
+            const exCount = getRecommendExcludedCount();
             const wName = (WEAPON_TYPES[currentWeaponType] || WEAPON_TYPES.sword).weaponLabel || '검/도';
             const mins = Math.round((simDurationSec || 300) / 60);
-            infoEl.innerText = `${enhList.length > 0 ? enhList.join(' · ') : '계열 강화 Lv.0'} | 돌파 설정 ${btCount}종 | ${wName} · ${mins}분 기준`;
+            infoEl.innerText = `${enhList.length > 0 ? enhList.join(' · ') : '계열 강화 Lv.0'} | 돌파 설정 ${btCount}종${exCount > 0 ? ` | 추천 제외 ${exCount}종` : ''} | ${wName} · ${mins}분 기준`;
 
             container.innerHTML = `
                 <div class="py-10 text-center text-xs text-gray-400">
@@ -5075,7 +5125,8 @@ function renderSingleLineTimeline(root, res) {
             container.innerHTML = '';
 
             if (!builds || builds.length === 0) {
-                container.innerHTML = `<div class="text-center py-8 text-xs text-gray-500">추천 빌드를 생성할 수 없습니다.</div>`;
+                const exCount = getRecommendExcludedCount();
+                container.innerHTML = `<div class="text-center py-8 text-xs text-gray-500">추천 빌드를 생성할 수 없습니다.${exCount > 0 ? '<br><span class="text-rose-300/90 mt-1 inline-block">추천 제외된 도술이 너무 많아 동일 계열 3개 이상 조건을 만족하지 못했습니다.</span>' : ''}</div>`;
                 return;
             }
 
@@ -5243,8 +5294,9 @@ function renderSingleLineTimeline(root, res) {
                     }"><span class="font-extrabold ${isBt6 ? 'text-amber-300' : 'text-gray-500'} mr-1">${isBt6 ? '✦ 6돌파 활성' : '✦ 6돌파'}</span>${sk.breakthrough6.desc.replace(/^6✦\s*/, '')}</div>`
                     : '';
 
+                const isRecExcluded = !!recommendExcludedMap[sk.name];
                 const card = document.createElement('div');
-                card.className = "bg-cardBg border border-borderCol hover:border-violet-500/80 rounded-2xl p-3.5 transition flex items-center justify-between gap-3 group cursor-pointer shadow-sm";
+                card.className = `bg-cardBg border ${isRecExcluded ? 'border-rose-500/40 opacity-75' : 'border-borderCol'} hover:border-violet-500/80 rounded-2xl p-3.5 transition flex items-center justify-between gap-3 group cursor-pointer shadow-sm`;
                 card.onclick = () => addSkillToCycle(sk.name);
 
                 const effBadges = (sk.effects || []).map(e => {
@@ -5269,6 +5321,21 @@ function renderSingleLineTimeline(root, res) {
                 const btInputBorder = btStage >= 6
                     ? 'border-amber-400/70 bg-amber-500/15 text-amber-200'
                     : (btStage > 0 ? 'border-amber-500/40 bg-darkBg text-amber-300' : 'border-borderCol bg-darkBg text-gray-300');
+
+                const recExcludeControlHtml = `
+                    <label onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"
+                           class="flex items-center gap-1 px-2 py-1 rounded-xl border cursor-pointer select-none transition ${
+                               isRecExcluded
+                                   ? 'border-rose-500/60 bg-rose-950/40 text-rose-300'
+                                   : 'border-borderCol bg-darkBg text-gray-400 hover:text-gray-200'
+                           }"
+                           title="체크 시 추천 스킬 빌드 탐색에서 이 도술을 제외합니다">
+                        <input type="checkbox" ${isRecExcluded ? 'checked' : ''}
+                               onchange="toggleRecommendExclude('${sk.name}', this, event)"
+                               class="w-3.5 h-3.5 accent-rose-500 cursor-pointer rounded" />
+                        <span class="text-[10px] font-bold whitespace-nowrap">제외</span>
+                    </label>
+                `;
 
                 const btControlHtml = !isDosul ? `
                     <div onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" class="flex items-center gap-1 px-2 py-1 rounded-xl border ${btInputBorder} transition" title="돌파 단계 (0~10)">
@@ -5314,11 +5381,14 @@ function renderSingleLineTimeline(root, res) {
                         </div>
                     </div>
 
-                    <div class="shrink-0 flex flex-col sm:flex-row items-center gap-1.5">
-                        ${btControlHtml}
-                        <span class="px-3 py-2 bg-violet-600/20 group-hover:bg-violet-600 text-violet-300 group-hover:text-white rounded-xl text-xs font-extrabold transition border border-violet-500/30">
-                            + 추가
-                        </span>
+                    <div class="shrink-0 flex flex-col items-end gap-1.5">
+                        <div class="flex items-center gap-1.5">
+                            ${btControlHtml}
+                            <span class="px-3 py-2 bg-violet-600/20 group-hover:bg-violet-600 text-violet-300 group-hover:text-white rounded-xl text-xs font-extrabold transition border border-violet-500/30">
+                                + 추가
+                            </span>
+                        </div>
+                        ${recExcludeControlHtml}
                     </div>
                 `;
                 container.appendChild(card);
