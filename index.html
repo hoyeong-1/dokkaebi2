@@ -5158,7 +5158,7 @@ function renderSingleLineTimeline(root, res) {
             recommendMode = mode === 'custom' ? 'custom' : 'current';
             saveAllState();
             renderRecommendConfigUI();
-            recomputeRecommendedBuilds();
+            updateRecommendContextInfo();
         }
 
         function updateRecommendBtRule(idx, field, val) {
@@ -5167,6 +5167,7 @@ function renderSingleLineTimeline(root, res) {
                 recommendBtRules[idx].category = val === '특별' ? '특별' : '일반';
                 saveAllState();
                 renderRecommendConfigUI();
+                updateRecommendContextInfo();
                 return;
             }
             let num = parseInt(val, 10);
@@ -5190,6 +5191,7 @@ function renderSingleLineTimeline(root, res) {
                     summaryEl.innerText = `지정 합계: 8 / 8개 (특별 ${budget.reqSpecial} · 일반 ${budget.reqNormal})`;
                 }
             }
+            updateRecommendContextInfo();
         }
 
         function addRecommendBtRule() {
@@ -5198,6 +5200,7 @@ function renderSingleLineTimeline(root, res) {
             recommendBtRules.push({ category: '일반', stage: 0, count: rem });
             saveAllState();
             renderRecommendConfigUI();
+            updateRecommendContextInfo();
         }
 
         function removeRecommendBtRule(idx) {
@@ -5205,6 +5208,7 @@ function renderSingleLineTimeline(root, res) {
             recommendBtRules.splice(idx, 1);
             saveAllState();
             renderRecommendConfigUI();
+            updateRecommendContextInfo();
         }
 
         function computeRecommendedBuildsWithBudget(budget) {
@@ -5528,11 +5532,9 @@ function renderSingleLineTimeline(root, res) {
             return top3;
         }
 
-        function recomputeRecommendedBuilds() {
-            const container = document.getElementById('recommendListContainer');
+        function updateRecommendContextInfo() {
             const infoEl = document.getElementById('recommendContextInfo');
-
-            // 현재 강화/돌파 요약 표시
+            if (!infoEl) return;
             const enhList = SCHOOLS.filter(s => s.id !== 'all')
                 .map(s => ({ name: s.name, lv: parseInt(schoolEnhanceLevels[s.id], 10) || 0 }))
                 .filter(x => x.lv > 0)
@@ -5545,11 +5547,6 @@ function renderSingleLineTimeline(root, res) {
 
             let btSummaryStr = '';
             if (recommendMode === 'custom') {
-                const budget = getParsedRecommendBudget();
-                if (!budget.valid) {
-                    container.innerHTML = `<div class="text-center py-8 text-xs text-rose-400 font-bold">${budget.error}</div>`;
-                    return;
-                }
                 const ruleParts = recommendBtRules
                     .filter(r => (parseInt(r.count, 10) || 0) > 0)
                     .map(r => `${r.category} ${r.stage}돌×${r.count}`);
@@ -5560,6 +5557,30 @@ function renderSingleLineTimeline(root, res) {
             }
 
             infoEl.innerText = `${enhList.length > 0 ? enhList.join(' · ') : '계열 강화 Lv.0'} | ${btSummaryStr}${exCount > 0 ? ` | 추천 제외 ${exCount}종` : ''} | ${wName} · ${mins}분 기준`;
+        }
+
+        function renderRecommendIdleMessage() {
+            const container = document.getElementById('recommendListContainer');
+            if (!container) return;
+            container.innerHTML = `
+                <div class="py-12 text-center text-xs text-gray-400 border border-dashed border-borderCol rounded-2xl">
+                    <i class="fa-solid fa-sliders text-emerald-400/80 text-xl mb-2.5 block"></i>
+                    모드와 돌파 조건을 설정한 뒤 상단의 <span class="text-emerald-300 font-bold">추천 계산</span> 버튼을 눌러주세요.
+                </div>
+            `;
+        }
+
+        function recomputeRecommendedBuilds() {
+            const container = document.getElementById('recommendListContainer');
+            updateRecommendContextInfo();
+
+            if (recommendMode === 'custom') {
+                const budget = getParsedRecommendBudget();
+                if (!budget.valid) {
+                    container.innerHTML = `<div class="text-center py-8 text-xs text-rose-400 font-bold">${budget.error}</div>`;
+                    return;
+                }
+            }
 
             container.innerHTML = `
                 <div class="py-10 text-center text-xs text-gray-400">
@@ -5578,7 +5599,12 @@ function renderSingleLineTimeline(root, res) {
             const modal = document.getElementById('recommendModal');
             modal.classList.remove('hidden');
             renderRecommendConfigUI();
-            recomputeRecommendedBuilds();
+            updateRecommendContextInfo();
+            if (lastRecommendedBuilds && lastRecommendedBuilds.length > 0) {
+                renderRecommendedBuilds(lastRecommendedBuilds);
+            } else {
+                renderRecommendIdleMessage();
+            }
         }
 
         function closeRecommendModal() {
