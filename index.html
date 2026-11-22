@@ -753,7 +753,7 @@
                         <i class="fa-solid fa-trophy"></i>
                     </div>
                     <div>
-                        <h3 class="text-base font-extrabold text-white">추천 스킬 빌드 (Top 3)</h3>
+                        <h3 class="text-base font-extrabold text-white">추천 스킬 빌드 (신식 Top 3 · 각 Top 3)</h3>
                         <p id="recommendContextInfo" class="text-[11px] text-gray-400">현재 계열 강화 레벨 · 돌파 단계 기준 최고 DPS 조합</p>
                     </div>
                 </div>
@@ -5670,15 +5670,34 @@ function renderSingleLineTimeline(root, res) {
                 const coeff = getSkillEnhancedCoeff(sk);
                 const { btCdrSec, isBt6 } = getSkillBreakthroughInfo(sk);
                 const cd = Math.max(0.5, (Number(sk.cooldown) || 5) - btCdrSec);
-                let score = coeff / cd;
-                // 핵심 버프/디버프/시너지 보유 스킬 가산점
-                const hasAmpEffect = (sk.effects || []).some(e => (e.ampPct || 0) > 0 || (e.dotHitCoeff || 0) > 0 || (e.cdrPct || 0) > 0);
-                const hasTrig = (sk.conditionals || []).some(c => c.type === 'trigger_state' && (c.ampPct || 0) > 0);
-                if (hasAmpEffect) score += 18;
-                if (hasTrig) score += 12;
-                if (sk.name === '용맹의 기운') score += isBt6 ? 70 : 35;
-                if (sk.name === '은신') score += isBt6 ? 45 : 15;
-                if (isBt6 && (sk.name === '일섬' || sk.name === '환상술' || sk.name === '꿰뚫는 저격' || sk.name === '황천의 부름')) score += 35;
+                const motion = Math.max(0.15, Number(sk.motion) || 0.4);
+                // 초당 계수 + 짧은 모션 가산점
+                let score = (coeff / cd) * (1 + Math.max(0, 0.6 - motion) * 0.12);
+
+                const effs = sk.effects || [];
+                const conds = sk.conditionals || [];
+                // 직접 버프/디버프/방깎/치명/DoT 가중치
+                effs.forEach(e => {
+                    if ((e.ampPct || 0) > 0) score += (e.ampPct || 0) * 1.6;
+                    if (e.state === '방어력 감소' && baseAtkStat > 0 && targetDefStat > 0) {
+                        score += (calcAtkDefRelativeMult(0, 10) - 1) * 180;
+                    }
+                    if (e.state === '약화' && targetCritResStat > 0 && userCritHitStat > 0) {
+                        score += 14;
+                    }
+                    if ((e.dotHitCoeff || 0) > 0) score += 10;
+                    if ((e.cdrPct || 0) > 0) score += 16;
+                    if ((e.critHitVal || 0) > 0 || (e.critDmgPct || 0) > 0) score += 14;
+                });
+                if (conds.some(c => c.type === 'trigger_state' && ((c.ampPct || 0) > 0 || c.applyState === '방어력 감소'))) {
+                    score += 16;
+                }
+                if (sk.name === '용맹의 기운') score += isBt6 ? 95 : 45;
+                if (sk.name === '은신') score += isBt6 ? 70 : 18;
+                if (isBt6 && sk.name === '일섬') score += 65;
+                if (isBt6 && sk.name === '환상술') score += 55;
+                if (isBt6 && sk.name === '꿰뚫는 저격') score += 55;
+                if (isBt6 && sk.name === '황천의 부름') score += 45;
                 return score;
             };
             if (overrideStage !== null && overrideStage !== undefined) {
@@ -5763,12 +5782,13 @@ function renderSingleLineTimeline(root, res) {
                 (deckNames || []).forEach(n => {
                     const sk = skillDb[n];
                     if (!sk || !weightMap.hasOwnProperty(sk.school)) return;
-                    const { btStagePct, btCdrSec, bt6ExtraCoeff, bt6DmgBonusPct } = getSkillBreakthroughInfo(sk);
+                    const { btStagePct, btCdrSec, isBt6, bt6ExtraCoeff, bt6DmgBonusPct } = getSkillBreakthroughInfo(sk);
                     const base = (Number(sk.coeff) || 0) + bt6ExtraCoeff;
                     const effCoeff = base * (1 + btStagePct / 100.0) * (1 + bt6DmgBonusPct / 100.0);
                     const cd = Math.max(0.5, (Number(sk.cooldown) || 5) - btCdrSec);
                     let w = effCoeff / cd;
-                    if (sk.name === '용맹의 기운') w += 45; // 헌신 레벨에 따른 공증·주피 스케일링 가중치
+                    if (sk.category === '도술') w *= 1.25;
+                    if (sk.name === '용맹의 기운') w += isBt6 ? 85 : 45; // 헌신 레벨에 따른 공증·주피 스케일링 가중치
                     weightMap[sk.school] += w;
                     countMap[sk.school] += 1;
                 });
@@ -5827,6 +5847,169 @@ function renderSingleLineTimeline(root, res) {
                 btMap[sk.name] = i < normalSlots.length ? normalSlots[i] : 0;
             });
             return btMap;
+        }
+
+        // 실제 시뮬레이션 기반 돌파 배정 정밀 최적화 (같은 카테고리 내 서로 다른 돌파 단계를 스왑해 최고 DPS 탐색)
+        function optimizeBtMapBySim(deckOrder, initialBtMap, schMap, evalDur) {
+            if (!initialBtMap) return initialBtMap;
+            const btMap = { ...initialBtMap };
+            const nonUlts = deckOrder.filter(n => skillDb[n] && skillDb[n].category !== '도술');
+            const specials = nonUlts.filter(n => skillDb[n].category === '특별');
+            const normals = nonUlts.filter(n => skillDb[n].category === '일반');
+
+            let bestDps = withTemporaryEvalState(btMap, schMap, () => runSimulationForOrder(deckOrder, false, evalDur).dps);
+
+            const refineGroup = (group) => {
+                if (group.length < 2) return;
+                for (let pass = 0; pass < 3; pass++) {
+                    let improved = false;
+                    for (let i = 0; i < group.length; i++) {
+                        for (let j = i + 1; j < group.length; j++) {
+                            const a = group[i], b = group[j];
+                            if ((btMap[a] || 0) === (btMap[b] || 0)) continue;
+                            const tmp = btMap[a];
+                            btMap[a] = btMap[b];
+                            btMap[b] = tmp;
+                            const dps = withTemporaryEvalState(btMap, schMap, () => runSimulationForOrder(deckOrder, false, evalDur).dps);
+                            if (dps > bestDps + 0.02) {
+                                bestDps = dps;
+                                improved = true;
+                            } else {
+                                btMap[b] = btMap[a];
+                                btMap[a] = tmp;
+                            }
+                        }
+                    }
+                    if (!improved) break;
+                }
+            };
+
+            refineGroup(specials);
+            refineGroup(normals);
+            return btMap;
+        }
+
+        // 실제 시뮬레이션 기반 계열 강화 레벨 정밀 최적화 (덱에 포함된 계열 간 서로 다른 레벨을 스왑해 최고 DPS 탐색)
+        function optimizeSchoolLvMapBySim(deckOrder, btMap, initialSchMap, evalDur) {
+            if (!initialSchMap) return initialSchMap;
+            const schMap = { ...initialSchMap };
+            const usedSchools = Array.from(new Set(deckOrder.map(n => skillDb[n]?.school).filter(Boolean)));
+            if (usedSchools.length < 2) return schMap;
+
+            let bestDps = withTemporaryEvalState(btMap, schMap, () => runSimulationForOrder(deckOrder, false, evalDur).dps);
+            for (let pass = 0; pass < 3; pass++) {
+                let improved = false;
+                for (let i = 0; i < usedSchools.length; i++) {
+                    for (let j = i + 1; j < usedSchools.length; j++) {
+                        const a = usedSchools[i], b = usedSchools[j];
+                        if ((schMap[a] || 0) === (schMap[b] || 0)) continue;
+                        const tmp = schMap[a];
+                        schMap[a] = schMap[b];
+                        schMap[b] = tmp;
+                        const dps = withTemporaryEvalState(btMap, schMap, () => runSimulationForOrder(deckOrder, false, evalDur).dps);
+                        if (dps > bestDps + 0.02) {
+                            bestDps = dps;
+                            improved = true;
+                        } else {
+                            schMap[b] = schMap[a];
+                            schMap[a] = tmp;
+                        }
+                    }
+                }
+                if (!improved) break;
+            }
+            return schMap;
+        }
+
+        // 시너지·버프·디버프 선행 관계를 반영한 스마트 정렬 (탐욕/교체 평가 시 순서 왜곡 방지)
+        function smartOrderDeck(deckNonUlt, ultName, btMap = null) {
+            const fullNames = ultName ? [...deckNonUlt, ultName] : [...deckNonUlt];
+            const reqStatesInDeck = new Set();
+            fullNames.forEach(n => {
+                const sk = skillDb[n];
+                if (!sk) return;
+                (sk.conditionals || []).forEach(c => {
+                    if (c.reqState) reqStatesInDeck.add(c.reqState);
+                });
+            });
+
+            const getRolePriority = (name) => {
+                const sk = skillDb[name];
+                if (!sk) return 99;
+                if (sk.category === '도술') {
+                    // 암습은 검의 형상 스택을 쌓고, 정조준은 디버프를 깔고 쏘는 것이 유리
+                    if (sk.name === '암습') return 62;
+                    if (sk.name === '정조준') return 58;
+                    if (sk.name === '개전의 가호') return 18;
+                    return 52;
+                }
+                const btStage = btMap ? (btMap[name] || 0) : (parseInt(breakthroughStageMap[name], 10) || 0);
+                const isBt6 = (sk.category === '특별') && btStage >= 6;
+                if (name === '용맹의 기운') return 5;
+                if (name === '은신' && isBt6) return 8;
+                if (name === '일섬' && isBt6) return 10;
+                if (name === '환상술' && isBt6) return 12;
+                if (name === '꿰뚫는 저격') return 14;
+
+                const effs = sk.effects || [];
+                const conds = sk.conditionals || [];
+                const providesDirectAmp = effs.some(e => (e.ampPct || 0) > 0 || e.state === '방어력 감소' || e.state === '받는 치명타 피해량 증가' || (e.cdrPct || 0) > 0);
+                const providesReqState = effs.some(e => reqStatesInDeck.has(e.state));
+                const providesDotOrWeak = effs.some(e => (e.dotHitCoeff || 0) > 0 || e.state === '약화');
+                const triggersAmp = conds.some(c => c.type === 'trigger_state' && ((c.ampPct || 0) > 0 || c.applyState === '방어력 감소'));
+
+                if (providesDirectAmp) return 16;
+                if (providesReqState && !triggersAmp) return 22;
+                if (triggersAmp) return 32;
+                if (providesDotOrWeak) return 36;
+                if (conds.some(c => c.type === 'bonus_coeff' || c.type === 'dmg_amp')) return 56;
+                return 68;
+            };
+
+            return fullNames.slice().sort((a, b) => {
+                const pa = getRolePriority(a);
+                const pb = getRolePriority(b);
+                if (pa !== pb) return pa - pb;
+                const ska = skillDb[a], skb = skillDb[b];
+                const da = ska ? ((Number(ska.coeff) || 0) / Math.max(0.5, Number(ska.cooldown) || 5)) : 0;
+                const db = skb ? ((Number(skb.coeff) || 0) / Math.max(0.5, Number(skb.cooldown) || 5)) : 0;
+                return db - da;
+            });
+        }
+
+        // 조건부 발동(trigger_state / 고효율 bonus_coeff)과 선행 상태 부여 스킬의 2스킬 시너지 페어 자동 추출
+        function buildDynamicSynergyPairs(eligibleSkills) {
+            const stateProviders = {};
+            eligibleSkills.forEach(sk => {
+                (sk.effects || []).forEach(e => {
+                    if (!e.state) return;
+                    if (!stateProviders[e.state]) stateProviders[e.state] = [];
+                    stateProviders[e.state].push(sk);
+                });
+            });
+            Object.values(stateProviders).forEach(arr => {
+                arr.sort((a, b) => ((Number(b.coeff) || 0) / Math.max(0.5, Number(b.cooldown) || 5)) - ((Number(a.coeff) || 0) / Math.max(0.5, Number(a.cooldown) || 5)));
+            });
+
+            const pairs = [];
+            const seenKey = new Set();
+            eligibleSkills.forEach(sk => {
+                (sk.conditionals || []).forEach(c => {
+                    const isGoodTrigger = (c.type === 'trigger_state' && ((c.ampPct || 0) > 0 || (c.applyState === '방어력 감소' && baseAtkStat > 0 && targetDefStat > 0)));
+                    const isGoodBonus = (c.type === 'bonus_coeff' && (c.value || 0) >= 50);
+                    if (!isGoodTrigger && !isGoodBonus) return;
+                    if (permanentStates[c.reqState]) return; // 이미 상시 켜져 있으면 페어 불필요
+                    const providers = (stateProviders[c.reqState] || []).filter(p => p.name !== sk.name).slice(0, 2);
+                    providers.forEach(p => {
+                        const key = [p.name, sk.name].sort().join('|');
+                        if (!seenKey.has(key)) {
+                            seenKey.add(key);
+                            pairs.push([p.name, sk.name]);
+                        }
+                    });
+                });
+            });
+            return pairs;
         }
 
         function updateRecommendSchoolLvRuleSummaryText() {
@@ -6092,25 +6275,45 @@ function renderSingleLineTimeline(root, res) {
 
             if (allSpecials.length < reqSpecial || allNormals.length < reqNormal) return [];
 
-            const coreSynergyNames = [
-                '용맹의 기운', '내려찍기', '환영 참격', '심장 절단', '삼단 찌르기',
-                '꿰뚫는 저격', '요혼격', '화염구', '번개 폭풍', '연쇄 번개',
-                '화염 분출', '주먹 지르기', '삼묵법', '일섬', '환상술',
-                '묵직한 주먹', '은신', '월식', '쌍검 가르기', '황천의 부름'
-            ];
+            // 동적 시너지 후보 풀 구축: 모든 핵심 버프·디버프·방깎·약화·상태이상·연계 발동기 및 선행 부여기를 누락 없이 포함
+            const neededReqStates = new Set();
+            allEligible.forEach(sk => {
+                (sk.conditionals || []).forEach(c => {
+                    if (c.type === 'trigger_state' && ((c.ampPct || 0) > 0 || c.applyState === '방어력 감소')) {
+                        neededReqStates.add(c.reqState);
+                    } else if (c.type === 'bonus_coeff' && (c.value || 0) >= 50) {
+                        neededReqStates.add(c.reqState);
+                    }
+                });
+            });
+
             const globalPoolSet = new Set([
                 ...pinnedNonUlts,
                 ...(maxSpecialCap > 0 ? allSpecials.map(x => x.name) : []),
-                ...(maxNormalCap > 0 ? allNormals.slice(0, 24).map(x => x.name) : [])
+                ...(maxNormalCap > 0 ? allNormals.slice(0, 26).map(x => x.name) : [])
             ]);
-            coreSynergyNames.forEach(n => {
-                const sk = skillDb[n];
-                if (!sk || sk.category === '도술' || recommendExcludedMap[n]) return;
+
+            allEligible.forEach(sk => {
                 if (sk.category === '특별' && maxSpecialCap <= 0) return;
                 if (sk.category === '일반' && maxNormalCap <= 0) return;
-                globalPoolSet.add(n);
+                const effs = sk.effects || [];
+                const conds = sk.conditionals || [];
+                const isSynergySkill =
+                    effs.some(e =>
+                        (e.ampPct || 0) > 0 ||
+                        e.state === '방어력 감소' ||
+                        e.state === '약화' ||
+                        (e.dotHitCoeff || 0) > 0 ||
+                        (e.cdrPct || 0) > 0 ||
+                        (e.critHitVal || 0) > 0 ||
+                        (e.critDmgPct || 0) > 0 ||
+                        neededReqStates.has(e.state)
+                    ) ||
+                    conds.some(c => c.type === 'trigger_state' && ((c.ampPct || 0) > 0 || c.applyState === '방어력 감소'));
+                if (isSynergySkill) globalPoolSet.add(sk.name);
             });
 
+            const synergyPairs = buildDynamicSynergyPairs(allEligible);
             const evalDur = 120;
             const results = [];
             const schoolList = SCHOOLS.filter(s => s.id !== 'all');
@@ -6120,6 +6323,13 @@ function renderSingleLineTimeline(root, res) {
                 const btMap = isCustomBt ? assignBtMapForDeck(deckNonUlt, specialSlots, normalSlots) : null;
                 const schMap = isCustomSch ? assignSchoolLvMapForDeck(fullDeck, scId, levelSlots, btMap) : null;
                 return { btMap, schMap };
+            };
+
+            const evalDeckSmart = (deckNonUlt, ultName, scId) => {
+                const { btMap, schMap } = getEvalMaps(deckNonUlt, ultName, scId);
+                const ordered = smartOrderDeck(deckNonUlt, ultName, btMap);
+                const sim = withTemporaryEvalState(btMap, schMap, () => runSimulationForOrder(ordered, false, evalDur));
+                return { dps: sim.dps, ordered, btMap, schMap };
             };
 
             schoolList.forEach(scMeta => {
@@ -6135,36 +6345,54 @@ function renderSingleLineTimeline(root, res) {
                     ...(maxNormalCap > 0 ? schoolNormals : [])
                 ].sort((a, b) => b.score - a.score);
 
-                // 1) 고정 도술 먼저 배치 후 해당 계열 최소 3개 조건 충족
-                let picked = [...pinnedNonUlts];
-                const pickedSet = new Set(picked);
-                let cS = picked.filter(n => skillDb[n]?.category === '특별').length;
-                let cN = picked.length - cS;
-                let sameSchoolCnt = picked.filter(n => skillDb[n]?.school === scId).length;
+                // 시드 다양성: (1) 점수 상위 3개 시드 + (2) 시너지·짧은 쿨 우선 시드
+                const schoolSynergySorted = schoolAll.slice().sort((a, b) => {
+                    const ska = skillDb[a.name], skb = skillDb[b.name];
+                    const bonusA = ((ska.effects || []).length > 0 ? 25 : 0) + (12 / Math.max(2, Number(ska.cooldown) || 6));
+                    const bonusB = ((skb.effects || []).length > 0 ? 25 : 0) + (12 / Math.max(2, Number(skb.cooldown) || 6));
+                    return (b.score + bonusB) - (a.score + bonusA);
+                });
 
-                if (Math.max(0, 3 - sameSchoolCnt) > (8 - picked.length)) return;
+                const buildInitialPicked = (orderedSchoolList) => {
+                    let picked = [...pinnedNonUlts];
+                    const pickedSet = new Set(picked);
+                    let cS = picked.filter(n => skillDb[n]?.category === '특별').length;
+                    let cN = picked.length - cS;
+                    let sameSchoolCnt = picked.filter(n => skillDb[n]?.school === scId).length;
+                    if (Math.max(0, 3 - sameSchoolCnt) > (8 - picked.length)) return null;
 
-                for (const item of schoolAll) {
-                    if (sameSchoolCnt >= 3 || picked.length >= 8) break;
-                    if (pickedSet.has(item.name)) continue;
-                    const remAfter = 8 - (picked.length + 1);
-                    if (item.category === '특별') {
-                        if (cS >= maxSpecialCap) continue;
-                        if (Math.max(0, reqNormal - cN) > remAfter) continue;
-                        picked.push(item.name);
-                        pickedSet.add(item.name);
-                        cS++;
-                        sameSchoolCnt++;
-                    } else {
-                        if (cN >= maxNormalCap) continue;
-                        if (Math.max(0, reqSpecial - cS) > remAfter) continue;
-                        picked.push(item.name);
-                        pickedSet.add(item.name);
-                        cN++;
-                        sameSchoolCnt++;
+                    for (const item of orderedSchoolList) {
+                        if (sameSchoolCnt >= 3 || picked.length >= 8) break;
+                        if (pickedSet.has(item.name)) continue;
+                        const remAfter = 8 - (picked.length + 1);
+                        if (item.category === '특별') {
+                            if (cS >= maxSpecialCap) continue;
+                            if (Math.max(0, reqNormal - cN) > remAfter) continue;
+                            picked.push(item.name);
+                            pickedSet.add(item.name);
+                            cS++;
+                            sameSchoolCnt++;
+                        } else {
+                            if (cN >= maxNormalCap) continue;
+                            if (Math.max(0, reqSpecial - cS) > remAfter) continue;
+                            picked.push(item.name);
+                            pickedSet.add(item.name);
+                            cN++;
+                            sameSchoolCnt++;
+                        }
                     }
+                    if (sameSchoolCnt < 3) return null;
+                    return { picked, cS, cN };
+                };
+
+                const seedCandidates = [];
+                const s1 = buildInitialPicked(schoolAll);
+                if (!s1) return;
+                seedCandidates.push(s1);
+                const s2 = buildInitialPicked(schoolSynergySorted);
+                if (s2 && s2.picked.slice().sort().join('|') !== s1.picked.slice().sort().join('|')) {
+                    seedCandidates.push(s2);
                 }
-                if (sameSchoolCnt < 3) return;
 
                 const candidatePool = Array.from(new Set([
                     ...globalPoolSet,
@@ -6172,57 +6400,85 @@ function renderSingleLineTimeline(root, res) {
                     ...(maxNormalCap > 0 ? schoolNormals.map(x => x.name) : [])
                 ]));
 
-                // 2) 나머지 슬롯 탐욕적(Greedy) 선택
-                while (picked.length < 8) {
-                    const remAfter = 8 - (picked.length + 1);
-                    const needS = Math.max(0, reqSpecial - cS);
-                    const needN = Math.max(0, reqNormal - cN);
-                    const allowSpecial = (cS < maxSpecialCap) && (needN <= remAfter);
-                    const allowNormal = (cN < maxNormalCap) && (needS <= remAfter);
+                let bestSchoolDeck = null;
+                let bestSchoolDps = -1;
 
-                    let bestSkill = null;
-                    let bestDps = -1;
-                    for (const candName of candidatePool) {
-                        if (pickedSet.has(candName)) continue;
-                        const cSk = skillDb[candName];
-                        if (!cSk) continue;
-                        if (cSk.category === '특별' && !allowSpecial) continue;
-                        if (cSk.category === '일반' && !allowNormal) continue;
+                seedCandidates.forEach(seed => {
+                    let picked = seed.picked.slice();
+                    const pickedSet = new Set(picked);
+                    let cS = seed.cS;
+                    let cN = seed.cN;
 
-                        const testPicked = [...picked, candName];
-                        const { btMap, schMap } = getEvalMaps(testPicked, ultSkill.name, scId);
-                        const sim = withTemporaryEvalState(btMap, schMap, () => runSimulationForOrder([...testPicked, ultSkill.name], false, evalDur));
-                        if (sim.dps > bestDps) {
-                            bestDps = sim.dps;
-                            bestSkill = candName;
+                    // 2) 나머지 슬롯 스마트 정렬 기반 탐욕적(Greedy) 선택
+                    while (picked.length < 8) {
+                        const remAfter = 8 - (picked.length + 1);
+                        const needS = Math.max(0, reqSpecial - cS);
+                        const needN = Math.max(0, reqNormal - cN);
+                        const allowSpecial = (cS < maxSpecialCap) && (needN <= remAfter);
+                        const allowNormal = (cN < maxNormalCap) && (needS <= remAfter);
+
+                        let bestSkill = null;
+                        let bestDps = -1;
+                        for (const candName of candidatePool) {
+                            if (pickedSet.has(candName)) continue;
+                            const cSk = skillDb[candName];
+                            if (!cSk) continue;
+                            if (cSk.category === '특별' && !allowSpecial) continue;
+                            if (cSk.category === '일반' && !allowNormal) continue;
+
+                            const ev = evalDeckSmart([...picked, candName], ultSkill.name, scId);
+                            if (ev.dps > bestDps) {
+                                bestDps = ev.dps;
+                                bestSkill = candName;
+                            }
                         }
+                        if (!bestSkill) break;
+                        picked.push(bestSkill);
+                        pickedSet.add(bestSkill);
+                        if (skillDb[bestSkill]?.category === '특별') cS++;
+                        else cN++;
                     }
-                    if (!bestSkill) break;
-                    picked.push(bestSkill);
-                    pickedSet.add(bestSkill);
-                    if (skillDb[bestSkill]?.category === '특별') cS++;
-                    else cN++;
-                }
 
-                if (picked.length < 8 || cS < reqSpecial || cN < reqNormal) return;
+                    if (picked.length < 8 || cS < reqSpecial || cN < reqNormal) return;
+                    const evSeed = evalDeckSmart(picked, ultSkill.name, scId);
+                    if (evSeed.dps > bestSchoolDps) {
+                        bestSchoolDps = evSeed.dps;
+                        bestSchoolDeck = picked;
+                    }
+                });
 
-                // 3) 1:1 교체(Replacement) 정밀 탐색 (고정 도술 보호 · 계열 >= 3 · 카테고리 제약 유지)
-                const initMaps = getEvalMaps(picked, ultSkill.name, scId);
-                let curOrderRes = withTemporaryEvalState(initMaps.btMap, initMaps.schMap, () => localSearchOrder([...picked, ultSkill.name], evalDur, 3));
-                let curBestDps = curOrderRes.dps;
-                picked = curOrderRes.order.filter(n => n !== ultSkill.name);
+                if (!bestSchoolDeck) return;
+                let picked = bestSchoolDeck;
 
-                for (let round = 0; round < 2; round++) {
+                // 3) 1:1 교체(Replacement) 정밀 탐색 (스마트 정렬 + 고레벨 계열 집중 후보 포함)
+                let curEval = evalDeckSmart(picked, ultSkill.name, scId);
+                let curBestDps = curEval.dps;
+
+                for (let round = 0; round < 3; round++) {
                     let replaced = false;
+                    // 계열 레벨 지정 모드일 때, 현재 덱에 고레벨이 배정된 계열의 스킬들을 후보 풀에 보강
+                    let roundPool = candidatePool;
+                    if (isCustomSch && curEval.schMap) {
+                        const highSchools = Object.entries(curEval.schMap).filter(([, lv]) => lv > 0).map(([id]) => id);
+                        const extraPool = new Set(candidatePool);
+                        allEligible.forEach(sk => {
+                            if (!highSchools.includes(sk.school)) return;
+                            if (sk.category === '특별' && maxSpecialCap <= 0) return;
+                            if (sk.category === '일반' && maxNormalCap <= 0) return;
+                            extraPool.add(sk.name);
+                        });
+                        roundPool = Array.from(extraPool);
+                    }
+
                     for (let idx = 0; idx < picked.length; idx++) {
                         if (pinnedNonUltSet.has(picked[idx])) continue;
                         const sameSchoolCountWithout = picked.filter((n, k) => k !== idx && skillDb[n]?.school === scId).length;
                         const sWithout = picked.filter((n, k) => k !== idx && skillDb[n]?.category === '특별').length;
                         const nWithout = picked.filter((n, k) => k !== idx && skillDb[n]?.category === '일반').length;
                         let bestIn = null;
-                        let bestSwapDps = curBestDps;
+                        let bestSwapEval = curEval;
 
-                        for (const candName of candidatePool) {
+                        for (const candName of roundPool) {
                             if (picked.includes(candName)) continue;
                             const cSk = skillDb[candName];
                             if (!cSk) continue;
@@ -6233,61 +6489,251 @@ function renderSingleLineTimeline(root, res) {
 
                             const testPicked = picked.slice();
                             testPicked[idx] = candName;
-                            const { btMap, schMap } = getEvalMaps(testPicked, ultSkill.name, scId);
-                            const sim = withTemporaryEvalState(btMap, schMap, () => runSimulationForOrder([...testPicked, ultSkill.name], false, evalDur));
-                            if (sim.dps > bestSwapDps + 0.1) {
-                                bestSwapDps = sim.dps;
+                            const ev = evalDeckSmart(testPicked, ultSkill.name, scId);
+                            if (ev.dps > bestSwapEval.dps + 0.05) {
+                                bestSwapEval = ev;
                                 bestIn = candName;
                             }
                         }
 
                         if (bestIn) {
                             picked[idx] = bestIn;
-                            curBestDps = bestSwapDps;
+                            curEval = bestSwapEval;
+                            curBestDps = curEval.dps;
                             replaced = true;
                         }
                     }
                     if (!replaced) break;
                 }
 
-                // 4) 1차 전체 순서 최적화 후 실제 시뮬 시간으로 평가
-                const finalMaps = getEvalMaps(picked, ultSkill.name, scId);
-                const opt1 = withTemporaryEvalState(finalMaps.btMap, finalMaps.schMap, () => optimizeOrderFull([...picked, ultSkill.name], evalDur, 4));
-                const finalSim = withTemporaryEvalState(finalMaps.btMap, finalMaps.schMap, () => runSimulationForOrder(opt1.order, false));
+                // 4) 2:2 페어 시너지 동시 교체 (단독으로는 안 뽑히지만 2개 짝으로 넣으면 강한 시너지 조합 탐색)
+                const replaceableIdxs = [];
+                for (let idx = 0; idx < picked.length; idx++) {
+                    if (!pinnedNonUltSet.has(picked[idx])) replaceableIdxs.push(idx);
+                }
+                if (replaceableIdxs.length >= 2 && synergyPairs.length > 0) {
+                    // 각 비고정 슬롯의 제거 시 DPS 하락폭을 계산해 기여도가 낮은 하위 3슬롯을 후보로 선정
+                    const dropImpacts = replaceableIdxs.map(idx => {
+                        const without = picked.filter((_, k) => k !== idx);
+                        const evW = evalDeckSmart(without, ultSkill.name, scId);
+                        return { idx, loss: curBestDps - evW.dps };
+                    }).sort((a, b) => a.loss - b.loss);
+
+                    const weakIdxs = dropImpacts.slice(0, Math.min(3, dropImpacts.length)).map(x => x.idx);
+                    for (let a = 0; a < weakIdxs.length; a++) {
+                        for (let b = a + 1; b < weakIdxs.length; b++) {
+                            const i1 = weakIdxs[a], i2 = weakIdxs[b];
+                            let bestPair = null;
+                            let bestPairEval = curEval;
+                            for (const [p1, p2] of synergyPairs) {
+                                if (picked.includes(p1) || picked.includes(p2)) continue;
+                                const testPicked = picked.slice();
+                                testPicked[i1] = p1;
+                                testPicked[i2] = p2;
+                                const sameCnt = testPicked.filter(n => skillDb[n]?.school === scId).length;
+                                if (sameCnt < 3) continue;
+                                const sCnt = testPicked.filter(n => skillDb[n]?.category === '특별').length;
+                                const nCnt = testPicked.length - sCnt;
+                                if (sCnt < reqSpecial || sCnt > maxSpecialCap || nCnt < reqNormal || nCnt > maxNormalCap) continue;
+
+                                const ev = evalDeckSmart(testPicked, ultSkill.name, scId);
+                                if (ev.dps > bestPairEval.dps + 0.1) {
+                                    bestPairEval = ev;
+                                    bestPair = [p1, p2];
+                                }
+                            }
+                            if (bestPair) {
+                                picked[i1] = bestPair[0];
+                                picked[i2] = bestPair[1];
+                                curEval = bestPairEval;
+                                curBestDps = curEval.dps;
+                            }
+                        }
+                    }
+                }
+
+                // 5) 해당 계열 최종 덱의 순서 + 실제 시뮬레이션 기반 돌파·계열레벨 최적화
+                let finalBtMap = curEval.btMap;
+                let finalSchMap = curEval.schMap;
+                let bestOrder = curEval.ordered;
+
+                const optOrder1 = withTemporaryEvalState(finalBtMap, finalSchMap, () => localSearchOrder(bestOrder, evalDur, 4));
+                bestOrder = optOrder1.order;
+                if (isCustomBt && finalBtMap) {
+                    finalBtMap = optimizeBtMapBySim(bestOrder, finalBtMap, finalSchMap, evalDur);
+                }
+                if (isCustomSch && finalSchMap) {
+                    finalSchMap = optimizeSchoolLvMapBySim(bestOrder, finalBtMap, finalSchMap, evalDur);
+                }
+                const optOrder2 = withTemporaryEvalState(finalBtMap, finalSchMap, () => optimizeOrderFull(bestOrder, evalDur, 4));
+                const evalSim = withTemporaryEvalState(finalBtMap, finalSchMap, () => runSimulationForOrder(optOrder2.order, false, evalDur));
 
                 results.push({
                     schoolId: scId,
                     schoolName: scMeta.name,
                     schoolColor: scMeta.color,
                     ultName: ultSkill.name,
-                    deck: opt1.order,
-                    dps: finalSim.dps,
-                    baseDps: finalSim.baseDps,
-                    synergyPct: finalSim.synergyPct,
-                    assignedBtMap: finalMaps.btMap,
+                    deck: optOrder2.order,
+                    dps: evalSim.dps,
+                    baseDps: evalSim.baseDps,
+                    synergyPct: evalSim.synergyPct,
+                    assignedBtMap: finalBtMap,
                     isCustomBudget: isCustomBt,
-                    assignedSchoolLvMap: finalMaps.schMap,
-                    isCustomSchoolLv: isCustomSch
+                    assignedSchoolLvMap: finalSchMap,
+                    isCustomSchoolLv: isCustomSch,
+                    _candidatePool: candidatePool
                 });
             });
 
+            // 6) 상위 5개 계열에 대해 실제 시뮬 시간(simDurationSec) 기준으로 순서·돌파·계열레벨 정밀 재최적화 후 Top 3 신식 선출
             results.sort((a, b) => b.dps - a.dps);
-            const top3 = results.slice(0, 3);
+            const topCandidates = results.slice(0, 5);
 
-            // 5) 최종 Top 3는 실제 시뮬 시간(simDurationSec) 기준으로 순서 정밀 재최적화
-            top3.forEach(b => {
-                const btMap = b.assignedBtMap || null;
-                const schMap = b.assignedSchoolLvMap || null;
-                const refined = withTemporaryEvalState(btMap, schMap, () => optimizeOrderFull(b.deck, null, 6));
+            topCandidates.forEach(b => {
+                let btMap = b.assignedBtMap || null;
+                let schMap = b.assignedSchoolLvMap || null;
+                let refined = withTemporaryEvalState(btMap, schMap, () => optimizeOrderFull(b.deck, null, 6));
+                if (b.isCustomBudget && btMap) {
+                    btMap = optimizeBtMapBySim(refined.order, btMap, schMap, null);
+                }
+                if (b.isCustomSchoolLv && schMap) {
+                    schMap = optimizeSchoolLvMapBySim(refined.order, btMap, schMap, null);
+                }
+                refined = withTemporaryEvalState(btMap, schMap, () => localSearchOrder(refined.order, null, 5));
                 const refinedSim = withTemporaryEvalState(btMap, schMap, () => runSimulationForOrder(refined.order, false));
+                b.assignedBtMap = btMap;
+                b.assignedSchoolLvMap = schMap;
                 b.deck = refined.order;
                 b.dps = refinedSim.dps;
                 b.baseDps = refinedSim.baseDps;
                 b.synergyPct = refinedSim.synergyPct;
             });
 
-            top3.sort((a, b) => b.dps - a.dps);
-            return top3;
+            topCandidates.sort((a, b) => b.dps - a.dps);
+            const top3Schools = topCandidates.slice(0, 3);
+
+            // 7) 선출된 Top 3 신식 각각에 대해 서로 다른 도술 조합 Top 3 탐색
+            const makeDeckKey = (nonUltArr) => nonUltArr.slice().sort().join('|');
+
+            top3Schools.forEach(b => {
+                const scId = b.schoolId;
+                const ultName = b.ultName;
+                const baseNonUlt = b.deck.filter(n => n !== ultName);
+                const seenKeys = new Set([makeDeckKey(baseNonUlt)]);
+
+                const variantPoolSet = new Set(b._candidatePool || []);
+                if (b.isCustomSchoolLv && b.assignedSchoolLvMap) {
+                    const highSchools = Object.entries(b.assignedSchoolLvMap).filter(([, lv]) => lv > 0).map(([id]) => id);
+                    allEligible.forEach(sk => {
+                        if (!highSchools.includes(sk.school)) return;
+                        if (sk.category === '특별' && maxSpecialCap <= 0) return;
+                        if (sk.category === '일반' && maxNormalCap <= 0) return;
+                        variantPoolSet.add(sk.name);
+                    });
+                }
+                const variantPool = Array.from(variantPoolSet);
+
+                const altCandidates = [];
+                const collectOneSwaps = (srcNonUlt, limitPool) => {
+                    for (let idx = 0; idx < srcNonUlt.length; idx++) {
+                        if (pinnedNonUltSet.has(srcNonUlt[idx])) continue;
+                        const sameWithout = srcNonUlt.filter((n, k) => k !== idx && skillDb[n]?.school === scId).length;
+                        const sWithout = srcNonUlt.filter((n, k) => k !== idx && skillDb[n]?.category === '특별').length;
+                        const nWithout = srcNonUlt.filter((n, k) => k !== idx && skillDb[n]?.category === '일반').length;
+
+                        for (const candName of limitPool) {
+                            if (srcNonUlt.includes(candName)) continue;
+                            const cSk = skillDb[candName];
+                            if (!cSk) continue;
+                            if (sameWithout < 3 && cSk.school !== scId) continue;
+                            const newS = sWithout + (cSk.category === '특별' ? 1 : 0);
+                            const newN = nWithout + (cSk.category === '일반' ? 1 : 0);
+                            if (newS < reqSpecial || newS > maxSpecialCap || newN < reqNormal || newN > maxNormalCap) continue;
+
+                            const testPicked = srcNonUlt.slice();
+                            testPicked[idx] = candName;
+                            const key = makeDeckKey(testPicked);
+                            if (seenKeys.has(key)) continue;
+                            seenKeys.add(key);
+
+                            const ev = evalDeckSmart(testPicked, ultName, scId);
+                            altCandidates.push({
+                                nonUlt: testPicked,
+                                ordered: ev.ordered,
+                                btMap: ev.btMap,
+                                schMap: ev.schMap,
+                                fastDps: ev.dps
+                            });
+                        }
+                    }
+                };
+
+                // 1스킬 교체 변형 전수 평가
+                collectOneSwaps(baseNonUlt, variantPool);
+                altCandidates.sort((x, y) => y.fastDps - x.fastDps);
+
+                // 상위 1스킬 변형에서 2스킬 변형도 일부 보강 (상위 후보 풀 대상)
+                if (altCandidates.length > 0) {
+                    const topSubPool = variantPool.slice(0, 18);
+                    collectOneSwaps(altCandidates[0].nonUlt, topSubPool);
+                    altCandidates.sort((x, y) => y.fastDps - x.fastDps);
+                }
+
+                const v1 = {
+                    deck: b.deck,
+                    dps: b.dps,
+                    baseDps: b.baseDps,
+                    synergyPct: b.synergyPct,
+                    assignedBtMap: b.assignedBtMap,
+                    assignedSchoolLvMap: b.assignedSchoolLvMap
+                };
+
+                const refinedAlts = altCandidates.slice(0, 5).map(cand => {
+                    let btMap = cand.btMap || null;
+                    let schMap = cand.schMap || null;
+                    let refined = withTemporaryEvalState(btMap, schMap, () => optimizeOrderFull(cand.ordered, null, 4));
+                    if (b.isCustomBudget && btMap) {
+                        btMap = optimizeBtMapBySim(refined.order, btMap, schMap, null);
+                    }
+                    if (b.isCustomSchoolLv && schMap) {
+                        schMap = optimizeSchoolLvMapBySim(refined.order, btMap, schMap, null);
+                    }
+                    refined = withTemporaryEvalState(btMap, schMap, () => localSearchOrder(refined.order, null, 4));
+                    const sim = withTemporaryEvalState(btMap, schMap, () => runSimulationForOrder(refined.order, false));
+                    return {
+                        deck: refined.order,
+                        dps: sim.dps,
+                        baseDps: sim.baseDps,
+                        synergyPct: sim.synergyPct,
+                        assignedBtMap: btMap,
+                        assignedSchoolLvMap: schMap
+                    };
+                });
+
+                const allVariants = [v1, ...refinedAlts].sort((x, y) => y.dps - x.dps);
+                const uniqueVariants = [];
+                const uKeys = new Set();
+                for (const v of allVariants) {
+                    const k = makeDeckKey(v.deck.filter(n => n !== ultName));
+                    if (uKeys.has(k)) continue;
+                    uKeys.add(k);
+                    uniqueVariants.push(v);
+                    if (uniqueVariants.length >= 3) break;
+                }
+
+                b.variants = uniqueVariants;
+                const topV = uniqueVariants[0];
+                b.deck = topV.deck;
+                b.dps = topV.dps;
+                b.baseDps = topV.baseDps;
+                b.synergyPct = topV.synergyPct;
+                b.assignedBtMap = topV.assignedBtMap;
+                b.assignedSchoolLvMap = topV.assignedSchoolLvMap;
+                delete b._candidatePool;
+            });
+
+            top3Schools.sort((a, b) => b.dps - a.dps);
+            return top3Schools;
         }
 
         function updateRecommendContextInfo() {
@@ -6364,6 +6810,7 @@ function renderSingleLineTimeline(root, res) {
             `;
 
             setTimeout(() => {
+                recommendSelectedVariants = [0, 0, 0];
                 lastRecommendedBuilds = computeRecommendedBuilds();
                 renderRecommendedBuilds(lastRecommendedBuilds);
             }, 30);
@@ -6385,17 +6832,29 @@ function renderSingleLineTimeline(root, res) {
             document.getElementById('recommendModal').classList.add('hidden');
         }
 
-        function applyRecommendedBuild(idx) {
+        let recommendSelectedVariants = [0, 0, 0];
+
+        function selectRecommendVariant(schoolIdx, variantIdx) {
+            recommendSelectedVariants[schoolIdx] = variantIdx;
+            renderRecommendedBuilds(lastRecommendedBuilds);
+        }
+
+        function applyRecommendedBuild(idx, variantIdx = null) {
             const b = lastRecommendedBuilds[idx];
             if (!b) return;
+            const vIdx = (variantIdx !== null && variantIdx !== undefined)
+                ? variantIdx
+                : (recommendSelectedVariants[idx] || 0);
+            const v = (Array.isArray(b.variants) && b.variants[vIdx]) ? b.variants[vIdx] : b;
+
             selectedUltSchool = b.schoolId;
-            cycle = [...b.deck];
+            cycle = [...v.deck];
             const appliedTags = [];
-            if (b.isCustomBudget && b.assignedBtMap) {
-                b.deck.forEach(sName => {
+            if (b.isCustomBudget && v.assignedBtMap) {
+                v.deck.forEach(sName => {
                     const sk = skillDb[sName];
                     if (!sk || sk.category === '도술') return;
-                    const lv = Math.max(0, Math.min(10, parseInt(b.assignedBtMap[sName], 10) || 0));
+                    const lv = Math.max(0, Math.min(10, parseInt(v.assignedBtMap[sName], 10) || 0));
                     breakthroughStageMap[sName] = lv;
                     if (sk.category === '특별') {
                         bt6ActiveMap[sName] = (lv >= 6);
@@ -6403,11 +6862,11 @@ function renderSingleLineTimeline(root, res) {
                 });
                 appliedTags.push('지정 돌파');
             }
-            if (b.isCustomSchoolLv && b.assignedSchoolLvMap) {
-                schoolEnhanceLevels = { ...b.assignedSchoolLvMap };
+            if (b.isCustomSchoolLv && v.assignedSchoolLvMap) {
+                schoolEnhanceLevels = { ...v.assignedSchoolLvMap };
                 appliedTags.push('지정 계열 레벨');
             }
-            activeTreeName = `추천 ${idx + 1}위 (${b.schoolName} · ${b.ultName})`;
+            activeTreeName = `추천 ${idx + 1}위-${vIdx + 1} (${b.schoolName} · ${b.ultName})`;
             syncUltimateInCycle(false);
             saveAllState();
             renderSinsikAndBt6Banners();
@@ -6417,7 +6876,7 @@ function renderSingleLineTimeline(root, res) {
             renderCycle();
             calculateDPS();
             closeRecommendModal();
-            showToast(`추천 ${idx + 1}위 [${b.schoolName}] 빌드가 적용되었습니다!${appliedTags.length > 0 ? ` (${appliedTags.join(' · ')} 반영)` : ''} (DPS ${b.dps.toFixed(2)}%/초)`);
+            showToast(`추천 ${idx + 1}위 [${b.schoolName} #${vIdx + 1}] 빌드가 적용되었습니다!${appliedTags.length > 0 ? ` (${appliedTags.join(' · ')} 반영)` : ''} (DPS ${v.dps.toFixed(2)}%/초)`);
         }
 
         function renderRecommendedBuilds(builds) {
@@ -6437,27 +6896,82 @@ function renderSingleLineTimeline(root, res) {
                 'border-borderCol bg-cardBg'
             ];
             const rankBadges = [
-                '<span class="px-2 py-0.5 rounded-md text-[11px] font-black bg-amber-500 text-black">1위 · 최고 DPS</span>',
-                '<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-violet-600 text-white">2위</span>',
-                '<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-gray-700 text-gray-200">3위</span>'
+                '<span class="px-2 py-0.5 rounded-md text-[11px] font-black bg-amber-500 text-black">1위 신식</span>',
+                '<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-violet-600 text-white">2위 신식</span>',
+                '<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-gray-700 text-gray-200">3위 신식</span>'
             ];
 
             builds.forEach((b, idx) => {
-                const skillsHtml = b.deck.map((sName, sIdx) => {
+                const variants = (Array.isArray(b.variants) && b.variants.length > 0) ? b.variants : [b];
+                let selVIdx = recommendSelectedVariants[idx] || 0;
+                if (selVIdx >= variants.length) selVIdx = 0;
+                const v = variants[selVIdx];
+                const topV = variants[0];
+
+                // 1위 빌드 대비 변경된 스킬 추출 (2위/3위 선택 시 표시)
+                let diffHtml = '';
+                const addedSet = new Set();
+                if (selVIdx > 0 && topV) {
+                    const topNonUlt = topV.deck.filter(n => n !== b.ultName);
+                    const curNonUlt = v.deck.filter(n => n !== b.ultName);
+                    const removed = topNonUlt.filter(n => !curNonUlt.includes(n));
+                    const added = curNonUlt.filter(n => !topNonUlt.includes(n));
+                    added.forEach(n => addedSet.add(n));
+                    if (removed.length > 0 || added.length > 0) {
+                        const dpsDiff = v.dps - topV.dps;
+                        diffHtml = `
+                            <div class="flex flex-wrap items-center justify-between gap-2 mb-2 px-2.5 py-1.5 rounded-lg bg-darkBg/70 border border-borderCol/70 text-[11px]">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-gray-400 font-semibold">1위 대비 변경:</span>
+                                    <span class="text-rose-300/90 line-through">${removed.join(', ')}</span>
+                                    <i class="fa-solid fa-arrow-right text-[9px] text-gray-500"></i>
+                                    <span class="text-emerald-300 font-bold">${added.join(', ')}</span>
+                                </div>
+                                <span class="text-gray-400 num-clean">${dpsDiff.toFixed(2)}%/초</span>
+                            </div>
+                        `;
+                    }
+                }
+
+                // 신식 내부 Top 1 / 2 / 3 탭 버튼
+                const variantTabsHtml = variants.length > 1 ? `
+                    <div class="flex items-center gap-1.5 mb-2.5">
+                        ${variants.map((item, vIdx) => {
+                            const active = vIdx === selVIdx;
+                            return `
+                                <button type="button" onclick="selectRecommendVariant(${idx}, ${vIdx})"
+                                        class="flex-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition flex items-center justify-between gap-1.5 num-clean ${
+                                            active
+                                                ? 'bg-[#232836] border-[#7F91F5]/70 text-white'
+                                                : 'bg-darkBg/70 border-borderCol text-gray-400 hover:text-gray-200 hover:border-gray-600'
+                                        }">
+                                    <span>Top ${vIdx + 1}</span>
+                                    <span class="${active ? 'text-emerald-400' : 'text-gray-400'} text-[11px]">${item.dps.toFixed(2)}</span>
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                ` : '';
+
+                const skillsHtml = v.deck.map((sName, sIdx) => {
                     const sk = skillDb[sName];
                     if (!sk) return '';
                     const isUlt = sk.category === '도술';
                     const isPinned = !!recommendPinnedMap[sName];
+                    const isAddedDiff = addedSet.has(sName);
                     const btLv = isUlt
                         ? 0
-                        : (b.isCustomBudget && b.assignedBtMap
-                            ? (parseInt(b.assignedBtMap[sName], 10) || 0)
+                        : (b.isCustomBudget && v.assignedBtMap
+                            ? (parseInt(v.assignedBtMap[sName], 10) || 0)
                             : (parseInt(breakthroughStageMap[sName], 10) || 0));
                     const starHtml = (!isUlt && sk.category === '특별' && btLv >= 6)
                         ? `<img src="${BT6_STAR_ICON_SRC}" alt="6돌파" class="bt6-star-badge w-3 h-3">`
                         : '';
+                    const borderCls = isAddedDiff
+                        ? 'border-sky-400/70'
+                        : (isPinned ? 'border-emerald-500/60' : (isUlt ? 'border-amber-500/60' : 'border-borderCol'));
                     return `
-                        <div class="flex items-center gap-1.5 bg-darkBg/90 border ${isPinned ? 'border-emerald-500/60' : (isUlt ? 'border-amber-500/60' : 'border-borderCol')} rounded-lg px-2 py-1 min-w-0">
+                        <div class="flex items-center gap-1.5 bg-darkBg/90 border ${borderCls} rounded-lg px-2 py-1 min-w-0">
                             <span class="text-[10px] font-bold text-gray-500 num-clean">${sIdx + 1}</span>
                             ${isUlt
                                 ? `<div class="ult-hex-frame ult-hex-sm w-6 h-6"><div class="ult-hex-inner"><img src="${getSkillIconSrc(sk)}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')"><div class="hidden w-full h-full items-center justify-center text-[9px] font-bold text-amber-300">${sName.substring(0, 2)}</div></div></div>`
@@ -6470,8 +6984,8 @@ function renderSingleLineTimeline(root, res) {
                 }).join('');
 
                 let assignedSchHtml = '';
-                if (b.isCustomSchoolLv && b.assignedSchoolLvMap) {
-                    const assignedEntries = Object.entries(b.assignedSchoolLvMap)
+                if (b.isCustomSchoolLv && v.assignedSchoolLvMap) {
+                    const assignedEntries = Object.entries(v.assignedSchoolLvMap)
                         .filter(([, lv]) => lv > 0)
                         .sort((a, c) => c[1] - a[1]);
                     if (assignedEntries.length > 0) {
@@ -6491,22 +7005,24 @@ function renderSingleLineTimeline(root, res) {
                 const card = document.createElement('div');
                 card.className = `rounded-2xl border p-4 transition ${rankColors[idx] || rankColors[2]}`;
                 card.innerHTML = `
-                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
                         <div class="flex items-center gap-2 flex-wrap">
                             ${rankBadges[idx] || ''}
                             <span class="px-2 py-0.5 rounded-md text-[11px] font-bold text-white" style="background:${b.schoolColor}">${b.schoolName}</span>
-                            <span class="text-sm font-black text-white">${b.ultName} 중심 빌드</span>
+                            <span class="text-sm font-black text-white">${b.ultName} 중심</span>
                         </div>
                         <div class="flex items-center gap-3">
                             <div class="text-right num-clean">
-                                <div class="text-base font-black text-emerald-400 leading-tight">${b.dps.toFixed(2)} <span class="text-[10px] font-normal text-gray-400">%/초</span></div>
-                                <div class="text-[10px] text-amber-300/90">시너지·돌파 +${b.synergyPct.toFixed(1)}%</div>
+                                <div class="text-base font-black text-emerald-400 leading-tight">${v.dps.toFixed(2)} <span class="text-[10px] font-normal text-gray-400">%/초</span></div>
+                                <div class="text-[10px] text-amber-300/90">시너지·돌파 +${v.synergyPct.toFixed(1)}%</div>
                             </div>
-                            <button type="button" onclick="applyRecommendedBuild(${idx})" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold transition shadow-md shrink-0" title="추천 빌드를 적용합니다">
+                            <button type="button" onclick="applyRecommendedBuild(${idx}, ${selVIdx})" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold transition shadow-md shrink-0" title="선택한 추천 빌드를 적용합니다">
                                 ${applyBtnLabel}
                             </button>
                         </div>
                     </div>
+                    ${variantTabsHtml}
+                    ${diffHtml}
                     <div class="grid grid-cols-3 gap-1.5">
                         ${skillsHtml}
                     </div>
