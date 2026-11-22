@@ -206,7 +206,7 @@
                 <div id="quickPresetBar" class="flex items-center gap-1.5"></div>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
-                <input type="text" id="quickSaveInput" placeholder="빌드 이름 입력..." 
+                <input type="text" id="quickSaveInput" placeholder="빌드 이름 (미입력 가능)" 
                        class="bg-cardBg border border-borderCol rounded-lg px-2.5 py-1 text-xs text-gray-200 focus:outline-none focus:border-gray-500 w-40">
                 <button onclick="quickSaveCurrentTree()" class="px-2.5 py-1 bg-cardBg hover:bg-[#232836] border border-borderCol text-gray-200 rounded-lg text-xs font-medium transition">
                     저장
@@ -280,7 +280,7 @@
                         <span id="resBaseDps" class="text-[10px] text-gray-400 block mt-0.5">기본(무보정): 0.00%/초</span>
                     </div>
                     <div class="bg-cardBg border border-borderCol rounded-xl p-3.5">
-                        <span class="text-[11px] text-gray-400 block mb-1">누적 총 피해 계수</span>
+                        <span id="resTotalCoeffLabel" class="text-[11px] text-gray-400 block mb-1">누적 총 피해 계수</span>
                         <div id="resTotalCoeff" class="text-lg font-bold text-white">0%</div>
                         <span id="resBaseCoeff" class="text-[10px] text-gray-500 block mt-0.5">기본 누적합: 0%</span>
                     </div>
@@ -323,82 +323,139 @@
                     <div class="flex flex-wrap items-center gap-1.5" id="styleResourceToggles"></div>
                 </div>
 
-                <!-- Base Character & Target Stat Inputs (공격력, 치명타 적중/피해, 피해 증가, 보스 피증 & 대상 방어력/치명 저항) -->
+                <!-- Base Character & Attack Target Stat Inputs -->
                 <div class="bg-cardBg/70 border border-borderCol rounded-xl p-3 flex flex-col gap-2.5">
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <div class="text-xs text-indigo-300 flex items-center gap-1.5 font-bold shrink-0 w-24">
-                            <i class="fa-solid fa-sliders text-indigo-400"></i>
+                    <div class="flex flex-col sm:flex-row sm:items-start gap-2">
+                        <div class="text-xs text-gray-200 flex items-center gap-1.5 font-bold shrink-0 w-24 pt-1">
+                            <i class="fa-solid fa-sliders text-gray-400"></i>
                             <span>상세 스탯:</span>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2.5 flex-1">
-                            <label class="flex items-center gap-1.5 text-xs text-gray-300" title="방어력 계산식 A²/(A+D) 기반 방어력 감소 · 공격력 증가 효율 반영 (0이면 방깎 미반영)">
-                                <span class="font-semibold text-gray-400">공격력</span>
-                                <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-indigo-400 rounded-lg px-2 py-1">
-                                    <input type="number" id="baseAtkInput" step="1" min="0" max="9999999" value="0" inputmode="numeric"
-                                           oninput="onBaseStatInputChange()"
-                                           class="w-16 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
+                        <div class="flex flex-col gap-2 flex-1">
+                            <div class="flex flex-wrap items-center gap-2.5">
+                                <label class="flex items-center gap-1.5 text-xs text-gray-300" title="방어력 계산식 A²/(A+D) 기반 방어력 감소 · 공격력 증가 효율 반영 (0이면 방깎 미반영)">
+                                    <span class="font-semibold text-gray-400">공격력</span>
+                                    <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-[#7F91F5] rounded-lg px-2 py-1">
+                                        <input type="number" id="baseAtkInput" step="1" min="0" max="9999999" value="0" inputmode="numeric"
+                                               oninput="onBaseStatInputChange()"
+                                               class="w-16 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-1.5 text-xs text-gray-300" title="치명타 확률 = (0.8 × max(적중-저항,0)) / (2×저항 + max(적중-저항,0))">
+                                    <span class="font-semibold text-gray-400">치명타 적중</span>
+                                    <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-[#7F91F5] rounded-lg px-2 py-1">
+                                        <input type="number" id="userCritHitInput" step="1" min="0" max="999999" value="0" inputmode="numeric"
+                                               oninput="onBaseStatInputChange()"
+                                               class="w-14 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-1.5 text-xs text-gray-300" title="치명타 적중 시 추가 피해 배율 (기본 +20% = 1.2배 · 치피증/받치피증과 합연산)">
+                                    <span class="font-semibold text-gray-400">치명타 피해 증가</span>
+                                    <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-[#7F91F5] rounded-lg px-2 py-1">
+                                        <span class="text-[11px] text-gray-500 mr-0.5">+</span>
+                                        <input type="number" id="critDmgIncInput" step="0.1" min="0" max="1000" value="20" inputmode="decimal"
+                                               oninput="onBaseStatInputChange()"
+                                               class="w-12 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
+                                        <span class="text-[11px] text-gray-500 ml-0.5">%</span>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2.5">
+                                <label class="flex items-center gap-1.5 text-xs text-gray-300" title="주는 피해 증가 · 받는 피해 증가와 합연산">
+                                    <span class="font-semibold text-gray-400">피해 증가</span>
+                                    <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-[#7F91F5] rounded-lg px-2 py-1">
+                                        <input type="number" id="baseDmgIncInput" step="0.01" min="0" max="1000" value="0" inputmode="decimal"
+                                               oninput="onBaseStatInputChange()"
+                                               class="w-12 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
+                                        <span class="text-[11px] text-gray-500 ml-0.5">%</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-1.5 text-xs text-gray-300" title="공격대상이 허수아비일 때 적용되는 일반 요귀 피해 증가 (%)">
+                                    <span class="font-semibold text-gray-400">일반 요귀 피해 증가</span>
+                                    <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-[#7F91F5] rounded-lg px-2 py-1">
+                                        <input type="number" id="normalYoukaiDmgIncInput" step="0.01" min="0" max="1000" value="0" inputmode="decimal"
+                                               oninput="onBaseStatInputChange()"
+                                               class="w-12 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
+                                        <span class="text-[10px] text-gray-500 ml-0.5">%</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-1.5 text-xs text-gray-300" title="보스 대상 시 연타 신식(격노 +0.4%/중첩) · 저격 신식 연속 조준(+5%/중첩)과 합연산">
+                                    <span class="font-semibold text-gray-400">보스 피해 증가</span>
+                                    <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-[#7F91F5] rounded-lg px-2 py-1">
+                                        <input type="number" id="bossDmgIncInput" step="0.01" min="0" max="1000" value="0" inputmode="decimal"
+                                               oninput="onBaseStatInputChange()"
+                                               class="w-12 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
+                                        <span class="text-[11px] text-gray-500 ml-0.5">%</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t border-borderCol/60 pt-2 flex flex-col sm:flex-row sm:items-center gap-2">
+                        <div class="text-xs text-gray-300 flex items-center gap-1.5 font-bold shrink-0 w-24">
+                            <i class="fa-solid fa-sparkles text-[#7F91F5]"></i>
+                            <span>속성 피증:</span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 flex-1" id="attrDmgInputsContainer">
+                            <label id="attrLabel_요물" class="flex items-center gap-1 text-xs text-gray-300 transition">
+                                <span class="font-semibold text-gray-400">요물</span>
+                                <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-[#7F91F5] rounded-lg px-1.5 py-0.5">
+                                    <input type="number" id="attrDmgInput_요물" step="0.1" min="0" max="500" value="0" inputmode="decimal"
+                                           oninput="onAttrDmgInputChange('요물', this.value)"
+                                           class="w-10 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
+                                    <span class="text-[10px] text-gray-500 ml-0.5">%</span>
                                 </div>
                             </label>
-                            <label class="flex items-center gap-1.5 text-xs text-gray-300" title="치명타 확률 = (0.8 × max(적중-저항,0)) / (2×저항 + max(적중-저항,0))">
-                                <span class="font-semibold text-gray-400">치명타 적중</span>
-                                <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-indigo-400 rounded-lg px-2 py-1">
-                                    <input type="number" id="userCritHitInput" step="1" min="0" max="999999" value="0" inputmode="numeric"
-                                           oninput="onBaseStatInputChange()"
-                                           class="w-14 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
+                            <label id="attrLabel_요수" class="flex items-center gap-1 text-xs text-gray-300 transition">
+                                <span class="font-semibold text-gray-400">요수</span>
+                                <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-[#7F91F5] rounded-lg px-1.5 py-0.5">
+                                    <input type="number" id="attrDmgInput_요수" step="0.1" min="0" max="500" value="0" inputmode="decimal"
+                                           oninput="onAttrDmgInputChange('요수', this.value)"
+                                           class="w-10 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
+                                    <span class="text-[10px] text-gray-500 ml-0.5">%</span>
                                 </div>
                             </label>
-                            <label class="flex items-center gap-1.5 text-xs text-gray-300" title="치명타 적중 시 추가 피해 배율 (기본 +20% = 1.2배 · 치피증/받치피증과 합연산)">
-                                <span class="font-semibold text-gray-400">치명타 피해 증가</span>
-                                <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-indigo-400 rounded-lg px-2 py-1">
-                                    <span class="text-[11px] text-gray-500 mr-0.5">+</span>
-                                    <input type="number" id="critDmgIncInput" step="0.1" min="0" max="1000" value="20" inputmode="decimal"
-                                           oninput="onBaseStatInputChange()"
-                                           class="w-12 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
-                                    <span class="text-[11px] text-gray-500 ml-0.5">%</span>
+                            <label id="attrLabel_요마" class="flex items-center gap-1 text-xs text-gray-300 transition">
+                                <span class="font-semibold text-gray-400">요마</span>
+                                <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-[#7F91F5] rounded-lg px-1.5 py-0.5">
+                                    <input type="number" id="attrDmgInput_요마" step="0.1" min="0" max="500" value="0" inputmode="decimal"
+                                           oninput="onAttrDmgInputChange('요마', this.value)"
+                                           class="w-10 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
+                                    <span class="text-[10px] text-gray-500 ml-0.5">%</span>
                                 </div>
                             </label>
-                            <label class="flex items-center gap-1.5 text-xs text-gray-300" title="주는 피해 증가 · 받는 피해 증가와 합연산">
-                                <span class="font-semibold text-gray-400">피해 증가</span>
-                                <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-indigo-400 rounded-lg px-2 py-1">
-                                    <input type="number" id="baseDmgIncInput" step="0.01" min="0" max="1000" value="0" inputmode="decimal"
-                                           oninput="onBaseStatInputChange()"
-                                           class="w-12 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
-                                    <span class="text-[11px] text-gray-500 ml-0.5">%</span>
+                            <label id="attrLabel_원귀" class="flex items-center gap-1 text-xs text-gray-300 transition">
+                                <span class="font-semibold text-gray-400">원귀</span>
+                                <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-[#7F91F5] rounded-lg px-1.5 py-0.5">
+                                    <input type="number" id="attrDmgInput_원귀" step="0.1" min="0" max="500" value="0" inputmode="decimal"
+                                           oninput="onAttrDmgInputChange('원귀', this.value)"
+                                           class="w-10 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
+                                    <span class="text-[10px] text-gray-500 ml-0.5">%</span>
                                 </div>
                             </label>
-                            <label class="flex items-center gap-1.5 text-xs text-gray-300" title="연타 신식(격노 보스 피증 +0.4%/중첩) · 저격 신식 연속 조준(+5%/중첩)과 합연산">
-                                <span class="font-semibold text-gray-400">보스 주는 피해 증가</span>
-                                <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-indigo-400 rounded-lg px-2 py-1">
-                                    <input type="number" id="bossDmgIncInput" step="0.01" min="0" max="1000" value="0" inputmode="decimal"
-                                           oninput="onBaseStatInputChange()"
-                                           class="w-12 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
-                                    <span class="text-[11px] text-gray-500 ml-0.5">%</span>
+                            <label id="attrLabel_인간" class="flex items-center gap-1 text-xs text-gray-300 transition">
+                                <span class="font-semibold text-gray-400">인간</span>
+                                <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-[#7F91F5] rounded-lg px-1.5 py-0.5">
+                                    <input type="number" id="attrDmgInput_인간" step="0.1" min="0" max="500" value="0" inputmode="decimal"
+                                           oninput="onAttrDmgInputChange('인간', this.value)"
+                                           class="w-10 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
+                                    <span class="text-[10px] text-gray-500 ml-0.5">%</span>
                                 </div>
                             </label>
                         </div>
                     </div>
                     <div class="border-t border-borderCol/60 pt-2 flex flex-col sm:flex-row sm:items-center gap-2">
-                        <div class="text-xs text-amber-300 flex items-center gap-1.5 font-bold shrink-0 w-24">
-                            <i class="fa-solid fa-skull text-amber-400"></i>
-                            <span>대상 스탯:</span>
+                        <div class="text-xs text-gray-200 flex items-center gap-1.5 font-bold shrink-0 w-24">
+                            <i class="fa-solid fa-crosshairs text-gray-400"></i>
+                            <span>공격 대상:</span>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2.5 flex-1">
-                            <label class="flex items-center gap-1.5 text-xs text-gray-300" title="대상 기본 방어력 (기본값 1000)">
-                                <span class="font-semibold text-gray-400">대상 방어력</span>
-                                <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-amber-400 rounded-lg px-2 py-1">
-                                    <input type="number" id="targetDefInput" step="1" min="0" max="999999" value="1000" inputmode="numeric"
-                                           oninput="onBaseStatInputChange()"
-                                           class="w-14 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
-                                </div>
-                            </label>
-                            <label class="flex items-center gap-1.5 text-xs text-gray-300" title="대상 치명타 저항 (기본값 667)">
-                                <span class="font-semibold text-gray-400">치명타 저항</span>
-                                <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-amber-400 rounded-lg px-2 py-1">
-                                    <input type="number" id="targetCritResInput" step="1" min="0" max="999999" value="667" inputmode="numeric"
-                                           oninput="onBaseStatInputChange()"
-                                           class="w-14 bg-transparent text-right text-xs font-bold text-white num-clean no-spinner focus:outline-none">
-                                </div>
-                            </label>
+                        <div class="flex flex-wrap items-center gap-2 flex-1">
+                            <div class="inline-flex rounded-lg bg-darkBg p-0.5 border border-borderCol">
+                                <button type="button" onclick="setTargetPreset('scarecrow')" id="targetBtn_scarecrow" class="px-2.5 py-1 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white" title="허수아비 (방어력 1,000 · 치명타 저항 0 · 일반 요귀 피해 증가 적용)">허수아비</button>
+                                <button type="button" onclick="setTargetPreset('field_boss')" id="targetBtn_field_boss" class="px-2.5 py-1 rounded-md text-xs font-semibold transition bg-violet-600 text-white" title="필드보스 강화 6단계 (방어력 23,123 · 치명타 저항 629)">필드보스 (6단계)</button>
+                                <button type="button" onclick="setTargetPreset('raid_4')" id="targetBtn_raid_4" class="px-2.5 py-1 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white">레이드 4단</button>
+                                <button type="button" onclick="setTargetPreset('raid_5')" id="targetBtn_raid_5" class="px-2.5 py-1 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white">레이드 5단</button>
+                            </div>
+                            <div id="targetAttrToggleBox" class="inline-flex items-center gap-1"></div>
                             <span id="statCalcPreviewBadge" class="text-[11px] text-gray-400 num-clean ml-auto"></span>
                         </div>
                     </div>
@@ -612,10 +669,14 @@
                 <button onclick="closePresetModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
-            <div class="bg-cardBg border border-borderCol rounded-xl p-3.5 mb-4">
-                <label class="block text-xs font-bold text-violet-300 mb-2">현재 배치된 스킬트리를 새 프리셋으로 저장</label>
+            <div class="bg-cardBg border border-borderCol rounded-xl p-3.5 mb-4 space-y-2.5">
+                <div class="flex items-center justify-between gap-2">
+                    <label class="text-xs font-bold text-violet-300">저장할 프리셋 칸 선택 (1~9)</label>
+                    <span id="modalSelectedSlotBadge" class="text-[11px] font-bold text-indigo-300 num-clean">1번 칸 선택</span>
+                </div>
+                <div id="modalSlotSelector" class="grid grid-cols-9 gap-1"></div>
                 <div class="flex gap-2">
-                    <input type="text" id="modalPresetName" placeholder="예: 절명 신식 + 특별 6돌파 극딜 트리" 
+                    <input type="text" id="modalPresetName" placeholder="이름 미입력 시 '프리셋 N'으로 자동 저장" 
                            class="flex-1 bg-darkBg border border-borderCol rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500">
                     <button onclick="savePresetFromModal()" class="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs font-bold transition shrink-0">
                         <i class="fa-solid fa-floppy-disk mr-1"></i> 프리셋 저장
@@ -627,6 +688,30 @@
 
             <div class="flex justify-end mt-4 pt-3 border-t border-borderCol">
                 <button onclick="closePresetModal()" class="px-4 py-2 bg-cardBg hover:bg-gray-800 text-gray-300 rounded-xl text-xs font-medium border border-borderCol">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 1-B: Quick Save Slot Picker (1~9) -->
+    <div id="saveSlotModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-panelBg border border-borderCol rounded-2xl w-full max-w-md p-5 shadow-2xl">
+            <div class="flex justify-between items-center mb-3 pb-2.5 border-b border-borderCol">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk text-violet-400"></i> 프리셋 저장 칸 선택 (1~9)
+                </h3>
+                <button onclick="closeSaveSlotModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="mb-3">
+                <label class="block text-[11px] font-semibold text-gray-400 mb-1">빌드 이름 (입력하지 않아도 저장 가능)</label>
+                <input type="text" id="saveSlotNameInput" placeholder="미입력 시 '프리셋 N'으로 저장"
+                       class="w-full bg-darkBg border border-borderCol rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500">
+            </div>
+            <div id="saveSlotGrid" class="grid grid-cols-3 gap-2 mb-4"></div>
+            <div class="flex justify-end gap-2 pt-2.5 border-t border-borderCol">
+                <button onclick="closeSaveSlotModal()" class="px-3.5 py-1.5 bg-cardBg hover:bg-gray-800 text-gray-300 rounded-xl text-xs font-medium border border-borderCol">취소</button>
+                <button id="confirmSaveSlotBtn" onclick="confirmSaveToSelectedSlot()" class="px-4 py-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs font-bold transition">
+                    1번 칸에 저장
+                </button>
             </div>
         </div>
     </div>
@@ -695,7 +780,7 @@
 
                 <div id="recCustomConfigBox" class="hidden space-y-2 pt-2 border-t border-borderCol/70">
                     <div class="flex items-center justify-between text-[11px] text-gray-400">
-                        <span>특별/일반 도술별 돌파 단계와 개수를 지정해 최적 빌드를 탐색합니다. (최대 8슬롯)</span>
+                        <span>특별/일반 도술별 돌파 조건을 지정해 최적 8슬롯 빌드를 탐색합니다. (총합 8개 초과 시 조건 내 최적 8개 자동 선택)</span>
                     </div>
                     <div id="recBtRulesContainer" class="space-y-1.5"></div>
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
@@ -1270,40 +1355,39 @@
             return db;
         }
 
-        const DEFAULT_PRESETS = [
-            {
-                id: 'preset_default_1',
-                name: '절명·연타 출혈/충격 극딜 트리',
-                cycle: ['내려찍기', '주먹 지르기', '삼단 찌르기', '환영 참격', '심장 절단', '연속 찌르기', '암습'],
-                breakthroughStageMap: {},
-                schoolEnhanceLevels: {},
-                selectedUltSchool: 'jeolmyeong',
-                weaponType: 'sword'
-            },
-            {
-                id: 'preset_default_2',
-                name: '파멸 원소·화상 폭딜 트리',
-                cycle: ['요혼격', '연쇄 번개', '화염 분출', '날카로운 얼음창', '얼음화살', '화염구', '대폭발'],
-                breakthroughStageMap: {},
-                schoolEnhanceLevels: {},
-                selectedUltSchool: 'pamyeol',
-                weaponType: 'staff'
-            },
-            {
-                id: 'preset_default_3',
-                name: '저격·기동 상태이상 시너지 트리',
-                cycle: ['꿰뚫는 저격', '번개 폭풍', '일점 저격', '얼음 감옥', '폭발하는 화살', '정조준'],
-                breakthroughStageMap: {},
-                schoolEnhanceLevels: {},
-                selectedUltSchool: 'jeogyeok',
-                weaponType: 'staff'
+        const LEGACY_DEFAULT_PRESET_IDS = new Set([
+            'preset_default_1',
+            'preset_default_2',
+            'preset_default_3'
+        ]);
+
+        const MAX_PRESET_SLOTS = 9;
+        function normalizePresetSlots(raw) {
+            const slots = new Array(MAX_PRESET_SLOTS).fill(null);
+            if (Array.isArray(raw)) {
+                for (let i = 0; i < Math.min(raw.length, MAX_PRESET_SLOTS); i++) {
+                    const item = raw[i];
+                    if (item && typeof item === 'object' && Array.isArray(item.cycle) && !LEGACY_DEFAULT_PRESET_IDS.has(item.id)) {
+                        slots[i] = item;
+                    }
+                }
             }
-        ];
+            return slots;
+        }
+        function getFilledPresetCount() {
+            return savedPresets.filter(p => p !== null).length;
+        }
 
         const skillDb = buildSkillDbFromCode();
         const styleSinsikDb = STYLE_SINSIK_DATA;
-        let savedPresets = JSON.parse(localStorage.getItem('dokkaebi_presets_v6')) || [...DEFAULT_PRESETS];
-        let cycle = JSON.parse(localStorage.getItem('dokkaebi_cycle_v6')) || [...DEFAULT_PRESETS[0].cycle];
+        let savedPresets = normalizePresetSlots(JSON.parse(localStorage.getItem('dokkaebi_presets_v6')));
+        let activePresetSlot = parseInt(localStorage.getItem('dokkaebi_active_preset_slot_v1'), 10);
+        if (isNaN(activePresetSlot) || activePresetSlot < 0 || activePresetSlot >= MAX_PRESET_SLOTS || !savedPresets[activePresetSlot]) {
+            activePresetSlot = -1;
+        }
+        let selectedSaveSlotIdx = 0;
+        let modalSelectedSlotIdx = 0;
+        let cycle = JSON.parse(localStorage.getItem('dokkaebi_cycle_v6')) || [];
         let bt6ActiveMap = JSON.parse(localStorage.getItem('dokkaebi_bt6_map_v6')) || {};
         let breakthroughStageMap = JSON.parse(localStorage.getItem('dokkaebi_bt_stage_v6')) || {};
         let recommendExcludedMap = JSON.parse(localStorage.getItem('dokkaebi_rec_excluded_v1')) || {};
@@ -1317,10 +1401,11 @@
         let currentWeaponType = localStorage.getItem('dokkaebi_weapon_v6') || 'sword';
         let selectedLegendWeapon = localStorage.getItem('dokkaebi_legend_weapon_v1') || '';
         if (selectedLegendWeapon && !LEGEND_WEAPONS[selectedLegendWeapon]) selectedLegendWeapon = '';
-        let activeTreeName = localStorage.getItem('dokkaebi_active_tree_name_v6') || DEFAULT_PRESETS[0].name;
+        let activeTreeName = localStorage.getItem('dokkaebi_active_tree_name_v6') || '기본 스킬트리';
         let permanentStates = JSON.parse(localStorage.getItem('dokkaebi_perm_states_v6')) || {};
-        ['질풍', '원소', '기세', '정밀', '수호', '약화', '강화 저주'].forEach(k => { delete permanentStates[k]; });
+        ['질풍', '원소', '기세', '정밀', '수호', '강화 저주'].forEach(k => { delete permanentStates[k]; });
         let baseDmgIncPct = parseFloat(localStorage.getItem('dokkaebi_base_dmg_inc_v1')) || 0;
+        let normalYoukaiDmgIncPct = parseFloat(localStorage.getItem('dokkaebi_normal_youkai_dmg_inc_v1')) || 0;
         let bossDmgIncPct = parseFloat(localStorage.getItem('dokkaebi_boss_dmg_inc_v1')) || 0;
         let baseAtkStat = parseFloat(localStorage.getItem('dokkaebi_base_atk_v1')) || 0;
         let userCritHitStat = parseFloat(localStorage.getItem('dokkaebi_user_crit_hit_v1')) || 0;
@@ -1328,14 +1413,61 @@
             ? parseFloat(localStorage.getItem('dokkaebi_crit_dmg_inc_v1'))
             : 20;
         if (isNaN(critDmgIncPct) || critDmgIncPct < 0) critDmgIncPct = 20;
-        let targetDefStat = (localStorage.getItem('dokkaebi_target_def_v1') !== null)
-            ? (parseFloat(localStorage.getItem('dokkaebi_target_def_v1')))
-            : 1000;
-        if (isNaN(targetDefStat) || targetDefStat < 0) targetDefStat = 1000;
-        let targetCritResStat = (localStorage.getItem('dokkaebi_target_crit_res_v1') !== null)
-            ? (parseFloat(localStorage.getItem('dokkaebi_target_crit_res_v1')))
-            : 667;
-        if (isNaN(targetCritResStat) || targetCritResStat < 0) targetCritResStat = 667;
+        const MONSTER_ATTRIBUTES = ['요물', '요수', '요마', '원귀', '인간'];
+        const TARGET_PRESETS = {
+            scarecrow:  { id: 'scarecrow',  name: '허수아비', def: 1000, critRes: 0, attrs: ['요수'], isBoss: false },
+            field_boss: { id: 'field_boss', name: '필드보스 (6단계)', def: 23123, critRes: 629, attrs: ['요수', '요마'], isBoss: true },
+            raid_4:     { id: 'raid_4',     name: '레이드 4단', def: 29000, critRes: 749, attrs: ['요물'], isBoss: true },
+            raid_5:     { id: 'raid_5',     name: '레이드 5단', def: 65000, critRes: 1503, attrs: ['요물'], isBoss: true }
+        };
+        let selectedTargetPreset = localStorage.getItem('dokkaebi_target_preset_v1') || 'field_boss';
+        if (!TARGET_PRESETS[selectedTargetPreset]) selectedTargetPreset = 'field_boss';
+        let targetDefStat = TARGET_PRESETS[selectedTargetPreset].def;
+        let targetCritResStat = TARGET_PRESETS[selectedTargetPreset].critRes;
+        let selectedFieldBossAttr = localStorage.getItem('dokkaebi_field_boss_attr_v1') || '요수';
+        if (!['요수', '요마'].includes(selectedFieldBossAttr)) selectedFieldBossAttr = '요수';
+        let selectedScarecrowAttr = '요수';
+        let attrDmgIncMap = JSON.parse(localStorage.getItem('dokkaebi_attr_dmg_inc_v1')) || {};
+        MONSTER_ATTRIBUTES.forEach(a => {
+            const v = parseFloat(attrDmgIncMap[a]);
+            attrDmgIncMap[a] = isNaN(v) ? 0 : Math.max(0, Math.min(500, v));
+        });
+
+        function isCurrentTargetBoss() {
+            const preset = TARGET_PRESETS[selectedTargetPreset] || TARGET_PRESETS.field_boss;
+            return preset.isBoss !== false;
+        }
+
+        function getActiveTargetAttr() {
+            if (selectedTargetPreset === 'field_boss') return selectedFieldBossAttr;
+            if (selectedTargetPreset === 'scarecrow') return selectedScarecrowAttr;
+            const preset = TARGET_PRESETS[selectedTargetPreset] || TARGET_PRESETS.field_boss;
+            return (preset.attrs && preset.attrs[0]) ? preset.attrs[0] : '요물';
+        }
+
+        function getActiveAttrDmgIncPct() {
+            const attr = getActiveTargetAttr();
+            return Number(attrDmgIncMap[attr]) || 0;
+        }
+
+        // 공격대상 구분에 따른 추가 피해 보너스 합계:
+        // - 허수아비: 일반 요귀 피해 증가 적용 (보스 피해 증가 미적용)
+        // - 보스(필드보스/레이드): 보스 피해 증가 + 격노 보스 피증 + 연속 조준 보스 피증 적용
+        function getTargetTypeBonusPct(yeontaBossPct = 0, chojunPct = 0) {
+            if (isCurrentTargetBoss()) {
+                return bossDmgIncPct + yeontaBossPct + chojunPct;
+            }
+            return normalYoukaiDmgIncPct;
+        }
+
+        // 공격력 입력 시(A > 0) 계수(%) -> 절대 데미지 환산 배율: A0² / (1000 * (A0 + D0))
+        function getAbsDamageScale() {
+            if (baseAtkStat > 0) {
+                const D0 = Math.max(0, targetDefStat);
+                return (baseAtkStat * baseAtkStat) / (1000.0 * (baseAtkStat + D0));
+            }
+            return 0;
+        }
 
         // 방어력·공격력 공식: A² / (A + D_eff) 기준 기본 상태(A0, D0) 대비 상대 배율
         function calcAtkDefRelativeMult(atkBonusPct, defRedPct) {
@@ -1381,8 +1513,17 @@
             } else {
                 parts.push(`방깎 효율 <span class="text-gray-500">공격력 입력 시 반영</span>`);
             }
-            const critP = calcCritRate(0, 0, false) * 100;
-            parts.push(`치명타 확률 <span class="text-indigo-300 font-bold">${critP.toFixed(2)}%</span>`);
+            const permCritResRed = permanentStates['약화'] ? 100 : 0;
+            const critP = calcCritRate(0, permCritResRed, false) * 100;
+            parts.push(`치명타 확률 <span class="text-indigo-300 font-bold">${critP.toFixed(2)}%</span>${permCritResRed > 0 ? ' <span class="text-rose-300/90">(약화 반영)</span>' : ''}`);
+            const actAttr = getActiveTargetAttr();
+            const actAttrPct = getActiveAttrDmgIncPct();
+            if (actAttrPct > 0) {
+                parts.push(`${actAttr} <span class="text-gray-200 font-bold">+${actAttrPct}%</span>`);
+            }
+            if (!isCurrentTargetBoss() && normalYoukaiDmgIncPct > 0) {
+                parts.push(`일반 요귀 <span class="text-gray-200 font-bold">+${normalYoukaiDmgIncPct}%</span>`);
+            }
             badge.innerHTML = parts.join(' <span class="text-gray-600 mx-1">·</span> ');
         }
 
@@ -1408,12 +1549,15 @@
             if (critDmgIncEl) critDmgIncEl.value = critDmgIncPct;
             const bDmgEl = document.getElementById('baseDmgIncInput');
             if (bDmgEl) bDmgEl.value = baseDmgIncPct;
+            const nYoukaiEl = document.getElementById('normalYoukaiDmgIncInput');
+            if (nYoukaiEl) nYoukaiEl.value = normalYoukaiDmgIncPct;
             const bBossEl = document.getElementById('bossDmgIncInput');
             if (bBossEl) bBossEl.value = bossDmgIncPct;
-            const tDefEl = document.getElementById('targetDefInput');
-            if (tDefEl) tDefEl.value = targetDefStat;
-            const tCritResEl = document.getElementById('targetCritResInput');
-            if (tCritResEl) tCritResEl.value = targetCritResStat;
+            MONSTER_ATTRIBUTES.forEach(a => {
+                const el = document.getElementById('attrDmgInput_' + a);
+                if (el) el.value = attrDmgIncMap[a] || 0;
+            });
+            renderTargetPresetButtons();
             updateStatCalcPreview();
             syncUltimateInCycle(false);
             renderCategoryFilterBar();
@@ -1440,16 +1584,91 @@
             localStorage.setItem('dokkaebi_weapon_v6', currentWeaponType);
             localStorage.setItem('dokkaebi_legend_weapon_v1', selectedLegendWeapon);
             localStorage.setItem('dokkaebi_active_tree_name_v6', activeTreeName);
+            localStorage.setItem('dokkaebi_active_preset_slot_v1', String(activePresetSlot));
             localStorage.setItem('dokkaebi_perm_states_v6', JSON.stringify(permanentStates));
             localStorage.setItem('dokkaebi_base_dmg_inc_v1', String(baseDmgIncPct));
+            localStorage.setItem('dokkaebi_normal_youkai_dmg_inc_v1', String(normalYoukaiDmgIncPct));
             localStorage.setItem('dokkaebi_boss_dmg_inc_v1', String(bossDmgIncPct));
             localStorage.setItem('dokkaebi_base_atk_v1', String(baseAtkStat));
             localStorage.setItem('dokkaebi_user_crit_hit_v1', String(userCritHitStat));
             localStorage.setItem('dokkaebi_crit_dmg_inc_v1', String(critDmgIncPct));
+            localStorage.setItem('dokkaebi_target_preset_v1', selectedTargetPreset);
             localStorage.setItem('dokkaebi_target_def_v1', String(targetDefStat));
             localStorage.setItem('dokkaebi_target_crit_res_v1', String(targetCritResStat));
+            localStorage.setItem('dokkaebi_field_boss_attr_v1', selectedFieldBossAttr);
+            localStorage.setItem('dokkaebi_attr_dmg_inc_v1', JSON.stringify(attrDmgIncMap));
             document.getElementById('activeTreeNameBadge').innerText = activeTreeName;
-            document.getElementById('presetCountBadge').innerText = savedPresets.length;
+            document.getElementById('presetCountBadge').innerText = `${getFilledPresetCount()}/${MAX_PRESET_SLOTS}`;
+        }
+
+        function renderTargetPresetButtons() {
+            Object.keys(TARGET_PRESETS).forEach(k => {
+                const btn = document.getElementById('targetBtn_' + k);
+                if (!btn) return;
+                if (k === selectedTargetPreset) {
+                    btn.className = "px-2.5 py-1 rounded-md text-xs font-semibold transition bg-violet-600 text-white";
+                } else {
+                    btn.className = "px-2.5 py-1 rounded-md text-xs font-semibold transition text-gray-400 hover:text-white";
+                }
+            });
+
+            const box = document.getElementById('targetAttrToggleBox');
+            const activeAttr = getActiveTargetAttr();
+            if (box) {
+                if (selectedTargetPreset === 'field_boss') {
+                    box.innerHTML = `
+                        <div class="inline-flex rounded-lg bg-darkBg p-0.5 border border-borderCol" title="필드보스 선택 (산신 산군대호: 요수 / 해골장군: 요마)">
+                            <button type="button" onclick="setFieldBossAttr('요수')" title="요수 속성" class="px-2 py-0.5 rounded-md text-[11px] font-bold transition ${selectedFieldBossAttr === '요수' ? 'bg-[#232836] text-white border border-line-strong' : 'text-gray-400 hover:text-white'}">산신 산군대호</button>
+                            <button type="button" onclick="setFieldBossAttr('요마')" title="요마 속성" class="px-2 py-0.5 rounded-md text-[11px] font-bold transition ${selectedFieldBossAttr === '요마' ? 'bg-[#232836] text-white border border-line-strong' : 'text-gray-400 hover:text-white'}">해골장군</button>
+                        </div>`;
+                } else if (selectedTargetPreset === 'scarecrow') {
+                    box.innerHTML = `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#1A1E28] text-gray-200 border border-[#343B4C]" title="허수아비 속성 (요수)">요수</span>`;
+                } else {
+                    box.innerHTML = `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#1A1E28] text-gray-200 border border-[#343B4C]" title="레이드 보스 (${activeAttr} 속성)">불가살이</span>`;
+                }
+            }
+
+            MONSTER_ATTRIBUTES.forEach(a => {
+                const lbl = document.getElementById('attrLabel_' + a);
+                if (!lbl) return;
+                const sp = lbl.querySelector('span');
+                const boxDiv = lbl.querySelector('div');
+                if (a === activeAttr) {
+                    if (sp) sp.className = 'font-bold text-gray-100';
+                    if (boxDiv) boxDiv.className = 'flex items-center bg-[#171B24] border border-[#7F91F5]/70 rounded-lg px-1.5 py-0.5';
+                } else {
+                    if (sp) sp.className = 'font-semibold text-gray-400';
+                    if (boxDiv) boxDiv.className = 'flex items-center bg-darkBg border border-borderCol focus-within:border-[#7F91F5] rounded-lg px-1.5 py-0.5';
+                }
+            });
+        }
+
+        function setFieldBossAttr(attr) {
+            if (!['요수', '요마'].includes(attr)) return;
+            selectedFieldBossAttr = attr;
+            renderTargetPresetButtons();
+            updateStatCalcPreview();
+            saveAllState();
+            calculateDPS();
+        }
+
+        function onAttrDmgInputChange(attr, val) {
+            const parsed = parseFloat(val);
+            attrDmgIncMap[attr] = isNaN(parsed) ? 0 : Math.max(0, Math.min(500, parsed));
+            updateStatCalcPreview();
+            saveAllState();
+            calculateDPS();
+        }
+
+        function setTargetPreset(key) {
+            const resolved = TARGET_PRESETS[key] ? key : 'field_boss';
+            selectedTargetPreset = resolved;
+            targetDefStat = TARGET_PRESETS[resolved].def;
+            targetCritResStat = TARGET_PRESETS[resolved].critRes;
+            renderTargetPresetButtons();
+            updateStatCalcPreview();
+            saveAllState();
+            calculateDPS();
         }
 
         function onBaseStatInputChange() {
@@ -1457,25 +1676,22 @@
             const uCritEl = document.getElementById('userCritHitInput');
             const critDmgIncEl = document.getElementById('critDmgIncInput');
             const bDmgEl = document.getElementById('baseDmgIncInput');
+            const nYoukaiEl = document.getElementById('normalYoukaiDmgIncInput');
             const bBossEl = document.getElementById('bossDmgIncInput');
-            const tDefEl = document.getElementById('targetDefInput');
-            const tCritResEl = document.getElementById('targetCritResInput');
 
             const atkVal = parseFloat(bAtkEl ? bAtkEl.value : '0');
             const critHitVal = parseFloat(uCritEl ? uCritEl.value : '0');
             const critDmgVal = parseFloat(critDmgIncEl ? critDmgIncEl.value : '20');
             const bVal = parseFloat(bDmgEl ? bDmgEl.value : '0');
+            const youkaiVal = parseFloat(nYoukaiEl ? nYoukaiEl.value : '0');
             const bossVal = parseFloat(bBossEl ? bBossEl.value : '0');
-            const defVal = parseFloat(tDefEl ? tDefEl.value : '1000');
-            const critResVal = parseFloat(tCritResEl ? tCritResEl.value : '667');
 
             baseAtkStat = isNaN(atkVal) ? 0 : Math.max(0, atkVal);
             userCritHitStat = isNaN(critHitVal) ? 0 : Math.max(0, critHitVal);
             critDmgIncPct = isNaN(critDmgVal) ? 20 : Math.max(0, Math.min(1000, critDmgVal));
             baseDmgIncPct = isNaN(bVal) ? 0 : Math.max(0, Math.min(1000, bVal));
+            normalYoukaiDmgIncPct = isNaN(youkaiVal) ? 0 : Math.max(0, Math.min(1000, youkaiVal));
             bossDmgIncPct = isNaN(bossVal) ? 0 : Math.max(0, Math.min(1000, bossVal));
-            targetDefStat = isNaN(defVal) ? 0 : Math.max(0, defVal);
-            targetCritResStat = isNaN(critResVal) ? 0 : Math.max(0, critResVal);
 
             updateStatCalcPreview();
             saveAllState();
@@ -2048,67 +2264,168 @@
         // =========================================================================
         // 7. 스킬트리 프리셋 저장 / 불러오기 / 공유 코드
         // =========================================================================
+        function getDefaultSaveSlotIdx() {
+            if (activePresetSlot >= 0 && activePresetSlot < MAX_PRESET_SLOTS) return activePresetSlot;
+            const emptyIdx = savedPresets.findIndex(p => p === null);
+            return emptyIdx !== -1 ? emptyIdx : 0;
+        }
+
         function renderQuickPresetBar() {
             const bar = document.getElementById('quickPresetBar');
-            document.getElementById('presetCountBadge').innerText = savedPresets.length;
+            document.getElementById('presetCountBadge').innerText = `${getFilledPresetCount()}/${MAX_PRESET_SLOTS}`;
             document.getElementById('activeTreeNameBadge').innerText = activeTreeName;
             bar.innerHTML = '';
 
-            savedPresets.forEach((preset, idx) => {
-                const isActive = preset.name === activeTreeName;
-                const sim = runSimulationForOrder(preset.cycle || [], false);
-                const iconsHtml = (preset.cycle || []).map(sName => {
-                    const sk = skillDb[sName];
-                    if (!sk) return '';
-                    const isUlt = sk.category === '도술';
-                    if (isUlt) {
-                        return `<div class="ult-hex-frame ult-hex-sm w-5 h-5" title="${sName}"><div class="ult-hex-inner"><img src="${getSkillIconSrc(sk)}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')"><div class="hidden w-full h-full items-center justify-center text-[8px] font-bold text-amber-300">${sName.substring(0, 1)}</div></div></div>`;
-                    }
-                    return `<div class="relative shrink-0" title="${sName}"><img src="${getSkillIconSrc(sk)}" class="w-5 h-5 rounded object-cover border border-borderCol/80" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')"><div class="hidden w-5 h-5 rounded bg-darkBg items-center justify-center text-[8px] font-bold text-gray-300">${sName.substring(0, 1)}</div>${getBt6StarHtml(sk, 'w-2.5 h-2.5')}</div>`;
-                }).join('');
+            for (let idx = 0; idx < MAX_PRESET_SLOTS; idx++) {
+                const preset = savedPresets[idx];
+                const slotNum = idx + 1;
+                const isActive = preset && (activePresetSlot === idx || (activePresetSlot === -1 && preset.name === activeTreeName));
 
                 const btn = document.createElement('button');
-                btn.className = `px-2.5 py-1.5 rounded-xl text-left transition border flex flex-col gap-1 shrink-0 ${
-                    isActive 
-                        ? 'bg-violet-600/30 border-[#7F91F5] text-white' 
-                        : 'bg-cardBg border-borderCol text-gray-300 hover:border-gray-600 hover:text-white'
-                }`;
-                btn.onclick = () => loadPresetByIndex(idx);
-                btn.innerHTML = `
-                    <div class="flex items-center justify-between gap-2 w-full">
-                        <div class="flex items-center gap-0.5">${iconsHtml}</div>
-                        <span class="text-[11px] font-bold text-[#7F91F5] num-clean shrink-0">${sim.dps.toFixed(1)}%/초</span>
-                    </div>
-                    <div class="flex items-center justify-between gap-2 w-full">
-                        <span class="text-xs font-semibold leading-tight truncate">${preset.name}</span>
-                        <span class="text-[10px] text-gray-400 num-clean shrink-0">${(preset.cycle || []).length}</span>
-                    </div>
-                `;
+                btn.type = 'button';
+
+                if (preset) {
+                    const sim = runSimulationForOrder(preset.cycle || [], false);
+                    const iconsHtml = (preset.cycle || []).map(sName => {
+                        const sk = skillDb[sName];
+                        if (!sk) return '';
+                        const isUlt = sk.category === '도술';
+                        if (isUlt) {
+                            return `<div class="ult-hex-frame ult-hex-sm w-4 h-4" title="${sName}"><div class="ult-hex-inner"><img src="${getSkillIconSrc(sk)}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')"><div class="hidden w-full h-full items-center justify-center text-[7px] font-bold text-amber-300">${sName.substring(0, 1)}</div></div></div>`;
+                        }
+                        return `<div class="relative shrink-0" title="${sName}"><img src="${getSkillIconSrc(sk)}" class="w-4 h-4 rounded object-cover border border-borderCol/80" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')"><div class="hidden w-4 h-4 rounded bg-darkBg items-center justify-center text-[7px] font-bold text-gray-300">${sName.substring(0, 1)}</div>${getBt6StarHtml(sk, 'w-2 h-2')}</div>`;
+                    }).join('');
+
+                    btn.className = `px-2 py-1 rounded-xl text-left transition border flex flex-col gap-0.5 shrink-0 min-w-[104px] max-w-[170px] ${
+                        isActive
+                            ? 'bg-violet-600/30 border-[#7F91F5] text-white'
+                            : 'bg-cardBg border-borderCol text-gray-300 hover:border-gray-500 hover:text-white'
+                    }`;
+                    btn.onclick = () => loadPresetByIndex(idx);
+                    btn.title = `${slotNum}번 프리셋: ${preset.name} (클릭하여 불러오기)`;
+                    btn.innerHTML = `
+                        <div class="flex items-center justify-between gap-1.5 w-full">
+                            <span class="inline-flex items-center justify-center w-4 h-4 rounded text-[10px] font-extrabold num-clean shrink-0 ${isActive ? 'bg-[#7F91F5] text-[#0D0F13]' : 'bg-darkBg text-gray-300 border border-borderCol'}">${slotNum}</span>
+                            <span class="text-[11px] font-semibold leading-tight truncate flex-1">${preset.name}</span>
+                            <span class="text-[10px] font-bold text-[#7F91F5] num-clean shrink-0">${sim.dps.toFixed(0)}%</span>
+                        </div>
+                        <div class="flex items-center gap-0.5 overflow-hidden">${iconsHtml}</div>
+                    `;
+                } else {
+                    btn.className = `px-2 py-1 rounded-xl text-left transition border border-dashed border-borderCol/80 bg-darkBg/60 hover:bg-cardBg hover:border-gray-500 text-gray-500 hover:text-gray-300 flex flex-col justify-center gap-0.5 shrink-0 min-w-[68px]`;
+                    btn.onclick = () => openSaveSlotModal(idx);
+                    btn.title = `${slotNum}번 프리셋 비어 있음 (클릭하여 현재 빌드 저장)`;
+                    btn.innerHTML = `
+                        <div class="flex items-center gap-1.5">
+                            <span class="inline-flex items-center justify-center w-4 h-4 rounded text-[10px] font-bold num-clean bg-cardBg text-gray-500 border border-borderCol/80">${slotNum}</span>
+                            <span class="text-[10px] font-medium">빈 칸</span>
+                        </div>
+                    `;
+                }
                 bar.appendChild(btn);
-            });
+            }
         }
 
         function quickSaveCurrentTree() {
-            const input = document.getElementById('quickSaveInput');
-            const name = input.value.trim();
-            if (!name) {
-                showToast("저장할 스킬트리 이름을 입력해주세요!");
-                input.focus();
-                return;
-            }
             if (cycle.length === 0) {
                 showToast("현재 배치된 도술이 없습니다.");
                 return;
             }
-            savePresetByName(name);
-            input.value = '';
+            openSaveSlotModal();
         }
 
-        function savePresetByName(name) {
-            const existingIdx = savedPresets.findIndex(p => p.name === name);
+        function openSaveSlotModal(preselectIdx = null) {
+            if (cycle.length === 0) {
+                showToast("현재 배치된 도술이 없습니다.");
+                return;
+            }
+            const quickInput = document.getElementById('quickSaveInput');
+            const nameInput = document.getElementById('saveSlotNameInput');
+            if (nameInput) {
+                nameInput.value = quickInput ? quickInput.value.trim() : '';
+            }
+            selectedSaveSlotIdx = (preselectIdx !== null && preselectIdx >= 0 && preselectIdx < MAX_PRESET_SLOTS)
+                ? preselectIdx
+                : getDefaultSaveSlotIdx();
+            renderSaveSlotGrid();
+            document.getElementById('saveSlotModal').classList.remove('hidden');
+        }
+
+        function closeSaveSlotModal() {
+            document.getElementById('saveSlotModal').classList.add('hidden');
+        }
+
+        function selectSaveSlot(idx) {
+            selectedSaveSlotIdx = idx;
+            renderSaveSlotGrid();
+        }
+
+        function renderSaveSlotGrid() {
+            const grid = document.getElementById('saveSlotGrid');
+            const confirmBtn = document.getElementById('confirmSaveSlotBtn');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            for (let idx = 0; idx < MAX_PRESET_SLOTS; idx++) {
+                const p = savedPresets[idx];
+                const slotNum = idx + 1;
+                const isSelected = idx === selectedSaveSlotIdx;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.onclick = () => selectSaveSlot(idx);
+                btn.className = `p-2.5 rounded-xl border text-left transition flex flex-col gap-1 ${
+                    isSelected
+                        ? 'bg-violet-600/30 border-[#7F91F5] text-white'
+                        : (p ? 'bg-cardBg border-borderCol text-gray-300 hover:border-gray-500' : 'bg-darkBg border-dashed border-borderCol text-gray-500 hover:border-gray-500 hover:text-gray-300')
+                }`;
+                if (p) {
+                    const sim = runSimulationForOrder(p.cycle || [], false);
+                    btn.innerHTML = `
+                        <div class="flex items-center justify-between w-full">
+                            <span class="text-xs font-extrabold num-clean ${isSelected ? 'text-[#A9B7FF]' : 'text-gray-200'}">${slotNum}번</span>
+                            <span class="text-[10px] font-bold text-[#7F91F5] num-clean">${sim.dps.toFixed(0)}%</span>
+                        </div>
+                        <span class="text-[11px] font-medium truncate w-full">${p.name}</span>
+                    `;
+                } else {
+                    btn.innerHTML = `
+                        <div class="flex items-center justify-between w-full">
+                            <span class="text-xs font-extrabold num-clean ${isSelected ? 'text-[#A9B7FF]' : 'text-gray-400'}">${slotNum}번</span>
+                            <span class="text-[10px] text-gray-500">비어 있음</span>
+                        </div>
+                        <span class="text-[11px] text-gray-500 truncate w-full">프리셋 ${slotNum}</span>
+                    `;
+                }
+                grid.appendChild(btn);
+            }
+
+            if (confirmBtn) {
+                const target = savedPresets[selectedSaveSlotIdx];
+                confirmBtn.innerText = target
+                    ? `${selectedSaveSlotIdx + 1}번 칸에 덮어쓰기`
+                    : `${selectedSaveSlotIdx + 1}번 칸에 저장`;
+            }
+        }
+
+        function confirmSaveToSelectedSlot() {
+            const nameInput = document.getElementById('saveSlotNameInput');
+            const rawName = nameInput ? nameInput.value.trim() : '';
+            savePresetToSlot(selectedSaveSlotIdx, rawName);
+            const quickInput = document.getElementById('quickSaveInput');
+            if (quickInput) quickInput.value = '';
+            closeSaveSlotModal();
+        }
+
+        function savePresetToSlot(slotIdx, rawName = '') {
+            if (cycle.length === 0) {
+                showToast("현재 배치된 도술이 없습니다.");
+                return;
+            }
+            const idx = Math.max(0, Math.min(MAX_PRESET_SLOTS - 1, parseInt(slotIdx, 10) || 0));
+            const finalName = (rawName || '').trim() || `프리셋 ${idx + 1}`;
             const newPreset = {
-                id: 'preset_' + Date.now(),
-                name,
+                id: 'preset_slot_' + (idx + 1),
+                name: finalName,
                 cycle: [...cycle],
                 bt6ActiveMap: { ...bt6ActiveMap },
                 breakthroughStageMap: { ...breakthroughStageMap },
@@ -2118,16 +2435,13 @@
                 legendWeapon: selectedLegendWeapon
             };
 
-            if (existingIdx !== -1) {
-                savedPresets[existingIdx] = newPreset;
-            } else {
-                savedPresets.push(newPreset);
-            }
-            activeTreeName = name;
+            savedPresets[idx] = newPreset;
+            activePresetSlot = idx;
+            activeTreeName = finalName;
             saveAllState();
             renderQuickPresetBar();
             renderSavedPresetsModalList();
-            showToast(`'${name}' 스킬트리가 저장되었습니다!`);
+            showToast(`${idx + 1}번 프리셋 '${finalName}'이(가) 저장되었습니다!`);
         }
 
         function loadPresetByIndex(idx) {
@@ -2146,6 +2460,7 @@
                 const wSel = document.getElementById('weaponTypeSelect');
                 if (wSel) wSel.value = currentWeaponType;
             }
+            activePresetSlot = idx;
             activeTreeName = preset.name;
             syncUltimateInCycle(false);
             saveAllState();
@@ -2153,22 +2468,58 @@
             renderCycle();
             calculateDPS();
             renderSavedPresetsModalList();
-            showToast(`'${preset.name}' 스킬트리를 불러왔습니다.`);
+            showToast(`${idx + 1}번 프리셋 '${preset.name}'을(를) 불러왔습니다.`);
         }
 
         function deletePresetByIndex(idx) {
             const target = savedPresets[idx];
             if (!target) return;
-            savedPresets.splice(idx, 1);
+            savedPresets[idx] = null;
+            if (activePresetSlot === idx) activePresetSlot = -1;
             saveAllState();
             renderQuickPresetBar();
             renderSavedPresetsModalList();
-            showToast(`'${target.name}' 스킬트리가 삭제되었습니다.`);
+            showToast(`${idx + 1}번 프리셋 '${target.name}'이(가) 비워졌습니다.`);
+        }
+
+        function selectModalPresetSlot(idx) {
+            modalSelectedSlotIdx = idx;
+            renderModalSlotSelector();
+        }
+
+        function renderModalSlotSelector() {
+            const box = document.getElementById('modalSlotSelector');
+            const badge = document.getElementById('modalSelectedSlotBadge');
+            if (!box) return;
+            box.innerHTML = '';
+            for (let idx = 0; idx < MAX_PRESET_SLOTS; idx++) {
+                const isSelected = idx === modalSelectedSlotIdx;
+                const hasData = !!savedPresets[idx];
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.onclick = () => selectModalPresetSlot(idx);
+                btn.className = `py-1.5 rounded-lg text-xs font-bold num-clean border transition ${
+                    isSelected
+                        ? 'bg-violet-600/35 border-[#7F91F5] text-white'
+                        : (hasData ? 'bg-darkBg border-borderCol text-gray-200 hover:border-gray-500' : 'bg-darkBg/50 border-dashed border-borderCol text-gray-500 hover:text-gray-300')
+                }`;
+                btn.innerText = String(idx + 1);
+                btn.title = hasData ? `${idx + 1}번: ${savedPresets[idx].name}` : `${idx + 1}번: 비어 있음`;
+                box.appendChild(btn);
+            }
+            if (badge) {
+                const target = savedPresets[modalSelectedSlotIdx];
+                badge.innerText = target
+                    ? `${modalSelectedSlotIdx + 1}번 칸 (${target.name} 덮어쓰기)`
+                    : `${modalSelectedSlotIdx + 1}번 칸 (비어 있음)`;
+            }
         }
 
         function openPresetModal() {
             document.getElementById('presetModal').classList.remove('hidden');
-            document.getElementById('modalPresetName').value = activeTreeName;
+            modalSelectedSlotIdx = getDefaultSaveSlotIdx();
+            document.getElementById('modalPresetName').value = '';
+            renderModalSlotSelector();
             renderSavedPresetsModalList();
         }
 
@@ -2178,49 +2529,62 @@
 
         function savePresetFromModal() {
             const name = document.getElementById('modalPresetName').value.trim();
-            if (!name) {
-                showToast("스킬트리 이름을 입력해주세요.");
-                return;
-            }
-            savePresetByName(name);
+            savePresetToSlot(modalSelectedSlotIdx, name);
+            document.getElementById('modalPresetName').value = '';
+            renderModalSlotSelector();
         }
 
         function renderSavedPresetsModalList() {
             const container = document.getElementById('savedPresetsContainer');
+            if (!container) return;
             container.innerHTML = '';
 
-            if (savedPresets.length === 0) {
-                container.innerHTML = `<div class="text-center py-8 text-gray-500 text-xs">저장된 스킬트리가 없습니다.</div>`;
-                return;
-            }
-
-            savedPresets.forEach((p, idx) => {
-                const sim = runSimulationForOrder(p.cycle, false);
+            for (let idx = 0; idx < MAX_PRESET_SLOTS; idx++) {
+                const p = savedPresets[idx];
+                const slotNum = idx + 1;
                 const row = document.createElement('div');
-                row.className = "bg-cardBg border border-borderCol hover:border-violet-500/50 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition";
-                row.innerHTML = `
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-xs font-bold text-white">${p.name}</span>
-                            <span class="text-[11px] font-bold text-violet-400 bg-violet-950/60 border border-violet-700/40 px-2 py-0.5 rounded-md">
-                                DPS ${sim.dps.toFixed(1)}%/초
-                            </span>
+                if (p) {
+                    const sim = runSimulationForOrder(p.cycle || [], false);
+                    row.className = "bg-cardBg border border-borderCol hover:border-violet-500/50 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition";
+                    row.innerHTML = `
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-md text-[11px] font-extrabold num-clean bg-darkBg text-[#A9B7FF] border border-borderCol shrink-0">${slotNum}</span>
+                                <span class="text-xs font-bold text-white truncate">${p.name}</span>
+                                <span class="text-[11px] font-bold text-violet-400 bg-violet-950/60 border border-violet-700/40 px-2 py-0.5 rounded-md shrink-0 num-clean">
+                                    DPS ${sim.dps.toFixed(1)}%/초
+                                </span>
+                            </div>
+                            <div class="text-[11px] text-gray-400 truncate">
+                                순서(${(p.cycle || []).length}개): ${(p.cycle || []).join(' ➔ ')}
+                            </div>
                         </div>
-                        <div class="text-[11px] text-gray-400 truncate">
-                            순서(${p.cycle.length}개): ${p.cycle.join(' ➔ ')}
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button onclick="loadPresetByIndex(${idx}); closePresetModal();" class="px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-xs font-bold transition">
+                                불러오기
+                            </button>
+                            <button onclick="savePresetToSlot(${idx}, document.getElementById('modalPresetName').value.trim()); renderModalSlotSelector();" class="px-2.5 py-1.5 bg-cardBg hover:bg-[#232836] text-gray-200 border border-borderCol rounded-lg text-xs font-semibold transition" title="현재 빌드로 덮어쓰기">
+                                덮어쓰기
+                            </button>
+                            <button onclick="deletePresetByIndex(${idx}); renderModalSlotSelector();" class="px-2.5 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/50 rounded-lg text-xs transition" title="비우기">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
                         </div>
-                    </div>
-                    <div class="flex items-center gap-1.5 shrink-0">
-                        <button onclick="loadPresetByIndex(${idx}); closePresetModal();" class="px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-xs font-bold transition">
-                            불러오기
+                    `;
+                } else {
+                    row.className = "bg-darkBg/60 border border-dashed border-borderCol rounded-xl p-3 flex items-center justify-between gap-2.5 transition";
+                    row.innerHTML = `
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-md text-[11px] font-extrabold num-clean bg-cardBg text-gray-500 border border-borderCol shrink-0">${slotNum}</span>
+                            <span class="text-xs text-gray-500">비어 있음</span>
+                        </div>
+                        <button onclick="savePresetToSlot(${idx}, document.getElementById('modalPresetName').value.trim()); renderModalSlotSelector();" class="px-3 py-1.5 bg-cardBg hover:bg-[#232836] text-gray-200 border border-borderCol rounded-lg text-xs font-semibold transition shrink-0">
+                            여기에 저장
                         </button>
-                        <button onclick="deletePresetByIndex(${idx})" class="px-2.5 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/50 rounded-lg text-xs transition" title="삭제">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
-                    </div>
-                `;
+                    `;
+                }
                 container.appendChild(row);
-            });
+            }
         }
 
         function openShareCodeModal() {
@@ -2349,8 +2713,8 @@
         function getKnownDebuffStates() {
             return [
                 "충격", "파열", "파쇄", "관통", "낙인", "추적", "한기",
-                "출혈", "화상", "감전",
                 "빙결", "마비", "속박",
+                "출혈", "화상", "감전", "약화",
                 "파열(받는피해증가)", "파쇄(받는피해증가)", "관통(방어력감소)", "추적(방어력감소)",
                 "받는 피해 증가", "일섬:받는 피해 증가", "방어력 감소"
             ];
@@ -2366,6 +2730,7 @@
             if (st === '일섬:받는 피해 증가') return ' +20%';
             if (['파열(받는피해증가)', '파쇄(받는피해증가)'].includes(st)) return ' +10%';
             if (['관통(방어력감소)', '추적(방어력감소)', '방어력 감소'].includes(st)) return ' -10%';
+            if (st === '약화') return '(100중첩)';
             return '';
         }
 
@@ -2383,6 +2748,7 @@
                 btn.onclick = () => {
                     permanentStates[st] = !permanentStates[st];
                     saveAllState();
+                    updateStatCalcPreview();
                     renderStateToggles();
                     renderStyleResourceToggles();
                     calculateDPS();
@@ -2420,8 +2786,8 @@
             buffBox.appendChild(wrapBuff);
 
             const debuffRows = [
-                ["충격", "파열", "파쇄", "관통", "낙인", "추적", "한기", "출혈", "화상", "감전"],
-                ["빙결", "마비", "속박"],
+                ["충격", "파열", "파쇄", "관통", "낙인", "추적", "한기", "빙결", "마비", "속박"],
+                ["출혈", "화상", "감전", "약화"],
                 ["파열(받는피해증가)", "파쇄(받는피해증가)", "관통(방어력감소)", "추적(방어력감소)"],
                 ["받는 피해 증가", "일섬:받는 피해 증가", "방어력 감소"]
             ];
@@ -2446,12 +2812,12 @@
         // =========================================================================
         const savedStyleResV10 = JSON.parse(localStorage.getItem('dokkaebi_style_res_v10')) || {};
         let styleResourceToggles = {
-            jeolmyeongStartMax: true,
+            sinsikStartMax: savedStyleResV10.sinsikStartMax !== undefined ? !!savedStyleResV10.sinsikStartMax : true,
+            yonsokChojunStartMax: savedStyleResV10.yonsokChojunStartMax !== undefined ? !!savedStyleResV10.yonsokChojunStartMax : true,
             jeolmyeongUltMaxLock: false,
-            jeogyeokStartMax: true,
-            jeogyeokUlt3Stack: savedStyleResV10.jeogyeokUlt3Stack !== undefined ? !!savedStyleResV10.jeogyeokUlt3Stack : true,
+            jeogyeokUlt3Stack: !!savedStyleResV10.jeogyeokUlt3Stack,
             includeDotDamage: true,
-            yonsokChojunStack: true // [연속 조준] PvE 피해량 증가 (5스택 시작, 화살촉 소모당 +5%, 최대 5중첩 = +25%, 10초)
+            yonsokChojunStack: true // [연속 조준] PvE 피해량 증가 (화살촉 소모당 +5%, 최대 5중첩 = +25%, 10초)
         };
 
         function renderStyleResourceToggles() {
@@ -2460,6 +2826,8 @@
             container.innerHTML = '';
 
             const defs = [
+                { id: 'sinsikStartMax', label: '신식 자원 최대 시작' },
+                { id: 'yonsokChojunStartMax', label: '연속조준 5스택 시작' },
                 { id: 'jeogyeokUlt3Stack', label: '저격 궁 항상 3스택(+75%)' }
             ];
 
@@ -2470,6 +2838,8 @@
                 btn.onclick = () => {
                     styleResourceToggles[def.id] = !styleResourceToggles[def.id];
                     localStorage.setItem('dokkaebi_style_res_v10', JSON.stringify({
+                        sinsikStartMax: styleResourceToggles.sinsikStartMax,
+                        yonsokChojunStartMax: styleResourceToggles.yonsokChojunStartMax,
                         jeogyeokUlt3Stack: styleResourceToggles.jeogyeokUlt3Stack
                     }));
                     renderStyleResourceToggles();
@@ -2520,27 +2890,29 @@
             const hasJeogyeokInCycle = (activeUltSchool === 'jeogyeok' || skillOrder.some(s => skillDb[s]?.school === 'jeogyeok'));
             const hasJeolmyeongInCycle = (activeUltSchool === 'jeolmyeong' || skillOrder.some(s => skillDb[s]?.school === 'jeolmyeong'));
 
-            // 저격 화살촉 (최대 3개, 4초마다 1개 자동 충전) & [연속 조준] (5스택 시작, 최대 5중첩 = +25%, 10초 지속)
-            let jeogyeokArrows = (hasJeogyeokInCycle && styleResourceToggles.jeogyeokStartMax) ? 3 : 0;
+            const startSinsikMax = !!styleResourceToggles.sinsikStartMax;
+
+            // 저격 화살촉 (최대 3개, 4초마다 1개 자동 충전) & [연속 조준] (최대 5중첩 = +25%, 10초 지속)
+            let jeogyeokArrows = (hasJeogyeokInCycle && startSinsikMax) ? 3 : 0;
             let lastArrowGainTime = 0.0;
-            let yonsokChojunStacks = (activeUltSchool === 'jeogyeok' && styleResourceToggles.yonsokChojunStack) ? 5 : 0;
-            let yonsokChojunExpireAt = (activeUltSchool === 'jeogyeok' && styleResourceToggles.yonsokChojunStack) ? 10.0 : -1.0;
+            let yonsokChojunStacks = (activeUltSchool === 'jeogyeok' && styleResourceToggles.yonsokChojunStack && styleResourceToggles.yonsokChojunStartMax) ? 5 : 0;
+            let yonsokChojunExpireAt = (yonsokChojunStacks > 0) ? 10.0 : -1.0;
 
             // 절명 검의 형상 (최대 5개, 모든 일반/특별 도술 시전 시 +1 충전, 5스택 상태에서 도술 사용 시마다 궁극기 쿨 6초 감소)
-            let jeolmyeongSwords = (hasJeolmyeongInCycle && styleResourceToggles.jeolmyeongStartMax) ? 5 : 0;
+            let jeolmyeongSwords = (hasJeolmyeongInCycle && startSinsikMax) ? 5 : 0;
             let pendingUltFlatCdrSec = 0;
 
-            // 나머지 10대 스타일 신식 자원 상태 변수
-            let gangtaGauge = 0, gangtaBurstUntil = -1;
-            let pamyeolGauge = 0, pamyeolBurstUntil = -1;
-            let yeontaStacks = 0, yeontaExpireAt = -1;
-            let gidongGauge = 0, gidongBurstUntil = -1;
-            let gimanTears = 0;
-            let jusulGauge = 0, lastJusulTime = 0;
-            let ganginGauge = 0, ganginBurstUntil = -1;
-            let cheoksalGauge = 0, cheoksalPurgeStacks = 0, cheoksalPurgeExpireAt = -1;
-            let heonsinHearts = 0;
-            let jeapLocks = 0, jeapCoolStacks = 0, jeapCoolExpireAt = -1, jeapDealtStacks = 0, jeapDealtExpireAt = -1;
+            // 나머지 10대 스타일 신식 자원 상태 변수 (신식 자원 최대 시작 토글 반영)
+            let gangtaGauge = (activeUltSchool === 'gangta' && startSinsikMax) ? 100 : 0, gangtaBurstUntil = -1;
+            let pamyeolGauge = (activeUltSchool === 'pamyeol' && startSinsikMax) ? 200 : 0, pamyeolBurstUntil = -1;
+            let yeontaStacks = (activeUltSchool === 'yeonta' && startSinsikMax) ? 50 : 0, yeontaExpireAt = (yeontaStacks > 0) ? 3.0 : -1;
+            let gidongGauge = (activeUltSchool === 'gidong' && startSinsikMax) ? 200 : 0, gidongBurstUntil = -1;
+            let gimanTears = (activeUltSchool === 'giman' && startSinsikMax) ? 2 : 0;
+            let jusulGauge = (activeUltSchool === 'jusul' && startSinsikMax) ? 100 : 0, lastJusulTime = 0;
+            let ganginGauge = (activeUltSchool === 'gangin' && startSinsikMax) ? 100 : 0, ganginBurstUntil = -1;
+            let cheoksalGauge = (activeUltSchool === 'cheoksal' && startSinsikMax) ? 100 : 0, cheoksalPurgeStacks = 0, cheoksalPurgeExpireAt = -1;
+            let heonsinHearts = (activeUltSchool === 'heonsin' && startSinsikMax) ? 3 : 0;
+            let jeapLocks = (activeUltSchool === 'jeap' && startSinsikMax) ? 3 : 0, jeapCoolStacks = 0, jeapCoolExpireAt = -1, jeapDealtStacks = 0, jeapDealtExpireAt = -1;
             let blueChainStacks = 0, blueChainExpireAt = -1;
             let pendingSlotCdOps = [];
             const activeLegendWeapon = getEquippedLegendWeapon();
@@ -2569,7 +2941,7 @@
                 else if (activeUltSchool === 'jeolmyeong') resourceHistory.push({ time: 0.0, value: jeolmyeongSwords, max: 5, label: '검의 형상' });
             }
 
-            function recordStateInterval(stateName, startT, endT, isDebuff, ampPct = 0, isPermanent = false, extraNote = '', sourceSkill = '') {
+            function recordStateInterval(stateName, startT, endT, isDebuff, ampPct = 0, isPermanent = false, extraNote = '', sourceSkill = '', stackVal = null) {
                 if (!recordFullLogs) return;
                 const s = Math.max(0, Math.min(simDuration, startT));
                 const e = Math.max(0, Math.min(simDuration, endT));
@@ -2611,6 +2983,9 @@
                         };
                     }
                     const trk = stateTrackMap[stateName];
+                    if (stateName === '약화' && extraNote) {
+                        trk.label = `${stateName} (${extraNote})`;
+                    }
                     if (ampPct > trk.ampPct) {
                         trk.ampPct = Number(ampPct);
                         if (!trk.isDot && stateName !== '연속 조준') {
@@ -2618,12 +2993,15 @@
                         }
                     }
                     if (sourceSkill) trk.sources.add(sourceSkill);
-                    trk.rawIntervals.push([s, e]);
+                    trk.rawIntervals.push(stackVal !== null ? [s, e, stackVal] : [s, e]);
                 }
             }
 
             if (activeUltSchool === 'jeogyeok' && styleResourceToggles.yonsokChojunStack && yonsokChojunStacks > 0) {
-                recordStateInterval('연속 조준', 0.0, 10.0, false, 25, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || '');
+                recordStateInterval('연속 조준', 0.0, 10.0, false, yonsokChojunStacks * 5, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || '', yonsokChojunStacks);
+            }
+            if (activeUltSchool === 'yeonta' && yeontaStacks > 0) {
+                recordStateInterval('격노', 0.0, 3.0, false, Number((yeontaStacks * 0.8).toFixed(1)), false, '주는 피해 +0.4% · 보스 주는 피해 +0.4% · 받피감 0.4%/중첩', equippedDosulName || '');
             }
 
             const activeStates = {};
@@ -2649,12 +3027,15 @@
                         noteLabel = '곱연산 · 상시 적용';
                     } else if (['관통(방어력감소)', '추적(방어력감소)', '방어력 감소'].includes(st)) {
                         noteLabel = '방어력 -10% (상시)';
+                    } else if (st === '약화') {
+                        noteLabel = '치명타 저항 -100 (100중첩 상시)';
                     }
                     const isDeb = DEBUFF_STATE_SET.has(st);
                     activeStates[st] = {
                         expireAt: 999999,
                         ampPct: defaultAmp,
                         cdrPct: 0,
+                        stacks: (st === '약화') ? 100 : 1,
                         isDebuff: isDeb
                     };
                     recordStateInterval(st, 0, simDuration, isDeb, defaultAmp, true, noteLabel);
@@ -2858,7 +3239,7 @@
                     yeontaBossPct,
                     defRedPct: dc.defRedPct,
                     critMult,
-                    mult: atkDefMult * (1 + (baseDmgIncPct + dealtPct + takenPct) / 100.0) * (1 + (bossDmgIncPct + yeontaBossPct + chojunPct) / 100.0) * critMult
+                    mult: atkDefMult * (1 + (baseDmgIncPct + dealtPct + takenPct) / 100.0) * (1 + getTargetTypeBonusPct(yeontaBossPct, chojunPct) / 100.0) * (1 + getActiveAttrDmgIncPct() / 100.0) * critMult
                 };
             }
 
@@ -2889,9 +3270,9 @@
                 const dotNote = (eff.dotHitCoeff > 0)
                     ? (eff.state === '강화 저주' ? '1초 도트·5중첩 폭발' : `초당 ${eff.dotHitCoeff}% 도트`)
                     : (eff.state === '약화'
-                        ? `치명타 저항 -1/스택 (최대 도달 ${maxWeakStacks}/100스택)`
+                        ? `치명타 저항 -1, (${maxWeakStacks}/100)`
                         : (eff.cdrPct > 0 ? `쿨감 ${eff.cdrPct}%` : ''));
-                recordStateInterval(eff.state, applyTime, newExpire, true, eff.ampPct || 0, false, dotNote, sourceSkill);
+                recordStateInterval(eff.state, applyTime, newExpire, true, eff.ampPct || 0, false, dotNote, sourceSkill, eff.state === '약화' ? nextStacks : null);
 
                 if (styleResourceToggles.includeDotDamage && eff.dotHitCoeff > 0) {
                     const effTickCoeff = Number(eff.dotHitCoeff) * dotMultFactor;
@@ -3086,7 +3467,7 @@
                 if (dcBasic.isGuaranteedCrit) {
                     triggeredBadges.push(`[확정치명 ×${critMultBasic.toFixed(2)}]`);
                 }
-                const ampMultiplier = atkDefMultBasic * (1 + (baseDmgIncPct + dealtBonusPct + takenBonusPct) / 100.0) * (1 + (bossDmgIncPct + yeontaBossBonusPct + chojunBonusPct) / 100.0) * critMultBasic;
+                const ampMultiplier = atkDefMultBasic * (1 + (baseDmgIncPct + dealtBonusPct + takenBonusPct) / 100.0) * (1 + getTargetTypeBonusPct(yeontaBossBonusPct, chojunBonusPct) / 100.0) * (1 + getActiveAttrDmgIncPct() / 100.0) * critMultBasic;
                 const finalCoeff = rawBaseCoeff * ampMultiplier;
                 totalBaseCoeff += rawBaseCoeff;
                 totalFinalCoeff += finalCoeff;
@@ -3278,6 +3659,7 @@
                 // =========================================================
                 let gimanSelfHalfCd = false;
                 let jusulCurseBonusMult = 1.0;
+                let yonsokChojunApplied = null;
                 const isPrimaryCast = (!chainMeta || chainMeta.step === 1);
 
                 if (activeUltSchool === 'jeolmyeong') {
@@ -3315,7 +3697,8 @@
                             if (hitTime > yonsokChojunExpireAt) yonsokChojunStacks = 0;
                             yonsokChojunStacks = Math.min(5, yonsokChojunStacks + usedArrows);
                             yonsokChojunExpireAt = startTime + motion + 10.0;
-                            recordStateInterval('연속 조준', startTime + motion, yonsokChojunExpireAt, false, yonsokChojunStacks * 5, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || skillName);
+                            recordStateInterval('연속 조준', startTime + motion, yonsokChojunExpireAt, false, yonsokChojunStacks * 5, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || skillName, yonsokChojunStacks);
+                            yonsokChojunApplied = { stacks: yonsokChojunStacks, expireAt: yonsokChojunExpireAt };
                         }
                     } else {
                         if (jeogyeokArrows >= 1) {
@@ -3326,7 +3709,8 @@
                                 if (hitTime > yonsokChojunExpireAt) yonsokChojunStacks = 0;
                                 yonsokChojunStacks = Math.min(5, yonsokChojunStacks + 1);
                                 yonsokChojunExpireAt = startTime + motion + 10.0;
-                                recordStateInterval('연속 조준', startTime + motion, yonsokChojunExpireAt, false, yonsokChojunStacks * 5, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || skillName);
+                                recordStateInterval('연속 조준', startTime + motion, yonsokChojunExpireAt, false, yonsokChojunStacks * 5, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || skillName, yonsokChojunStacks);
+                                yonsokChojunApplied = { stacks: yonsokChojunStacks, expireAt: yonsokChojunExpireAt };
                             }
                         }
                     }
@@ -3571,7 +3955,7 @@
                             if (!isNonDamageStep) {
                                 const stepCondVal = chainMeta ? Number((Number(cond.value) / chainMeta.total).toFixed(2)) : Number(cond.value);
                                 bonusCoeff += stepCondVal;
-                                triggeredBadges.push(`[${cond.reqState}] +${stepCondVal}%`);
+                                triggeredBadges.push(`[${cond.reqState}] +${stepCondVal}%p`);
                                 triggeredSynergy = true;
                             }
                         } else if (cond.type === 'dmg_amp') {
@@ -3649,7 +4033,7 @@
                 } else if (dcSkill.critDmgBonusPct > 0 && calcCritRate(dcSkill.critHitBonus, dcSkill.critResRed, false) > 0) {
                     triggeredBadges.push(`[치피 +${dcSkill.critDmgBonusPct}%]`);
                 }
-                const stateMult = atkDefMultSkill * (1 + (baseDmgIncPct + buffAdditivePct + takenBonusPct) / 100.0) * (1 + (bossDmgIncPct + yeontaBossBonusPct + chojunBonusPct) / 100.0) * critMultSkill;
+                const stateMult = atkDefMultSkill * (1 + (baseDmgIncPct + buffAdditivePct + takenBonusPct) / 100.0) * (1 + getTargetTypeBonusPct(yeontaBossBonusPct, chojunBonusPct) / 100.0) * (1 + getActiveAttrDmgIncPct() / 100.0) * critMultSkill;
                 const ampMultiplier = multFactor * stateMult;
                 const debuffEffects = (sk.effects || []).filter(eff => eff.type === 'debuff').slice();
                 if (isBt6) {
@@ -3806,7 +4190,7 @@
                             let isKeyDebuff = (eff.ampPct > 0 || eff.dotHitCoeff > 0 || eff.critDmgPct > 0);
                             if (eff.state === '약화') {
                                 const curSt = activeStates['약화'] ? (activeStates['약화'].stacks || 1) : 1;
-                                valStr = `약화 ${curSt}스택(치저-${curSt})`;
+                                valStr = `약화 (${curSt}/100)`;
                                 isKeyDebuff = true;
                             } else if (eff.dotHitCoeff > 0) valStr = `${eff.state}`;
                             else if (eff.ampPct > 0) valStr = `${eff.state} +${eff.ampPct}%`;
@@ -3832,6 +4216,11 @@
                             const exp3 = hitTime + 3.0;
                             appliedChips.push({ label: `확정 치명타 ~${Math.floor(exp3 / 60)}:${(exp3 % 60).toFixed(1).padStart(4, '0')}`, kind: 'buff' });
                         }
+                    }
+                    if (yonsokChojunApplied) {
+                        const ycExp = yonsokChojunApplied.expireAt;
+                        const ycExpStr = `${Math.floor(ycExp / 60)}:${(ycExp % 60).toFixed(1).padStart(4, '0')}`;
+                        appliedChips.push({ label: `연속 조준 ${yonsokChojunApplied.stacks}/5 (+${yonsokChojunApplied.stacks * 5}%) ~${ycExpStr}`, kind: 'buff' });
                     }
 
                     timelineCasts.push({
@@ -4082,14 +4471,32 @@
             const mins = Math.round(res.totalTime / 60);
             const uptimePct = res.totalTime > 0 ? Math.min(100, (res.totalMotion / res.totalTime) * 100) : 0;
 
-            document.getElementById('resDps').innerHTML = `${res.dps.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-[11px] font-normal text-violet-300">%/초</span>`;
-            document.getElementById('resBaseDps').innerText = `기본(무보정): ${res.baseDps.toFixed(2)}%/초`;
+            const absScale = getAbsDamageScale();
+            const totalLbl = document.getElementById('resTotalCoeffLabel');
+            if (absScale > 0) {
+                const absDps = res.dps * absScale;
+                const absTotal = res.totalCoeff * absScale;
+                const absSynergy = res.synergyGain * absScale;
+                if (totalLbl) totalLbl.innerText = '누적 총 피해량';
+                document.getElementById('resDps').innerHTML = `${Math.round(absDps).toLocaleString()} <span class="text-[11px] font-normal text-violet-300">/초</span>`;
+                document.getElementById('resBaseDps').innerText = `계수 DPS: ${res.dps.toFixed(2)}%/초`;
 
-            document.getElementById('resTotalCoeff').innerText = `${Math.round(res.totalCoeff).toLocaleString()}%`;
-            document.getElementById('resBaseCoeff').innerText = `기본 누적합: ${Math.round(res.baseCoeff).toLocaleString()}%`;
+                document.getElementById('resTotalCoeff').innerText = `${Math.round(absTotal).toLocaleString()}`;
+                document.getElementById('resBaseCoeff').innerText = `누적 계수: ${Math.round(res.totalCoeff).toLocaleString()}%`;
 
-            document.getElementById('resSynergyGain').innerText = `+${Math.round(res.synergyGain).toLocaleString()}%`;
-            document.getElementById('resSynergyPct').innerText = `딜 상승률: +${res.synergyPct.toFixed(1)}%`;
+                document.getElementById('resSynergyGain').innerText = `+${Math.round(absSynergy).toLocaleString()}`;
+                document.getElementById('resSynergyPct').innerText = `딜 상승률: +${res.synergyPct.toFixed(1)}%`;
+            } else {
+                if (totalLbl) totalLbl.innerText = '누적 총 피해 계수';
+                document.getElementById('resDps').innerHTML = `${res.dps.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-[11px] font-normal text-violet-300">%/초</span>`;
+                document.getElementById('resBaseDps').innerText = `기본(무보정): ${res.baseDps.toFixed(2)}%/초`;
+
+                document.getElementById('resTotalCoeff').innerText = `${Math.round(res.totalCoeff).toLocaleString()}%`;
+                document.getElementById('resBaseCoeff').innerText = `기본 누적합: ${Math.round(res.baseCoeff).toLocaleString()}%`;
+
+                document.getElementById('resSynergyGain').innerText = `+${Math.round(res.synergyGain).toLocaleString()}%`;
+                document.getElementById('resSynergyPct').innerText = `딜 상승률: +${res.synergyPct.toFixed(1)}%`;
+            }
 
             document.getElementById('resTotalTime').innerText = `${mins}분 (${res.totalTime}초)`;
             document.getElementById('resMotionInfo').innerText = `총 시전: ${res.castCount.toLocaleString()}회 (가동률 ${uptimePct.toFixed(1)}%)`;
@@ -4110,6 +4517,7 @@
                 tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-500">우측 도술 도감에서 도술을 클릭해 스킬트리에 추가해보세요.</td></tr>`;
                 return;
             }
+            const absScale = getAbsDamageScale();
 
             skillSummary.forEach(item => {
                 const sharePct = grandTotal > 0 ? (item.finalSum / grandTotal) * 100 : 0;
@@ -4165,9 +4573,9 @@
                         </div>
                     </td>
                     <td class="py-3 px-3 text-right num-clean text-sm font-semibold text-gray-200 whitespace-nowrap">${item.casts.toLocaleString()}${unitLabel}</td>
-                    <td class="py-3 px-3 text-right num-clean text-sm font-medium text-gray-400 whitespace-nowrap">${Math.round(item.baseSum).toLocaleString()}%</td>
-                    <td class="py-3 px-3 text-right num-clean text-sm whitespace-nowrap ${bonus > 0 ? 'text-amber-400 font-bold' : 'text-gray-500 font-medium'}">+${Math.round(bonus).toLocaleString()}%</td>
-                    <td class="py-3 px-3 text-right num-clean text-[15px] font-extrabold text-emerald-400 whitespace-nowrap">${Math.round(item.finalSum).toLocaleString()}%</td>
+                    <td class="py-3 px-3 text-right num-clean text-sm font-medium text-gray-400 whitespace-nowrap">${absScale > 0 ? Math.round(item.baseSum * absScale).toLocaleString() : Math.round(item.baseSum).toLocaleString() + '%'}</td>
+                    <td class="py-3 px-3 text-right num-clean text-sm whitespace-nowrap ${bonus > 0 ? 'text-amber-400 font-bold' : 'text-gray-500 font-medium'}">${absScale > 0 ? '+' + Math.round(bonus * absScale).toLocaleString() : '+' + Math.round(bonus).toLocaleString() + '%'}</td>
+                    <td class="py-3 px-3 text-right num-clean text-[15px] font-extrabold text-emerald-400 whitespace-nowrap">${absScale > 0 ? Math.round(item.finalSum * absScale).toLocaleString() : Math.round(item.finalSum).toLocaleString() + '%'}</td>
                     <td class="py-3 px-3.5">
                         <div class="flex items-center gap-2.5">
                             <div class="flex-1 bg-darkBg rounded-full overflow-hidden border border-borderCol" style="height:10px; min-width:80px;">
@@ -4413,16 +4821,34 @@
                 if (sorted.length === 0) return;
 
                 const merged = [];
-                sorted.forEach(([s, e]) => {
-                    const clampedE = Math.min(viewSec, e);
-                    const last = merged[merged.length - 1];
-                    if (last && s <= last.end + 0.05) {
-                        if (s > last.start + 0.1) last.refreshes.push(s);
-                        if (clampedE > last.end) last.end = clampedE;
-                    } else {
-                        merged.push({ start: s, end: clampedE, refreshes: [] });
-                    }
-                });
+                if (track.state === '연속 조준') {
+                    sorted.forEach((iv, idx) => {
+                        const s = iv[0];
+                        const rawEnd = Math.min(viewSec, iv[1]);
+                        const stVal = iv[2] != null ? iv[2] : 5;
+                        const nextS = (idx + 1 < sorted.length) ? sorted[idx + 1][0] : viewSec;
+                        const segEnd = Math.min(rawEnd, nextS);
+                        if (segEnd <= s) return;
+                        const last = merged[merged.length - 1];
+                        if (last && s <= last.end + 0.05 && last.stackVal === stVal) {
+                            if (s > last.start + 0.1) last.refreshes.push(s);
+                            if (segEnd > last.end) last.end = segEnd;
+                        } else {
+                            merged.push({ start: s, end: segEnd, refreshes: [], stackVal: stVal });
+                        }
+                    });
+                } else {
+                    sorted.forEach(([s, e]) => {
+                        const clampedE = Math.min(viewSec, e);
+                        const last = merged[merged.length - 1];
+                        if (last && s <= last.end + 0.05) {
+                            if (s > last.start + 0.1) last.refreshes.push(s);
+                            if (clampedE > last.end) last.end = clampedE;
+                        } else {
+                            merged.push({ start: s, end: clampedE, refreshes: [], stackVal: null });
+                        }
+                    });
+                }
 
                 let barCls = 'bg-[#252834] border border-[#3d4254] text-gray-300';
                 if (track.isDot) {
@@ -4439,10 +4865,16 @@
                     const refLines = seg.refreshes.map(rt =>
                         `<div class="absolute top-0 bottom-0 w-[1px] bg-white/35 pointer-events-none" style="left:${(rt - seg.start) * pxPerSec}px"></div>`
                     ).join('');
+                    const segLabel = (track.state === '연속 조준' && seg.stackVal != null)
+                        ? `연속 조준 ${seg.stackVal}/5 (+${seg.stackVal * 5}%)`
+                        : track.label;
+                    const segTitle = (track.state === '연속 조준' && seg.stackVal != null)
+                        ? `연속 조준 ${seg.stackVal}/5스택 (주는 피해 +${seg.stackVal * 5}%) · ${fmtMMSS(seg.start, 1)} ~ ${fmtMMSS(seg.end, 1)}`
+                        : `${track.label} (${fmtMMSS(seg.start, 1)} ~ ${fmtMMSS(seg.end, 1)})`;
                     return `
                         <div class="absolute top-[5px] h-[22px] rounded px-1.5 text-[10px] font-semibold truncate flex items-center ${barCls}"
-                             style="left:${left}px;width:${w}px" title="${track.label} (${fmtMMSS(seg.start, 1)} ~ ${fmtMMSS(seg.end, 1)})">
-                            ${refLines}<span class="truncate relative z-10">${track.label}</span>
+                             style="left:${left}px;width:${w}px" title="${segTitle}">
+                            ${refLines}<span class="truncate relative z-10">${segLabel}</span>
                         </div>
                     `;
                 }).join('');
@@ -5030,7 +5462,7 @@ function renderSingleLineTimeline(root, res) {
             (recommendBtRules || []).forEach(r => {
                 const cat = r.category === '특별' ? '특별' : '일반';
                 const stage = Math.max(0, Math.min(10, parseInt(r.stage, 10) || 0));
-                const count = Math.max(0, Math.min(8, parseInt(r.count, 10) || 0));
+                const count = Math.max(0, Math.min(99, parseInt(r.count, 10) || 0));
                 for (let i = 0; i < count; i++) {
                     if (cat === '특별') specialSlots.push(stage);
                     else normalSlots.push(stage);
@@ -5038,22 +5470,37 @@ function renderSingleLineTimeline(root, res) {
             });
             specialSlots.sort((a, b) => b - a);
             normalSlots.sort((a, b) => b - a);
-            const totalSlots = specialSlots.length + normalSlots.length;
-            if (totalSlots > 8) {
-                return {
-                    valid: false,
-                    totalSlots,
-                    error: `지정된 도술 개수 합계가 8개를 초과했습니다. (현재 ${totalSlots}개)`
-                };
+            const rawSpecial = specialSlots.length;
+            const rawNormal = normalSlots.length;
+            const totalSlots = rawSpecial + rawNormal;
+
+            let reqSpecial, reqNormal, maxSpecialCap, maxNormalCap, freeSlots;
+            if (totalSlots <= 8) {
+                freeSlots = 8 - totalSlots;
+                reqSpecial = rawSpecial;
+                reqNormal = rawNormal;
+                maxSpecialCap = reqSpecial + freeSlots;
+                maxNormalCap = reqNormal + freeSlots;
+            } else {
+                freeSlots = 0;
+                maxSpecialCap = Math.min(8, rawSpecial);
+                maxNormalCap = Math.min(8, rawNormal);
+                reqSpecial = Math.max(0, 8 - maxNormalCap);
+                reqNormal = Math.max(0, 8 - maxSpecialCap);
             }
+
             return {
                 valid: true,
                 totalSlots,
                 specialSlots,
                 normalSlots,
-                reqSpecial: specialSlots.length,
-                reqNormal: normalSlots.length,
-                freeSlots: 8 - totalSlots
+                rawSpecial,
+                rawNormal,
+                reqSpecial,
+                reqNormal,
+                maxSpecialCap,
+                maxNormalCap,
+                freeSlots
             };
         }
 
@@ -5125,10 +5572,10 @@ function renderSingleLineTimeline(root, res) {
                         <span class="text-[11px] text-gray-400 font-semibold">돌파</span>
                     </div>
                     <div class="flex items-center gap-1 bg-cardBg border border-borderCol rounded-lg px-2 py-1">
-                        <input type="number" min="0" max="8" step="1" value="${rule.count}"
+                        <input type="number" min="0" max="99" step="1" value="${rule.count}"
                                onfocus="this.select()"
                                oninput="updateRecommendBtRule(${idx}, 'count', this.value)"
-                               class="w-8 bg-transparent text-right text-xs font-extrabold text-white num-clean no-spinner focus:outline-none">
+                               class="w-9 bg-transparent text-right text-xs font-extrabold text-white num-clean no-spinner focus:outline-none">
                         <span class="text-[11px] text-gray-400 font-semibold">개</span>
                     </div>
                     ${recommendBtRules.length > 1 ? `
@@ -5142,15 +5589,15 @@ function renderSingleLineTimeline(root, res) {
             });
 
             const budget = getParsedRecommendBudget();
-            if (!budget.valid) {
-                summaryEl.className = 'text-[11px] font-bold text-rose-400 num-clean';
-                summaryEl.innerText = `합계 ${budget.totalSlots} / 8개 (8개 이하로 줄여주세요)`;
+            if (budget.totalSlots > 8) {
+                summaryEl.className = 'text-[11px] font-bold text-emerald-400 num-clean';
+                summaryEl.innerText = `지정 합계: ${budget.totalSlots}개 (특별 ${budget.rawSpecial} · 일반 ${budget.rawNormal} 중 최적 8개 선택)`;
             } else if (budget.freeSlots > 0) {
                 summaryEl.className = 'text-[11px] font-bold text-gray-300 num-clean';
                 summaryEl.innerText = `지정 ${budget.totalSlots} / 8개 (남은 ${budget.freeSlots}슬롯: 0돌파 자동)`;
             } else {
                 summaryEl.className = 'text-[11px] font-bold text-emerald-400 num-clean';
-                summaryEl.innerText = `지정 합계: 8 / 8개 (특별 ${budget.reqSpecial} · 일반 ${budget.reqNormal})`;
+                summaryEl.innerText = `지정 합계: 8 / 8개 (특별 ${budget.rawSpecial} · 일반 ${budget.rawNormal})`;
             }
         }
 
@@ -5158,7 +5605,7 @@ function renderSingleLineTimeline(root, res) {
             recommendMode = mode === 'custom' ? 'custom' : 'current';
             saveAllState();
             renderRecommendConfigUI();
-            recomputeRecommendedBuilds();
+            updateRecommendContextInfo();
         }
 
         function updateRecommendBtRule(idx, field, val) {
@@ -5167,37 +5614,40 @@ function renderSingleLineTimeline(root, res) {
                 recommendBtRules[idx].category = val === '특별' ? '특별' : '일반';
                 saveAllState();
                 renderRecommendConfigUI();
+                updateRecommendContextInfo();
                 return;
             }
             let num = parseInt(val, 10);
             if (isNaN(num)) num = 0;
             if (field === 'stage') num = Math.max(0, Math.min(10, num));
-            if (field === 'count') num = Math.max(0, Math.min(8, num));
+            if (field === 'count') num = Math.max(0, Math.min(99, num));
             recommendBtRules[idx][field] = num;
             saveAllState();
             // 요약 배지만 즉시 갱신 (입력 중 포커스 유지)
             const summaryEl = document.getElementById('recBtRuleSummary');
             if (summaryEl) {
                 const budget = getParsedRecommendBudget();
-                if (!budget.valid) {
-                    summaryEl.className = 'text-[11px] font-bold text-rose-400 num-clean';
-                    summaryEl.innerText = `합계 ${budget.totalSlots} / 8개 (8개 이하로 줄여주세요)`;
+                if (budget.totalSlots > 8) {
+                    summaryEl.className = 'text-[11px] font-bold text-emerald-400 num-clean';
+                    summaryEl.innerText = `지정 합계: ${budget.totalSlots}개 (특별 ${budget.rawSpecial} · 일반 ${budget.rawNormal} 중 최적 8개 선택)`;
                 } else if (budget.freeSlots > 0) {
                     summaryEl.className = 'text-[11px] font-bold text-gray-300 num-clean';
                     summaryEl.innerText = `지정 ${budget.totalSlots} / 8개 (남은 ${budget.freeSlots}슬롯: 0돌파 자동)`;
                 } else {
                     summaryEl.className = 'text-[11px] font-bold text-emerald-400 num-clean';
-                    summaryEl.innerText = `지정 합계: 8 / 8개 (특별 ${budget.reqSpecial} · 일반 ${budget.reqNormal})`;
+                    summaryEl.innerText = `지정 합계: 8 / 8개 (특별 ${budget.rawSpecial} · 일반 ${budget.rawNormal})`;
                 }
             }
+            updateRecommendContextInfo();
         }
 
         function addRecommendBtRule() {
             const budget = getParsedRecommendBudget();
-            const rem = Math.max(0, 8 - budget.totalSlots);
+            const rem = budget.totalSlots < 8 ? (8 - budget.totalSlots) : 1;
             recommendBtRules.push({ category: '일반', stage: 0, count: rem });
             saveAllState();
             renderRecommendConfigUI();
+            updateRecommendContextInfo();
         }
 
         function removeRecommendBtRule(idx) {
@@ -5205,12 +5655,11 @@ function renderSingleLineTimeline(root, res) {
             recommendBtRules.splice(idx, 1);
             saveAllState();
             renderRecommendConfigUI();
+            updateRecommendContextInfo();
         }
 
         function computeRecommendedBuildsWithBudget(budget) {
-            const { specialSlots, normalSlots, reqSpecial, reqNormal, freeSlots } = budget;
-            const maxSpecialCap = reqSpecial + freeSlots;
-            const maxNormalCap = reqNormal + freeSlots;
+            const { specialSlots, normalSlots, reqSpecial, reqNormal, maxSpecialCap, maxNormalCap } = budget;
             const maxSpStage = specialSlots.length > 0 ? specialSlots[0] : 0;
             const maxNmStage = normalSlots.length > 0 ? normalSlots[0] : 0;
 
@@ -5528,11 +5977,9 @@ function renderSingleLineTimeline(root, res) {
             return top3;
         }
 
-        function recomputeRecommendedBuilds() {
-            const container = document.getElementById('recommendListContainer');
+        function updateRecommendContextInfo() {
             const infoEl = document.getElementById('recommendContextInfo');
-
-            // 현재 강화/돌파 요약 표시
+            if (!infoEl) return;
             const enhList = SCHOOLS.filter(s => s.id !== 'all')
                 .map(s => ({ name: s.name, lv: parseInt(schoolEnhanceLevels[s.id], 10) || 0 }))
                 .filter(x => x.lv > 0)
@@ -5545,11 +5992,6 @@ function renderSingleLineTimeline(root, res) {
 
             let btSummaryStr = '';
             if (recommendMode === 'custom') {
-                const budget = getParsedRecommendBudget();
-                if (!budget.valid) {
-                    container.innerHTML = `<div class="text-center py-8 text-xs text-rose-400 font-bold">${budget.error}</div>`;
-                    return;
-                }
                 const ruleParts = recommendBtRules
                     .filter(r => (parseInt(r.count, 10) || 0) > 0)
                     .map(r => `${r.category} ${r.stage}돌×${r.count}`);
@@ -5560,6 +6002,30 @@ function renderSingleLineTimeline(root, res) {
             }
 
             infoEl.innerText = `${enhList.length > 0 ? enhList.join(' · ') : '계열 강화 Lv.0'} | ${btSummaryStr}${exCount > 0 ? ` | 추천 제외 ${exCount}종` : ''} | ${wName} · ${mins}분 기준`;
+        }
+
+        function renderRecommendIdleMessage() {
+            const container = document.getElementById('recommendListContainer');
+            if (!container) return;
+            container.innerHTML = `
+                <div class="py-12 text-center text-xs text-gray-400 border border-dashed border-borderCol rounded-2xl">
+                    <i class="fa-solid fa-sliders text-emerald-400/80 text-xl mb-2.5 block"></i>
+                    모드와 돌파 조건을 설정한 뒤 상단의 <span class="text-emerald-300 font-bold">추천 계산</span> 버튼을 눌러주세요.
+                </div>
+            `;
+        }
+
+        function recomputeRecommendedBuilds() {
+            const container = document.getElementById('recommendListContainer');
+            updateRecommendContextInfo();
+
+            if (recommendMode === 'custom') {
+                const budget = getParsedRecommendBudget();
+                if (!budget.valid) {
+                    container.innerHTML = `<div class="text-center py-8 text-xs text-rose-400 font-bold">${budget.error}</div>`;
+                    return;
+                }
+            }
 
             container.innerHTML = `
                 <div class="py-10 text-center text-xs text-gray-400">
@@ -5578,7 +6044,12 @@ function renderSingleLineTimeline(root, res) {
             const modal = document.getElementById('recommendModal');
             modal.classList.remove('hidden');
             renderRecommendConfigUI();
-            recomputeRecommendedBuilds();
+            updateRecommendContextInfo();
+            if (lastRecommendedBuilds && lastRecommendedBuilds.length > 0) {
+                renderRecommendedBuilds(lastRecommendedBuilds);
+            } else {
+                renderRecommendIdleMessage();
+            }
         }
 
         function closeRecommendModal() {
@@ -5807,7 +6278,7 @@ function renderSingleLineTimeline(root, res) {
 
                 const condBadges = (sk.conditionals || []).map(c => {
                     let descTxt = '';
-                    if (c.type === 'bonus_coeff') descTxt = `+${c.value}%`;
+                    if (c.type === 'bonus_coeff') descTxt = `+${c.value}%p`;
                     else if (c.type === 'trigger_state') descTxt = `➔ ${c.applyState}${c.ampPct ? ` +${c.ampPct}%` : ''}`;
                     else if (c.type === 'dmg_amp_per_debuff') descTxt = `1개당 +${c.value}%`;
                     else if (c.type === 'cheoksal_hp_avg') descTxt = `+${c.rawValue ?? c.value}%`;
@@ -6052,10 +6523,11 @@ function renderSingleLineTimeline(root, res) {
                 }
                 (sk.conditionals || []).forEach(c => {
                     let lbl = '';
-                    if (c.type === 'trigger_state') lbl = `${c.reqState}➔${c.applyState}`;
-                    else if (c.type === 'dmg_amp_per_debuff') lbl = '상태이상 증뎀';
-                    else if (c.type === 'bonus_coeff') lbl = `${c.displayReq || c.reqState} 추뎀`;
-                    else lbl = `${c.displayReq || c.reqState} 증뎀`;
+                    if (c.type === 'trigger_state') lbl = `${c.reqState}➔${c.applyState}${c.ampPct ? ` +${c.ampPct}%` : ''}`;
+                    else if (c.type === 'dmg_amp_per_debuff') lbl = `상태이상 1개당 +${c.value}%`;
+                    else if (c.type === 'bonus_coeff') lbl = `${c.displayReq || c.reqState} +${c.value}%p`;
+                    else if (c.type === 'cheoksal_hp_avg') lbl = `${c.displayReq || c.reqState} +${c.rawValue ?? c.value}%`;
+                    else lbl = `${c.displayReq || c.reqState} +${c.value}%`;
                     cycleTagList.push(`<span class="badge-cond px-1.5 py-[1px] rounded text-[10px] font-semibold leading-tight whitespace-nowrap shrink-0">⚡${lbl}</span>`);
                 });
                 const cycleTagsHtml = cycleTagList.join('');
