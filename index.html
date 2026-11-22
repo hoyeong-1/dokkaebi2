@@ -1398,8 +1398,9 @@
             } else {
                 parts.push(`방깎 효율 <span class="text-gray-500">공격력 입력 시 반영</span>`);
             }
-            const critP = calcCritRate(0, 0, false) * 100;
-            parts.push(`치명타 확률 <span class="text-indigo-300 font-bold">${critP.toFixed(2)}%</span>`);
+            const permCritResRed = permanentStates['약화'] ? 100 : 0;
+            const critP = calcCritRate(0, permCritResRed, false) * 100;
+            parts.push(`치명타 확률 <span class="text-indigo-300 font-bold">${critP.toFixed(2)}%</span>${permCritResRed > 0 ? ' <span class="text-rose-300/90">(약화 반영)</span>' : ''}`);
             badge.innerHTML = parts.join(' <span class="text-gray-600 mx-1">·</span> ');
         }
 
@@ -2565,6 +2566,7 @@
                 btn.onclick = () => {
                     permanentStates[st] = !permanentStates[st];
                     saveAllState();
+                    updateStatCalcPreview();
                     renderStateToggles();
                     renderStyleResourceToggles();
                     calculateDPS();
@@ -2628,12 +2630,12 @@
         // =========================================================================
         const savedStyleResV10 = JSON.parse(localStorage.getItem('dokkaebi_style_res_v10')) || {};
         let styleResourceToggles = {
-            jeolmyeongStartMax: true,
+            sinsikStartMax: savedStyleResV10.sinsikStartMax !== undefined ? !!savedStyleResV10.sinsikStartMax : true,
+            yonsokChojunStartMax: savedStyleResV10.yonsokChojunStartMax !== undefined ? !!savedStyleResV10.yonsokChojunStartMax : true,
             jeolmyeongUltMaxLock: false,
-            jeogyeokStartMax: true,
             jeogyeokUlt3Stack: savedStyleResV10.jeogyeokUlt3Stack !== undefined ? !!savedStyleResV10.jeogyeokUlt3Stack : true,
             includeDotDamage: true,
-            yonsokChojunStack: true // [연속 조준] PvE 피해량 증가 (5스택 시작, 화살촉 소모당 +5%, 최대 5중첩 = +25%, 10초)
+            yonsokChojunStack: true // [연속 조준] PvE 피해량 증가 (화살촉 소모당 +5%, 최대 5중첩 = +25%, 10초)
         };
 
         function renderStyleResourceToggles() {
@@ -2642,6 +2644,8 @@
             container.innerHTML = '';
 
             const defs = [
+                { id: 'sinsikStartMax', label: '신식 자원 최대 시작' },
+                { id: 'yonsokChojunStartMax', label: '연속조준 5스택 시작' },
                 { id: 'jeogyeokUlt3Stack', label: '저격 궁 항상 3스택(+75%)' }
             ];
 
@@ -2652,6 +2656,8 @@
                 btn.onclick = () => {
                     styleResourceToggles[def.id] = !styleResourceToggles[def.id];
                     localStorage.setItem('dokkaebi_style_res_v10', JSON.stringify({
+                        sinsikStartMax: styleResourceToggles.sinsikStartMax,
+                        yonsokChojunStartMax: styleResourceToggles.yonsokChojunStartMax,
                         jeogyeokUlt3Stack: styleResourceToggles.jeogyeokUlt3Stack
                     }));
                     renderStyleResourceToggles();
@@ -2702,27 +2708,29 @@
             const hasJeogyeokInCycle = (activeUltSchool === 'jeogyeok' || skillOrder.some(s => skillDb[s]?.school === 'jeogyeok'));
             const hasJeolmyeongInCycle = (activeUltSchool === 'jeolmyeong' || skillOrder.some(s => skillDb[s]?.school === 'jeolmyeong'));
 
-            // 저격 화살촉 (최대 3개, 4초마다 1개 자동 충전) & [연속 조준] (5스택 시작, 최대 5중첩 = +25%, 10초 지속)
-            let jeogyeokArrows = (hasJeogyeokInCycle && styleResourceToggles.jeogyeokStartMax) ? 3 : 0;
+            const startSinsikMax = !!styleResourceToggles.sinsikStartMax;
+
+            // 저격 화살촉 (최대 3개, 4초마다 1개 자동 충전) & [연속 조준] (최대 5중첩 = +25%, 10초 지속)
+            let jeogyeokArrows = (hasJeogyeokInCycle && startSinsikMax) ? 3 : 0;
             let lastArrowGainTime = 0.0;
-            let yonsokChojunStacks = (activeUltSchool === 'jeogyeok' && styleResourceToggles.yonsokChojunStack) ? 5 : 0;
-            let yonsokChojunExpireAt = (activeUltSchool === 'jeogyeok' && styleResourceToggles.yonsokChojunStack) ? 10.0 : -1.0;
+            let yonsokChojunStacks = (activeUltSchool === 'jeogyeok' && styleResourceToggles.yonsokChojunStack && styleResourceToggles.yonsokChojunStartMax) ? 5 : 0;
+            let yonsokChojunExpireAt = (yonsokChojunStacks > 0) ? 10.0 : -1.0;
 
             // 절명 검의 형상 (최대 5개, 모든 일반/특별 도술 시전 시 +1 충전, 5스택 상태에서 도술 사용 시마다 궁극기 쿨 6초 감소)
-            let jeolmyeongSwords = (hasJeolmyeongInCycle && styleResourceToggles.jeolmyeongStartMax) ? 5 : 0;
+            let jeolmyeongSwords = (hasJeolmyeongInCycle && startSinsikMax) ? 5 : 0;
             let pendingUltFlatCdrSec = 0;
 
-            // 나머지 10대 스타일 신식 자원 상태 변수
-            let gangtaGauge = 0, gangtaBurstUntil = -1;
-            let pamyeolGauge = 0, pamyeolBurstUntil = -1;
-            let yeontaStacks = 0, yeontaExpireAt = -1;
-            let gidongGauge = 0, gidongBurstUntil = -1;
-            let gimanTears = 0;
-            let jusulGauge = 0, lastJusulTime = 0;
-            let ganginGauge = 0, ganginBurstUntil = -1;
-            let cheoksalGauge = 0, cheoksalPurgeStacks = 0, cheoksalPurgeExpireAt = -1;
-            let heonsinHearts = 0;
-            let jeapLocks = 0, jeapCoolStacks = 0, jeapCoolExpireAt = -1, jeapDealtStacks = 0, jeapDealtExpireAt = -1;
+            // 나머지 10대 스타일 신식 자원 상태 변수 (신식 자원 최대 시작 토글 반영)
+            let gangtaGauge = (activeUltSchool === 'gangta' && startSinsikMax) ? 100 : 0, gangtaBurstUntil = -1;
+            let pamyeolGauge = (activeUltSchool === 'pamyeol' && startSinsikMax) ? 200 : 0, pamyeolBurstUntil = -1;
+            let yeontaStacks = (activeUltSchool === 'yeonta' && startSinsikMax) ? 50 : 0, yeontaExpireAt = (yeontaStacks > 0) ? 3.0 : -1;
+            let gidongGauge = (activeUltSchool === 'gidong' && startSinsikMax) ? 200 : 0, gidongBurstUntil = -1;
+            let gimanTears = (activeUltSchool === 'giman' && startSinsikMax) ? 2 : 0;
+            let jusulGauge = (activeUltSchool === 'jusul' && startSinsikMax) ? 100 : 0, lastJusulTime = 0;
+            let ganginGauge = (activeUltSchool === 'gangin' && startSinsikMax) ? 100 : 0, ganginBurstUntil = -1;
+            let cheoksalGauge = (activeUltSchool === 'cheoksal' && startSinsikMax) ? 100 : 0, cheoksalPurgeStacks = 0, cheoksalPurgeExpireAt = -1;
+            let heonsinHearts = (activeUltSchool === 'heonsin' && startSinsikMax) ? 3 : 0;
+            let jeapLocks = (activeUltSchool === 'jeap' && startSinsikMax) ? 3 : 0, jeapCoolStacks = 0, jeapCoolExpireAt = -1, jeapDealtStacks = 0, jeapDealtExpireAt = -1;
             let blueChainStacks = 0, blueChainExpireAt = -1;
             let pendingSlotCdOps = [];
             const activeLegendWeapon = getEquippedLegendWeapon();
@@ -2751,7 +2759,7 @@
                 else if (activeUltSchool === 'jeolmyeong') resourceHistory.push({ time: 0.0, value: jeolmyeongSwords, max: 5, label: '검의 형상' });
             }
 
-            function recordStateInterval(stateName, startT, endT, isDebuff, ampPct = 0, isPermanent = false, extraNote = '', sourceSkill = '') {
+            function recordStateInterval(stateName, startT, endT, isDebuff, ampPct = 0, isPermanent = false, extraNote = '', sourceSkill = '', stackVal = null) {
                 if (!recordFullLogs) return;
                 const s = Math.max(0, Math.min(simDuration, startT));
                 const e = Math.max(0, Math.min(simDuration, endT));
@@ -2793,6 +2801,9 @@
                         };
                     }
                     const trk = stateTrackMap[stateName];
+                    if (stateName === '약화' && extraNote) {
+                        trk.label = `${stateName} (${extraNote})`;
+                    }
                     if (ampPct > trk.ampPct) {
                         trk.ampPct = Number(ampPct);
                         if (!trk.isDot && stateName !== '연속 조준') {
@@ -2800,12 +2811,15 @@
                         }
                     }
                     if (sourceSkill) trk.sources.add(sourceSkill);
-                    trk.rawIntervals.push([s, e]);
+                    trk.rawIntervals.push(stackVal !== null ? [s, e, stackVal] : [s, e]);
                 }
             }
 
             if (activeUltSchool === 'jeogyeok' && styleResourceToggles.yonsokChojunStack && yonsokChojunStacks > 0) {
-                recordStateInterval('연속 조준', 0.0, 10.0, false, 25, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || '');
+                recordStateInterval('연속 조준', 0.0, 10.0, false, yonsokChojunStacks * 5, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || '', yonsokChojunStacks);
+            }
+            if (activeUltSchool === 'yeonta' && yeontaStacks > 0) {
+                recordStateInterval('격노', 0.0, 3.0, false, Number((yeontaStacks * 0.8).toFixed(1)), false, '주는 피해 +0.4% · 보스 주는 피해 +0.4% · 받피감 0.4%/중첩', equippedDosulName || '');
             }
 
             const activeStates = {};
@@ -3074,9 +3088,9 @@
                 const dotNote = (eff.dotHitCoeff > 0)
                     ? (eff.state === '강화 저주' ? '1초 도트·5중첩 폭발' : `초당 ${eff.dotHitCoeff}% 도트`)
                     : (eff.state === '약화'
-                        ? `치명타 저항 -1/스택 (최대 도달 ${maxWeakStacks}/100스택)`
+                        ? `치명타 저항 -1, (${maxWeakStacks}/100)`
                         : (eff.cdrPct > 0 ? `쿨감 ${eff.cdrPct}%` : ''));
-                recordStateInterval(eff.state, applyTime, newExpire, true, eff.ampPct || 0, false, dotNote, sourceSkill);
+                recordStateInterval(eff.state, applyTime, newExpire, true, eff.ampPct || 0, false, dotNote, sourceSkill, eff.state === '약화' ? nextStacks : null);
 
                 if (styleResourceToggles.includeDotDamage && eff.dotHitCoeff > 0) {
                     const effTickCoeff = Number(eff.dotHitCoeff) * dotMultFactor;
@@ -3463,6 +3477,7 @@
                 // =========================================================
                 let gimanSelfHalfCd = false;
                 let jusulCurseBonusMult = 1.0;
+                let yonsokChojunApplied = null;
                 const isPrimaryCast = (!chainMeta || chainMeta.step === 1);
 
                 if (activeUltSchool === 'jeolmyeong') {
@@ -3500,7 +3515,8 @@
                             if (hitTime > yonsokChojunExpireAt) yonsokChojunStacks = 0;
                             yonsokChojunStacks = Math.min(5, yonsokChojunStacks + usedArrows);
                             yonsokChojunExpireAt = startTime + motion + 10.0;
-                            recordStateInterval('연속 조준', startTime + motion, yonsokChojunExpireAt, false, yonsokChojunStacks * 5, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || skillName);
+                            recordStateInterval('연속 조준', startTime + motion, yonsokChojunExpireAt, false, yonsokChojunStacks * 5, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || skillName, yonsokChojunStacks);
+                            yonsokChojunApplied = { stacks: yonsokChojunStacks, expireAt: yonsokChojunExpireAt };
                         }
                     } else {
                         if (jeogyeokArrows >= 1) {
@@ -3511,7 +3527,8 @@
                                 if (hitTime > yonsokChojunExpireAt) yonsokChojunStacks = 0;
                                 yonsokChojunStacks = Math.min(5, yonsokChojunStacks + 1);
                                 yonsokChojunExpireAt = startTime + motion + 10.0;
-                                recordStateInterval('연속 조준', startTime + motion, yonsokChojunExpireAt, false, yonsokChojunStacks * 5, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || skillName);
+                                recordStateInterval('연속 조준', startTime + motion, yonsokChojunExpireAt, false, yonsokChojunStacks * 5, false, 'PvE 피해 +5%/중첩 (최대 +25%)', equippedDosulName || skillName, yonsokChojunStacks);
+                                yonsokChojunApplied = { stacks: yonsokChojunStacks, expireAt: yonsokChojunExpireAt };
                             }
                         }
                     }
@@ -3991,7 +4008,7 @@
                             let isKeyDebuff = (eff.ampPct > 0 || eff.dotHitCoeff > 0 || eff.critDmgPct > 0);
                             if (eff.state === '약화') {
                                 const curSt = activeStates['약화'] ? (activeStates['약화'].stacks || 1) : 1;
-                                valStr = `약화 ${curSt}스택(치저-${curSt})`;
+                                valStr = `약화 (${curSt}/100)`;
                                 isKeyDebuff = true;
                             } else if (eff.dotHitCoeff > 0) valStr = `${eff.state}`;
                             else if (eff.ampPct > 0) valStr = `${eff.state} +${eff.ampPct}%`;
@@ -4017,6 +4034,11 @@
                             const exp3 = hitTime + 3.0;
                             appliedChips.push({ label: `확정 치명타 ~${Math.floor(exp3 / 60)}:${(exp3 % 60).toFixed(1).padStart(4, '0')}`, kind: 'buff' });
                         }
+                    }
+                    if (yonsokChojunApplied) {
+                        const ycExp = yonsokChojunApplied.expireAt;
+                        const ycExpStr = `${Math.floor(ycExp / 60)}:${(ycExp % 60).toFixed(1).padStart(4, '0')}`;
+                        appliedChips.push({ label: `연속 조준 ${yonsokChojunApplied.stacks}/5 (+${yonsokChojunApplied.stacks * 5}%) ~${ycExpStr}`, kind: 'buff' });
                     }
 
                     timelineCasts.push({
@@ -4598,16 +4620,34 @@
                 if (sorted.length === 0) return;
 
                 const merged = [];
-                sorted.forEach(([s, e]) => {
-                    const clampedE = Math.min(viewSec, e);
-                    const last = merged[merged.length - 1];
-                    if (last && s <= last.end + 0.05) {
-                        if (s > last.start + 0.1) last.refreshes.push(s);
-                        if (clampedE > last.end) last.end = clampedE;
-                    } else {
-                        merged.push({ start: s, end: clampedE, refreshes: [] });
-                    }
-                });
+                if (track.state === '연속 조준') {
+                    sorted.forEach((iv, idx) => {
+                        const s = iv[0];
+                        const rawEnd = Math.min(viewSec, iv[1]);
+                        const stVal = iv[2] != null ? iv[2] : 5;
+                        const nextS = (idx + 1 < sorted.length) ? sorted[idx + 1][0] : viewSec;
+                        const segEnd = Math.min(rawEnd, nextS);
+                        if (segEnd <= s) return;
+                        const last = merged[merged.length - 1];
+                        if (last && s <= last.end + 0.05 && last.stackVal === stVal) {
+                            if (s > last.start + 0.1) last.refreshes.push(s);
+                            if (segEnd > last.end) last.end = segEnd;
+                        } else {
+                            merged.push({ start: s, end: segEnd, refreshes: [], stackVal: stVal });
+                        }
+                    });
+                } else {
+                    sorted.forEach(([s, e]) => {
+                        const clampedE = Math.min(viewSec, e);
+                        const last = merged[merged.length - 1];
+                        if (last && s <= last.end + 0.05) {
+                            if (s > last.start + 0.1) last.refreshes.push(s);
+                            if (clampedE > last.end) last.end = clampedE;
+                        } else {
+                            merged.push({ start: s, end: clampedE, refreshes: [], stackVal: null });
+                        }
+                    });
+                }
 
                 let barCls = 'bg-[#252834] border border-[#3d4254] text-gray-300';
                 if (track.isDot) {
@@ -4624,10 +4664,16 @@
                     const refLines = seg.refreshes.map(rt =>
                         `<div class="absolute top-0 bottom-0 w-[1px] bg-white/35 pointer-events-none" style="left:${(rt - seg.start) * pxPerSec}px"></div>`
                     ).join('');
+                    const segLabel = (track.state === '연속 조준' && seg.stackVal != null)
+                        ? `연속 조준 ${seg.stackVal}/5 (+${seg.stackVal * 5}%)`
+                        : track.label;
+                    const segTitle = (track.state === '연속 조준' && seg.stackVal != null)
+                        ? `연속 조준 ${seg.stackVal}/5스택 (주는 피해 +${seg.stackVal * 5}%) · ${fmtMMSS(seg.start, 1)} ~ ${fmtMMSS(seg.end, 1)}`
+                        : `${track.label} (${fmtMMSS(seg.start, 1)} ~ ${fmtMMSS(seg.end, 1)})`;
                     return `
                         <div class="absolute top-[5px] h-[22px] rounded px-1.5 text-[10px] font-semibold truncate flex items-center ${barCls}"
-                             style="left:${left}px;width:${w}px" title="${track.label} (${fmtMMSS(seg.start, 1)} ~ ${fmtMMSS(seg.end, 1)})">
-                            ${refLines}<span class="truncate relative z-10">${track.label}</span>
+                             style="left:${left}px;width:${w}px" title="${segTitle}">
+                            ${refLines}<span class="truncate relative z-10">${segLabel}</span>
                         </div>
                     `;
                 }).join('');
