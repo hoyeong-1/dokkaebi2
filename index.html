@@ -369,7 +369,7 @@
                                         <span class="text-[11px] text-gray-500 ml-0.5">%</span>
                                     </div>
                                 </label>
-                                <label class="flex items-center gap-1.5 text-xs text-gray-300" title="공격대상이 허수아비일 때 적용되는 일반 요귀 피해 증가 (%)">
+                                <label class="flex items-center gap-1.5 text-xs text-gray-300" title="허수아비(일반 요귀) 대상 시 적용 · 저격 신식 연속 조준(+5%/중첩)과 합연산">
                                     <span class="font-semibold text-gray-400">일반 요귀 피해 증가</span>
                                     <div class="flex items-center bg-darkBg border border-borderCol focus-within:border-[#7F91F5] rounded-lg px-2 py-1">
                                         <input type="number" id="normalYoukaiDmgIncInput" step="0.01" min="0" max="1000" value="0" inputmode="decimal"
@@ -1484,13 +1484,13 @@
         }
 
         // 공격대상 구분에 따른 추가 피해 보너스 합계:
-        // - 허수아비: 일반 요귀 피해 증가 적용 (보스 피해 증가 미적용)
-        // - 보스(필드보스/레이드): 보스 피해 증가 + 격노 보스 피증 + 연속 조준 보스 피증 적용
+        // - 허수아비: 일반 요귀 피해 증가 + 연속 조준(+5%/중첩) 적용 (보스 피해 증가 · 격노 보스 피증 미적용)
+        // - 보스(필드보스/레이드): 보스 피해 증가 + 격노 보스 피증 + 연속 조준(+5%/중첩) 적용
         function getTargetTypeBonusPct(yeontaBossPct = 0, chojunPct = 0) {
             if (isCurrentTargetBoss()) {
                 return bossDmgIncPct + yeontaBossPct + chojunPct;
             }
-            return normalYoukaiDmgIncPct;
+            return normalYoukaiDmgIncPct + chojunPct;
         }
 
         // 공격력 입력 시(A > 0) 계수(%) -> 절대 데미지 환산 배율: A0² / (1000 * (A0 + D0))
