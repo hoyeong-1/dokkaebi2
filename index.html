@@ -818,6 +818,27 @@
                         <span id="recSchoolLvRuleSummary" class="text-[11px] font-bold text-gray-300 num-clean">지정 합계: 12 / 12개</span>
                     </div>
                 </div>
+
+                <!-- Fixed Specific School Level & Skill Breakthrough Overrides -->
+                <div id="recFixedOverridesBox" class="space-y-2 pt-2 border-t border-borderCol/70">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-[11px] font-bold text-gray-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-lock text-amber-400 text-[10px]"></i>
+                            특정 계열 레벨 · 도술 돌파 고정
+                        </span>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="addRecommendFixedSchoolLvRule()"
+                                    class="px-2 py-0.5 text-[11px] font-bold text-emerald-300 bg-darkBg hover:bg-[#232836] border border-borderCol rounded-lg transition">
+                                + 계열 레벨 고정
+                            </button>
+                            <button type="button" onclick="addRecommendFixedBtRule()"
+                                    class="px-2 py-0.5 text-[11px] font-bold text-amber-300 bg-darkBg hover:bg-[#232836] border border-borderCol rounded-lg transition">
+                                + 도술 돌파 고정
+                            </button>
+                        </div>
+                    </div>
+                    <div id="recFixedRulesContainer" class="space-y-1.5"></div>
+                </div>
             </div>
 
             <div id="recommendListContainer" class="flex-1 overflow-y-auto space-y-3 pr-1"></div>
@@ -1429,6 +1450,8 @@
             { level: 50, count: 3 },
             { level: 0, count: 9 }
         ];
+        let recommendFixedSchoolLvRules = JSON.parse(localStorage.getItem('dokkaebi_rec_fixed_school_lv_v1')) || [];
+        let recommendFixedBtRules = JSON.parse(localStorage.getItem('dokkaebi_rec_fixed_bt_v1')) || [];
         let schoolEnhanceLevels = JSON.parse(localStorage.getItem('dokkaebi_school_lv_v6')) || {};
         let selectedUltSchool = localStorage.getItem('dokkaebi_ult_school_v6') || null;
         let currentWeaponType = localStorage.getItem('dokkaebi_weapon_v6') || 'sword';
@@ -1615,6 +1638,8 @@
             localStorage.setItem('dokkaebi_rec_bt_rules_v1', JSON.stringify(recommendBtRules));
             localStorage.setItem('dokkaebi_rec_school_lv_mode_v1', recommendSchoolLvMode);
             localStorage.setItem('dokkaebi_rec_school_lv_rules_v1', JSON.stringify(recommendSchoolLvRules));
+            localStorage.setItem('dokkaebi_rec_fixed_school_lv_v1', JSON.stringify(recommendFixedSchoolLvRules));
+            localStorage.setItem('dokkaebi_rec_fixed_bt_v1', JSON.stringify(recommendFixedBtRules));
             localStorage.setItem('dokkaebi_school_lv_v6', JSON.stringify(schoolEnhanceLevels));
             if (selectedUltSchool) localStorage.setItem('dokkaebi_ult_school_v6', selectedUltSchool);
             localStorage.setItem('dokkaebi_weapon_v6', currentWeaponType);
@@ -5772,7 +5797,41 @@ function renderSingleLineTimeline(root, res) {
             };
         }
 
-        function assignSchoolLvMapForDeck(deckNames, mainSchoolId, levelSlots, btMapForWeight = null) {
+        function getFixedSchoolLvMap() {
+            const map = {};
+            const validIds = new Set(SCHOOLS.filter(s => s.id !== 'all').map(s => s.id));
+            (recommendFixedSchoolLvRules || []).forEach(r => {
+                if (!r || !validIds.has(r.school)) return;
+                map[r.school] = Math.max(0, Math.min(50, parseInt(r.level, 10) || 0));
+            });
+            return map;
+        }
+
+        function getFixedBtMap() {
+            const map = {};
+            (recommendFixedBtRules || []).forEach(r => {
+                if (!r || !r.skill || !skillDb[r.skill] || skillDb[r.skill].category === '도술') return;
+                map[r.skill] = Math.max(0, Math.min(10, parseInt(r.stage, 10) || 0));
+            });
+            return map;
+        }
+
+        function consumeClosestSlot(slotsArr, targetVal) {
+            if (!slotsArr || slotsArr.length === 0) return;
+            let bestIdx = 0;
+            let bestDiff = Infinity;
+            for (let i = 0; i < slotsArr.length; i++) {
+                const diff = Math.abs(slotsArr[i] - targetVal);
+                if (diff < bestDiff) {
+                    bestDiff = diff;
+                    bestIdx = i;
+                    if (diff === 0) break;
+                }
+            }
+            slotsArr.splice(bestIdx, 1);
+        }
+
+        function assignSchoolLvMapForDeck(deckNames, mainSchoolId, levelSlots, btMapForWeight = null, fixedSchMap = null) {
             const schoolIds = SCHOOLS.filter(s => s.id !== 'all').map(s => s.id);
             const weightMap = {};
             const countMap = {};
@@ -5795,7 +5854,20 @@ function renderSingleLineTimeline(root, res) {
             };
             withTemporaryBtMap(btMapForWeight, computeWeights);
 
-            const sortedSchools = schoolIds.slice().sort((a, b) => {
+            const lvMap = {};
+            const remainingSlots = (levelSlots || []).slice();
+            const fixedSet = new Set();
+
+            if (fixedSchMap) {
+                Object.entries(fixedSchMap).forEach(([scId, lv]) => {
+                    if (!weightMap.hasOwnProperty(scId)) return;
+                    lvMap[scId] = lv;
+                    fixedSet.add(scId);
+                    consumeClosestSlot(remainingSlots, lv);
+                });
+            }
+
+            const nonFixedSchools = schoolIds.filter(id => !fixedSet.has(id)).sort((a, b) => {
                 const usedA = countMap[a] > 0 ? 1 : 0;
                 const usedB = countMap[b] > 0 ? 1 : 0;
                 if (usedB !== usedA) return usedB - usedA;
@@ -5805,25 +5877,34 @@ function renderSingleLineTimeline(root, res) {
                 return countMap[b] - countMap[a];
             });
 
-            const lvMap = {};
-            sortedSchools.forEach((scId, idx) => {
-                lvMap[scId] = (levelSlots && levelSlots[idx] !== undefined) ? levelSlots[idx] : 0;
+            nonFixedSchools.forEach((scId, idx) => {
+                lvMap[scId] = (remainingSlots[idx] !== undefined) ? remainingSlots[idx] : 0;
             });
             return lvMap;
         }
 
-        function assignBtMapForDeck(skillNames, specialSlots, normalSlots) {
+        function assignBtMapForDeck(skillNames, specialSlots, normalSlots, fixedBtMap = null) {
+            const btMap = {};
+            const remSpecialSlots = (specialSlots || []).slice();
+            const remNormalSlots = (normalSlots || []).slice();
             const specials = [];
             const normals = [];
+
             skillNames.forEach(n => {
                 const sk = skillDb[n];
                 if (!sk || sk.category === '도술') return;
+                if (fixedBtMap && fixedBtMap[n] !== undefined) {
+                    btMap[n] = fixedBtMap[n];
+                    if (sk.category === '특별') consumeClosestSlot(remSpecialSlots, fixedBtMap[n]);
+                    else consumeClosestSlot(remNormalSlots, fixedBtMap[n]);
+                    return;
+                }
                 if (sk.category === '특별') specials.push(sk);
                 else normals.push(sk);
             });
 
-            const maxSpStage = specialSlots.length > 0 ? specialSlots[0] : 0;
-            const maxNmStage = normalSlots.length > 0 ? normalSlots[0] : 0;
+            const maxSpStage = remSpecialSlots.length > 0 ? remSpecialSlots[0] : 0;
+            const maxNmStage = remNormalSlots.length > 0 ? remNormalSlots[0] : 0;
 
             specials.sort((a, b) => {
                 const gainA = getSingleSkillScore(a, maxSpStage) - getSingleSkillScore(a, 0);
@@ -5839,21 +5920,21 @@ function renderSingleLineTimeline(root, res) {
                 return getSingleSkillScore(b, maxNmStage) - getSingleSkillScore(a, maxNmStage);
             });
 
-            const btMap = {};
             specials.forEach((sk, i) => {
-                btMap[sk.name] = i < specialSlots.length ? specialSlots[i] : 0;
+                btMap[sk.name] = i < remSpecialSlots.length ? remSpecialSlots[i] : 0;
             });
             normals.forEach((sk, i) => {
-                btMap[sk.name] = i < normalSlots.length ? normalSlots[i] : 0;
+                btMap[sk.name] = i < remNormalSlots.length ? remNormalSlots[i] : 0;
             });
             return btMap;
         }
 
-        // 실제 시뮬레이션 기반 돌파 배정 정밀 최적화 (같은 카테고리 내 서로 다른 돌파 단계를 스왑해 최고 DPS 탐색)
-        function optimizeBtMapBySim(deckOrder, initialBtMap, schMap, evalDur) {
+        // 실제 시뮬레이션 기반 돌파 배정 정밀 최적화 (같은 카테고리 내 비고정 도술의 돌파 단계를 스왑해 최고 DPS 탐색)
+        function optimizeBtMapBySim(deckOrder, initialBtMap, schMap, evalDur, fixedBtMap = null) {
             if (!initialBtMap) return initialBtMap;
             const btMap = { ...initialBtMap };
-            const nonUlts = deckOrder.filter(n => skillDb[n] && skillDb[n].category !== '도술');
+            const isFixed = (n) => fixedBtMap && fixedBtMap[n] !== undefined;
+            const nonUlts = deckOrder.filter(n => skillDb[n] && skillDb[n].category !== '도술' && !isFixed(n));
             const specials = nonUlts.filter(n => skillDb[n].category === '특별');
             const normals = nonUlts.filter(n => skillDb[n].category === '일반');
 
@@ -5889,11 +5970,12 @@ function renderSingleLineTimeline(root, res) {
             return btMap;
         }
 
-        // 실제 시뮬레이션 기반 계열 강화 레벨 정밀 최적화 (덱에 포함된 계열 간 서로 다른 레벨을 스왑해 최고 DPS 탐색)
-        function optimizeSchoolLvMapBySim(deckOrder, btMap, initialSchMap, evalDur) {
+        // 실제 시뮬레이션 기반 계열 강화 레벨 정밀 최적화 (비고정 계열 간 서로 다른 레벨을 스왑해 최고 DPS 탐색)
+        function optimizeSchoolLvMapBySim(deckOrder, btMap, initialSchMap, evalDur, fixedSchMap = null) {
             if (!initialSchMap) return initialSchMap;
             const schMap = { ...initialSchMap };
-            const usedSchools = Array.from(new Set(deckOrder.map(n => skillDb[n]?.school).filter(Boolean)));
+            const isFixed = (scId) => fixedSchMap && fixedSchMap[scId] !== undefined;
+            const usedSchools = Array.from(new Set(deckOrder.map(n => skillDb[n]?.school).filter(scId => scId && !isFixed(scId))));
             if (usedSchools.length < 2) return schMap;
 
             let bestDps = withTemporaryEvalState(btMap, schMap, () => runSimulationForOrder(deckOrder, false, evalDur).dps);
@@ -6135,6 +6217,77 @@ function renderSingleLineTimeline(root, res) {
                 });
                 updateRecommendSchoolLvRuleSummaryText();
             }
+
+            // 특정 계열 레벨 · 도술 돌파 고정 UI 렌더링
+            const fixedContainer = document.getElementById('recFixedRulesContainer');
+            if (fixedContainer) {
+                fixedContainer.innerHTML = '';
+                const hasAnyFixed = (recommendFixedSchoolLvRules.length > 0 || recommendFixedBtRules.length > 0);
+                if (!hasAnyFixed) {
+                    fixedContainer.innerHTML = `<div class="text-[11px] text-gray-500">고정된 항목 없음 (예: 파멸 50렙 고정, 요기 폭발 6돌파 고정)</div>`;
+                } else {
+                    const schoolOptsHtml = (selectedId) => SCHOOLS.filter(s => s.id !== 'all').map(s =>
+                        `<option value="${s.id}" class="bg-panelBg text-white" ${s.id === selectedId ? 'selected' : ''}>${s.name}</option>`
+                    ).join('');
+
+                    const nonUltSkills = Object.values(skillDb).filter(sk => sk.category !== '도술').sort((a, b) => {
+                        if (a.category !== b.category) return a.category === '특별' ? -1 : 1;
+                        return a.name.localeCompare(b.name, 'ko');
+                    });
+                    const skillOptsHtml = (selectedName) => nonUltSkills.map(sk => {
+                        const scName = getSchoolMeta(sk.school).name;
+                        return `<option value="${sk.name}" class="bg-panelBg text-white" ${sk.name === selectedName ? 'selected' : ''}>[${sk.category}·${scName}] ${sk.name}</option>`;
+                    }).join('');
+
+                    recommendFixedSchoolLvRules.forEach((rule, idx) => {
+                        const row = document.createElement('div');
+                        row.className = 'flex flex-wrap items-center gap-2 bg-darkBg/80 border border-emerald-500/35 rounded-lg px-2.5 py-1.5';
+                        row.innerHTML = `
+                            <span class="text-[10px] font-bold text-emerald-300 bg-emerald-950/50 border border-emerald-500/30 px-1.5 py-0.5 rounded">계열 고정</span>
+                            <select onchange="updateRecommendFixedSchoolLvRule(${idx}, 'school', this.value)"
+                                    class="bg-cardBg border border-borderCol rounded-lg px-2 py-1 text-xs font-bold text-white focus:outline-none cursor-pointer">
+                                ${schoolOptsHtml(rule.school)}
+                            </select>
+                            <div class="flex items-center gap-1 bg-cardBg border border-borderCol rounded-lg px-2 py-1">
+                                <input type="number" min="0" max="50" step="1" value="${rule.level}"
+                                       onfocus="this.select()"
+                                       oninput="updateRecommendFixedSchoolLvRule(${idx}, 'level', this.value)"
+                                       class="w-10 bg-transparent text-right text-xs font-extrabold text-emerald-300 num-clean no-spinner focus:outline-none">
+                                <span class="text-[11px] text-gray-400 font-semibold">렙 고정</span>
+                            </div>
+                            <button type="button" onclick="removeRecommendFixedSchoolLvRule(${idx})"
+                                    class="ml-auto text-gray-500 hover:text-rose-400 px-1.5 py-0.5 text-xs transition" title="고정 해제">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        `;
+                        fixedContainer.appendChild(row);
+                    });
+
+                    recommendFixedBtRules.forEach((rule, idx) => {
+                        const row = document.createElement('div');
+                        row.className = 'flex flex-wrap items-center gap-2 bg-darkBg/80 border border-amber-500/35 rounded-lg px-2.5 py-1.5';
+                        row.innerHTML = `
+                            <span class="text-[10px] font-bold text-amber-300 bg-amber-950/40 border border-amber-500/30 px-1.5 py-0.5 rounded">돌파 고정</span>
+                            <select onchange="updateRecommendFixedBtRule(${idx}, 'skill', this.value)"
+                                    class="bg-cardBg border border-borderCol rounded-lg px-2 py-1 text-xs font-bold text-white focus:outline-none cursor-pointer max-w-[220px]">
+                                ${skillOptsHtml(rule.skill)}
+                            </select>
+                            <div class="flex items-center gap-1 bg-cardBg border border-borderCol rounded-lg px-2 py-1">
+                                <input type="number" min="0" max="10" step="1" value="${rule.stage}"
+                                       onfocus="this.select()"
+                                       oninput="updateRecommendFixedBtRule(${idx}, 'stage', this.value)"
+                                       class="w-9 bg-transparent text-right text-xs font-extrabold text-amber-300 num-clean no-spinner focus:outline-none">
+                                <span class="text-[11px] text-gray-400 font-semibold">돌파 고정</span>
+                            </div>
+                            <button type="button" onclick="removeRecommendFixedBtRule(${idx})"
+                                    class="ml-auto text-gray-500 hover:text-rose-400 px-1.5 py-0.5 text-xs transition" title="고정 해제">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        `;
+                        fixedContainer.appendChild(row);
+                    });
+                }
+            }
         }
 
         function setRecommendMode(mode) {
@@ -6229,9 +6382,77 @@ function renderSingleLineTimeline(root, res) {
             updateRecommendContextInfo();
         }
 
+        function addRecommendFixedSchoolLvRule() {
+            const used = new Set(recommendFixedSchoolLvRules.map(r => r.school));
+            const avail = SCHOOLS.filter(s => s.id !== 'all' && !used.has(s.id));
+            const nextSchool = avail.length > 0 ? avail[0].id : 'pamyeol';
+            recommendFixedSchoolLvRules.push({ school: nextSchool, level: 50 });
+            saveAllState();
+            renderRecommendConfigUI();
+            updateRecommendContextInfo();
+        }
+
+        function updateRecommendFixedSchoolLvRule(idx, field, val) {
+            if (!recommendFixedSchoolLvRules[idx]) return;
+            if (field === 'school') {
+                recommendFixedSchoolLvRules[idx].school = val;
+            } else {
+                let num = parseInt(val, 10);
+                if (isNaN(num)) num = 0;
+                recommendFixedSchoolLvRules[idx].level = Math.max(0, Math.min(50, num));
+            }
+            saveAllState();
+            updateRecommendContextInfo();
+        }
+
+        function removeRecommendFixedSchoolLvRule(idx) {
+            recommendFixedSchoolLvRules.splice(idx, 1);
+            saveAllState();
+            renderRecommendConfigUI();
+            updateRecommendContextInfo();
+        }
+
+        function addRecommendFixedBtRule() {
+            const used = new Set(recommendFixedBtRules.map(r => r.skill));
+            const preferred = Object.values(skillDb)
+                .filter(sk => sk.category !== '도술' && !used.has(sk.name))
+                .sort((a, b) => (a.category === '특별' ? -1 : 1) - (b.category === '특별' ? -1 : 1));
+            const nextSkill = preferred.length > 0 ? preferred[0].name : '요기 폭발';
+            const defStage = skillDb[nextSkill]?.category === '특별' ? 6 : 10;
+            recommendFixedBtRules.push({ skill: nextSkill, stage: defStage });
+            saveAllState();
+            renderRecommendConfigUI();
+            updateRecommendContextInfo();
+        }
+
+        function updateRecommendFixedBtRule(idx, field, val) {
+            if (!recommendFixedBtRules[idx]) return;
+            if (field === 'skill') {
+                recommendFixedBtRules[idx].skill = val;
+            } else {
+                let num = parseInt(val, 10);
+                if (isNaN(num)) num = 0;
+                recommendFixedBtRules[idx].stage = Math.max(0, Math.min(10, num));
+            }
+            saveAllState();
+            updateRecommendContextInfo();
+        }
+
+        function removeRecommendFixedBtRule(idx) {
+            recommendFixedBtRules.splice(idx, 1);
+            saveAllState();
+            renderRecommendConfigUI();
+            updateRecommendContextInfo();
+        }
+
         function computeRecommendedBuilds() {
             const isCustomBt = (recommendMode === 'custom');
             const isCustomSch = (recommendSchoolLvMode === 'custom');
+            const fixedSchMap = getFixedSchoolLvMap();
+            const fixedBtMap = getFixedBtMap();
+            const hasFixedSch = Object.keys(fixedSchMap).length > 0;
+            const hasFixedBt = Object.keys(fixedBtMap).length > 0;
+
             const budget = isCustomBt ? getParsedRecommendBudget() : null;
             if (isCustomBt && (!budget || !budget.valid)) return [];
             const schBudget = isCustomSch ? getParsedRecommendSchoolLvBudget() : null;
@@ -6254,10 +6475,13 @@ function renderSingleLineTimeline(root, res) {
             const pinnedNmCount = pinnedNonUlts.length - pinnedSpCount;
             if (pinnedSpCount > maxSpecialCap || pinnedNmCount > maxNormalCap) return [];
 
-            // 후보군 정렬 시 계열 레벨 지정 모드라면 최고 레벨 기준 균등 점수로 후보 풀을 넓게 확보
+            // 후보군 정렬 시 고정 계열 레벨 및 최고 레벨 기준을 반영해 후보 풀을 넓게 확보
             const scoreEvalLvMap = isCustomSch
-                ? Object.fromEntries(SCHOOLS.filter(s => s.id !== 'all').map(s => [s.id, levelSlots[0] || 0]))
-                : null;
+                ? Object.fromEntries(SCHOOLS.filter(s => s.id !== 'all').map(s => [
+                    s.id,
+                    fixedSchMap[s.id] !== undefined ? fixedSchMap[s.id] : (levelSlots[0] || 0)
+                ]))
+                : (hasFixedSch ? { ...schoolEnhanceLevels, ...fixedSchMap } : null);
 
             const allEligible = Object.values(skillDb).filter(sk => sk.category !== '도술' && !recommendExcludedMap[sk.name]);
             let allSpecials = [];
@@ -6265,11 +6489,17 @@ function renderSingleLineTimeline(root, res) {
             withTemporarySchoolLvMap(scoreEvalLvMap, () => {
                 allSpecials = allEligible
                     .filter(sk => sk.category === '특별')
-                    .map(sk => ({ name: sk.name, school: sk.school, category: '특별', score: getSingleSkillScore(sk, isCustomBt ? maxSpStage : null) }))
+                    .map(sk => {
+                        const evalSt = fixedBtMap[sk.name] !== undefined ? fixedBtMap[sk.name] : (isCustomBt ? maxSpStage : null);
+                        return { name: sk.name, school: sk.school, category: '특별', score: getSingleSkillScore(sk, evalSt) };
+                    })
                     .sort((a, b) => b.score - a.score);
                 allNormals = allEligible
                     .filter(sk => sk.category === '일반')
-                    .map(sk => ({ name: sk.name, school: sk.school, category: '일반', score: getSingleSkillScore(sk, isCustomBt ? maxNmStage : null) }))
+                    .map(sk => {
+                        const evalSt = fixedBtMap[sk.name] !== undefined ? fixedBtMap[sk.name] : (isCustomBt ? maxNmStage : null);
+                        return { name: sk.name, school: sk.school, category: '일반', score: getSingleSkillScore(sk, evalSt) };
+                    })
                     .sort((a, b) => b.score - a.score);
             });
 
@@ -6310,7 +6540,8 @@ function renderSingleLineTimeline(root, res) {
                         neededReqStates.has(e.state)
                     ) ||
                     conds.some(c => c.type === 'trigger_state' && ((c.ampPct || 0) > 0 || c.applyState === '방어력 감소'));
-                if (isSynergySkill) globalPoolSet.add(sk.name);
+                const isFixedTarget = (fixedBtMap[sk.name] !== undefined) || (fixedSchMap[sk.school] !== undefined && fixedSchMap[sk.school] > 0);
+                if (isSynergySkill || isFixedTarget) globalPoolSet.add(sk.name);
             });
 
             const synergyPairs = buildDynamicSynergyPairs(allEligible);
@@ -6320,8 +6551,18 @@ function renderSingleLineTimeline(root, res) {
 
             const getEvalMaps = (deckNonUlt, ultName, scId) => {
                 const fullDeck = [...deckNonUlt, ultName];
-                const btMap = isCustomBt ? assignBtMapForDeck(deckNonUlt, specialSlots, normalSlots) : null;
-                const schMap = isCustomSch ? assignSchoolLvMapForDeck(fullDeck, scId, levelSlots, btMap) : null;
+                let btMap = null;
+                if (isCustomBt) {
+                    btMap = assignBtMapForDeck(deckNonUlt, specialSlots, normalSlots, fixedBtMap);
+                } else if (hasFixedBt) {
+                    btMap = { ...breakthroughStageMap, ...fixedBtMap };
+                }
+                let schMap = null;
+                if (isCustomSch) {
+                    schMap = assignSchoolLvMapForDeck(fullDeck, scId, levelSlots, btMap, fixedSchMap);
+                } else if (hasFixedSch) {
+                    schMap = { ...schoolEnhanceLevels, ...fixedSchMap };
+                }
                 return { btMap, schMap };
             };
 
@@ -6560,10 +6801,10 @@ function renderSingleLineTimeline(root, res) {
                 const optOrder1 = withTemporaryEvalState(finalBtMap, finalSchMap, () => localSearchOrder(bestOrder, evalDur, 4));
                 bestOrder = optOrder1.order;
                 if (isCustomBt && finalBtMap) {
-                    finalBtMap = optimizeBtMapBySim(bestOrder, finalBtMap, finalSchMap, evalDur);
+                    finalBtMap = optimizeBtMapBySim(bestOrder, finalBtMap, finalSchMap, evalDur, fixedBtMap);
                 }
                 if (isCustomSch && finalSchMap) {
-                    finalSchMap = optimizeSchoolLvMapBySim(bestOrder, finalBtMap, finalSchMap, evalDur);
+                    finalSchMap = optimizeSchoolLvMapBySim(bestOrder, finalBtMap, finalSchMap, evalDur, fixedSchMap);
                 }
                 const optOrder2 = withTemporaryEvalState(finalBtMap, finalSchMap, () => optimizeOrderFull(bestOrder, evalDur, 4));
                 const evalSim = withTemporaryEvalState(finalBtMap, finalSchMap, () => runSimulationForOrder(optOrder2.order, false, evalDur));
@@ -6579,8 +6820,12 @@ function renderSingleLineTimeline(root, res) {
                     synergyPct: evalSim.synergyPct,
                     assignedBtMap: finalBtMap,
                     isCustomBudget: isCustomBt,
+                    hasFixedBt: hasFixedBt,
+                    fixedBtMap: hasFixedBt ? { ...fixedBtMap } : null,
                     assignedSchoolLvMap: finalSchMap,
                     isCustomSchoolLv: isCustomSch,
+                    hasFixedSch: hasFixedSch,
+                    fixedSchMap: hasFixedSch ? { ...fixedSchMap } : null,
                     _candidatePool: candidatePool
                 });
             });
@@ -6594,10 +6839,10 @@ function renderSingleLineTimeline(root, res) {
                 let schMap = b.assignedSchoolLvMap || null;
                 let refined = withTemporaryEvalState(btMap, schMap, () => optimizeOrderFull(b.deck, null, 6));
                 if (b.isCustomBudget && btMap) {
-                    btMap = optimizeBtMapBySim(refined.order, btMap, schMap, null);
+                    btMap = optimizeBtMapBySim(refined.order, btMap, schMap, null, fixedBtMap);
                 }
                 if (b.isCustomSchoolLv && schMap) {
-                    schMap = optimizeSchoolLvMapBySim(refined.order, btMap, schMap, null);
+                    schMap = optimizeSchoolLvMapBySim(refined.order, btMap, schMap, null, fixedSchMap);
                 }
                 refined = withTemporaryEvalState(btMap, schMap, () => localSearchOrder(refined.order, null, 5));
                 const refinedSim = withTemporaryEvalState(btMap, schMap, () => runSimulationForOrder(refined.order, false));
@@ -6693,10 +6938,10 @@ function renderSingleLineTimeline(root, res) {
                     let schMap = cand.schMap || null;
                     let refined = withTemporaryEvalState(btMap, schMap, () => optimizeOrderFull(cand.ordered, null, 4));
                     if (b.isCustomBudget && btMap) {
-                        btMap = optimizeBtMapBySim(refined.order, btMap, schMap, null);
+                        btMap = optimizeBtMapBySim(refined.order, btMap, schMap, null, fixedBtMap);
                     }
                     if (b.isCustomSchoolLv && schMap) {
-                        schMap = optimizeSchoolLvMapBySim(refined.order, btMap, schMap, null);
+                        schMap = optimizeSchoolLvMapBySim(refined.order, btMap, schMap, null, fixedSchMap);
                     }
                     refined = withTemporaryEvalState(btMap, schMap, () => localSearchOrder(refined.order, null, 4));
                     const sim = withTemporaryEvalState(btMap, schMap, () => runSimulationForOrder(refined.order, false));
@@ -6776,6 +7021,13 @@ function renderSingleLineTimeline(root, res) {
             if (pinCount > 0) filterParts.push(`고정 ${pinCount}종`);
             if (exCount > 0) filterParts.push(`제외 ${exCount}종`);
 
+            const fixedParts = [];
+            const fSch = getFixedSchoolLvMap();
+            Object.entries(fSch).forEach(([id, lv]) => fixedParts.push(`${getSchoolMeta(id).name} Lv.${lv}`));
+            const fBt = getFixedBtMap();
+            Object.entries(fBt).forEach(([nm, st]) => fixedParts.push(`${nm} ${st}돌`));
+            if (fixedParts.length > 0) filterParts.push(`🔒${fixedParts.join(', ')}`);
+
             infoEl.innerText = `${schSummaryStr} | ${btSummaryStr}${filterParts.length > 0 ? ` | ${filterParts.join(' · ')}` : ''} | ${wName} · ${mins}분 기준`;
         }
 
@@ -6850,7 +7102,7 @@ function renderSingleLineTimeline(root, res) {
             selectedUltSchool = b.schoolId;
             cycle = [...v.deck];
             const appliedTags = [];
-            if (b.isCustomBudget && v.assignedBtMap) {
+            if ((b.isCustomBudget || b.hasFixedBt) && v.assignedBtMap) {
                 v.deck.forEach(sName => {
                     const sk = skillDb[sName];
                     if (!sk || sk.category === '도술') return;
@@ -6860,11 +7112,11 @@ function renderSingleLineTimeline(root, res) {
                         bt6ActiveMap[sName] = (lv >= 6);
                     }
                 });
-                appliedTags.push('지정 돌파');
+                appliedTags.push(b.isCustomBudget ? '지정 돌파' : '고정 돌파');
             }
-            if (b.isCustomSchoolLv && v.assignedSchoolLvMap) {
+            if ((b.isCustomSchoolLv || b.hasFixedSch) && v.assignedSchoolLvMap) {
                 schoolEnhanceLevels = { ...v.assignedSchoolLvMap };
-                appliedTags.push('지정 계열 레벨');
+                appliedTags.push(b.isCustomSchoolLv ? '지정 계열 레벨' : '고정 계열 레벨');
             }
             activeTreeName = `추천 ${idx + 1}위-${vIdx + 1} (${b.schoolName} · ${b.ultName})`;
             syncUltimateInCycle(false);
@@ -6959,9 +7211,10 @@ function renderSingleLineTimeline(root, res) {
                     const isUlt = sk.category === '도술';
                     const isPinned = !!recommendPinnedMap[sName];
                     const isAddedDiff = addedSet.has(sName);
+                    const isFixedSkillBt = !!(b.fixedBtMap && b.fixedBtMap[sName] !== undefined);
                     const btLv = isUlt
                         ? 0
-                        : (b.isCustomBudget && v.assignedBtMap
+                        : ((b.isCustomBudget || b.hasFixedBt) && v.assignedBtMap
                             ? (parseInt(v.assignedBtMap[sName], 10) || 0)
                             : (parseInt(breakthroughStageMap[sName], 10) || 0));
                     const starHtml = (!isUlt && sk.category === '특별' && btLv >= 6)
@@ -6978,28 +7231,29 @@ function renderSingleLineTimeline(root, res) {
                                 : `<div class="relative shrink-0"><div class="w-6 h-6 rounded-md overflow-hidden bg-cardBg flex items-center justify-center"><img src="${getSkillIconSrc(sk)}" class="w-full h-full object-cover" onerror="handleSkillImgError(this, '${sk.imageFile || ''}')"><div class="hidden w-full h-full items-center justify-center text-[9px] font-bold text-white">${sName.substring(0, 2)}</div></div>${starHtml}</div>`}
                             <span class="text-[11px] font-bold ${isUlt ? 'text-amber-300' : (sk.category === '특별' ? 'text-indigo-200' : 'text-gray-100')} truncate">${sName}</span>
                             ${isPinned ? `<i class="fa-solid fa-thumbtack text-[9px] text-emerald-400 shrink-0" title="고정 도술"></i>` : ''}
-                            ${btLv > 0 ? `<span class="text-[9px] font-bold text-amber-400 shrink-0">${btLv}돌</span>` : ''}
+                            ${btLv > 0 ? `<span class="text-[9px] font-bold ${isFixedSkillBt ? 'text-amber-300' : 'text-amber-400'} shrink-0" title="${isFixedSkillBt ? '고정 돌파' : ''}">${isFixedSkillBt ? '🔒' : ''}${btLv}돌</span>` : (isFixedSkillBt ? `<span class="text-[9px] font-bold text-amber-300 shrink-0" title="고정 0돌파">🔒0돌</span>` : '')}
                         </div>
                     `;
                 }).join('');
 
                 let assignedSchHtml = '';
-                if (b.isCustomSchoolLv && v.assignedSchoolLvMap) {
+                if ((b.isCustomSchoolLv || b.hasFixedSch) && v.assignedSchoolLvMap) {
                     const assignedEntries = Object.entries(v.assignedSchoolLvMap)
-                        .filter(([, lv]) => lv > 0)
+                        .filter(([scId, lv]) => lv > 0 || (b.fixedSchMap && b.fixedSchMap[scId] !== undefined))
                         .sort((a, c) => c[1] - a[1]);
                     if (assignedEntries.length > 0) {
                         const badges = assignedEntries.map(([scId, lv]) => {
                             const meta = getSchoolMeta(scId);
-                            return `<span class="px-1.5 py-0.5 rounded bg-darkBg border border-borderCol text-[10px] font-bold text-gray-200"><span style="color:${meta.color}">${meta.name}</span> Lv.${lv}</span>`;
+                            const isFixedSc = !!(b.fixedSchMap && b.fixedSchMap[scId] !== undefined);
+                            return `<span class="px-1.5 py-0.5 rounded bg-darkBg border ${isFixedSc ? 'border-emerald-500/60' : 'border-borderCol'} text-[10px] font-bold text-gray-200" title="${isFixedSc ? '고정 계열 레벨' : ''}">${isFixedSc ? '🔒' : ''}<span style="color:${meta.color}">${meta.name}</span> Lv.${lv}</span>`;
                         }).join('');
                         assignedSchHtml = `<div class="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-borderCol/50"><span class="text-[10px] font-bold text-emerald-300">배정 계열 레벨:</span>${badges}</div>`;
                     }
                 }
 
                 const applyTags = [];
-                if (b.isCustomBudget) applyTags.push('돌파');
-                if (b.isCustomSchoolLv) applyTags.push('계열레벨');
+                if (b.isCustomBudget || b.hasFixedBt) applyTags.push('돌파');
+                if (b.isCustomSchoolLv || b.hasFixedSch) applyTags.push('계열레벨');
                 const applyBtnLabel = applyTags.length > 0 ? `적용 (${applyTags.join('·')} 포함)` : '적용';
 
                 const card = document.createElement('div');
