@@ -3121,6 +3121,7 @@
                         if (isDot) lbl = stateName === '강화 저주' ? '강화 저주(도트·폭발)' : `${stateName}(1초마다 공격력의 2%)`;
                         else if (stateName === '연속 조준') lbl = '연속 조준(주는 피해 +5%/중첩, 최대 5)';
                         else if (ampPct > 0) lbl = `${stateName.replace(/^[^:]+:/, '')} +${ampPct}%`;
+                        else if (extraNote && stateName.includes('치명타 피해')) lbl = `${stateName.replace(/^[^:]+:/, '')} (${extraNote.replace(/^받는 치명타 피해 /, '')})`;
                         else if (extraNote) lbl = `${stateName} (${extraNote})`;
                         stateTrackMap[stateName] = {
                             state: stateName,
@@ -3314,6 +3315,7 @@
                 let critHitBonus = 0;
                 let critResRed = 0;
                 let critDmgBonusPct = 0;
+                let maxTakenCritDmgPct = 0;
                 let isGuaranteedCrit = false;
 
                 stateKeys.forEach(st => {
@@ -3330,9 +3332,9 @@
                     } else if (st === '치명타 피해 증가') {
                         critDmgBonusPct += Number(stObj.critDmgPct || 10);
                     } else if (st === '받는 치명타 피해량 증가') {
-                        critDmgBonusPct += Number(stObj.critDmgPct || 30);
+                        maxTakenCritDmgPct = Math.max(maxTakenCritDmgPct, Number(stObj.critDmgPct || 30));
                     } else if (st === '환상술:받는 치명타 피해 증가') {
-                        critDmgBonusPct += Number(stObj.critDmgPct || 20);
+                        maxTakenCritDmgPct = Math.max(maxTakenCritDmgPct, Number(stObj.critDmgPct || 20));
                     } else if (st === '확정 치명타') {
                         isGuaranteedCrit = true;
                     }
@@ -3342,7 +3344,7 @@
                     defRedPct: Math.min(100, synergyDefRed + generalDefRed),
                     critHitBonus,
                     critResRed,
-                    critDmgBonusPct,
+                    critDmgBonusPct: critDmgBonusPct + maxTakenCritDmgPct,
                     isGuaranteedCrit
                 };
             }
@@ -3352,7 +3354,7 @@
                 let maxAtk = 0, maxPasae = 0, maxTaken = 0;
                 let otherTaken = 0, otherDealt = 0;
                 let synergyDefRed = 0, generalDefRed = 0;
-                let critHitBonus = 0, critResRed = 0, critDmgBonusPct = 0;
+                let critHitBonus = 0, critResRed = 0, critDmgBonusPct = 0, maxTakenCritDmgPct = 0;
                 let isGuaranteedCrit = false;
 
                 for (const st in activeStates) {
@@ -3371,9 +3373,11 @@
                     } else if (st === '치명타 피해 증가') {
                         critDmgBonusPct += Number(stObj.critDmgPct || 10);
                     } else if (st === '받는 치명타 피해량 증가') {
-                        critDmgBonusPct += Number(stObj.critDmgPct || 30);
+                        const v = Number(stObj.critDmgPct || 30);
+                        if (v > maxTakenCritDmgPct) maxTakenCritDmgPct = v;
                     } else if (st === '환상술:받는 치명타 피해 증가') {
-                        critDmgBonusPct += Number(stObj.critDmgPct || 20);
+                        const v = Number(stObj.critDmgPct || 20);
+                        if (v > maxTakenCritDmgPct) maxTakenCritDmgPct = v;
                     } else if (st === '확정 치명타') {
                         isGuaranteedCrit = true;
                     }
@@ -3405,7 +3409,7 @@
                     defRedPct: Math.min(100, synergyDefRed + generalDefRed),
                     critHitBonus,
                     critResRed,
-                    critDmgBonusPct,
+                    critDmgBonusPct: critDmgBonusPct + maxTakenCritDmgPct,
                     isGuaranteedCrit
                 };
             }
@@ -3471,7 +3475,9 @@
                     ? (eff.state === '강화 저주' ? '1초 도트·5중첩 폭발' : `초당 ${eff.dotHitCoeff}% 도트`)
                     : (eff.state === '약화'
                         ? `치명타 저항 -1, (${maxWeakStacks}/100)`
-                        : (eff.cdrPct > 0 ? `쿨감 ${eff.cdrPct}%` : ''));
+                        : (eff.critDmgPct > 0
+                            ? `받는 치명타 피해 +${eff.critDmgPct}%`
+                            : (eff.cdrPct > 0 ? `쿨감 ${eff.cdrPct}%` : '')));
                 recordStateInterval(eff.state, applyTime, newExpire, true, eff.ampPct || 0, false, dotNote, sourceSkill, eff.state === '약화' ? nextStacks : null);
 
                 if (styleResourceToggles.includeDotDamage && eff.dotHitCoeff > 0) {
@@ -3756,7 +3762,8 @@
                 (sk.effects || []).forEach(eff => {
                     if (eff.type === 'buff') {
                         const prev = activeStates[eff.state];
-                        const newExpire = hitTime + Number(eff.duration || 5);
+                        const effDur = (skillName === '공간 결계' && eff.state === '받는 피해 감소') ? 6.95 : Number(eff.duration || 5);
+                        const newExpire = hitTime + effDur;
                         let effAmp = Number(eff.ampPct || 0);
                         if (skillName === '용맹의 기운' && eff.state === '공격력 증가') {
                             effAmp = yongmaengBuffPct;
@@ -3861,8 +3868,8 @@
                     }
                     // 6✦ 조건부 특수효과: 묵영점정·용사비등(속박 +20%), 하늘의 심판(파멸 신식 요기범람 +50%)
                     if ((skillName === '묵영점정' || skillName === '용사비등') && activeStates['속박']) {
-                        buffAdditivePct += 20.0;
-                        if (recordFullLogs) triggeredBadges.push(`[6✦ 속박 증뎀 +20%]`);
+                        multFactor *= 1.2;
+                        if (recordFullLogs) triggeredBadges.push(`[6✦ 속박 ×1.20]`);
                     }
                     if (skillName === '하늘의 심판' && pamyeolBurstUntil > hitTime) {
                         multFactor *= 1.5;
@@ -4147,8 +4154,9 @@
                 // =========================================================
                 (sk.conditionals || []).forEach(cond => {
                     if (cond.type === 'cheoksal_hp_avg') {
-                        buffAdditivePct += Number(cond.value);
-                        if (recordFullLogs) triggeredBadges.push(`[${cond.displayReq || cond.reqState}] +${cond.value}%`);
+                        const condMult = 1 + Number(cond.value) / 100.0;
+                        multFactor *= condMult;
+                        if (recordFullLogs) triggeredBadges.push(`[${cond.displayReq || cond.reqState}] ×${Number(condMult.toFixed(4))}`);
                         return;
                     }
                     if (cond.type === 'dmg_amp_per_debuff') {
@@ -4165,7 +4173,10 @@
                         }
                         return;
                     }
-                    if (activeStates[cond.reqState]) {
+                    const hasReqState = (cond.reqState === '받는 피해 증가')
+                        ? Object.keys(activeStates).some(st => st.includes('받는 피해 증가'))
+                        : !!activeStates[cond.reqState];
+                    if (hasReqState) {
                         let triggeredSynergy = false;
                         if (cond.type === 'bonus_coeff') {
                             if (!isNonDamageStep) {
@@ -4175,9 +4186,9 @@
                                 triggeredSynergy = true;
                             }
                         } else if (cond.type === 'dmg_amp') {
-                            buffAdditivePct += Number(cond.value);
-                            consumedAmpStates.add(cond.reqState);
-                            if (recordFullLogs) triggeredBadges.push(`[${cond.displayReq || cond.reqState}] 증뎀 +${cond.value}%`);
+                            const condMult = 1 + Number(cond.value) / 100.0;
+                            multFactor *= condMult;
+                            if (recordFullLogs) triggeredBadges.push(`[${cond.displayReq || cond.reqState}] ×${condMult.toFixed(2)}`);
                             triggeredSynergy = true;
                         } else if (cond.type === 'trigger_state') {
                             const isDebuffTrig = (cond.targetType === 'debuff' || DEBUFF_STATE_SET.has(cond.applyState));
@@ -4270,7 +4281,8 @@
                     } else if (skillName === '일섬') {
                         debuffEffects.push({ type: 'debuff', state: '일섬:받는 피해 증가', duration: 5, ampPct: 20, cdrPct: 0, dotHitCoeff: 0, extraBurstCoeff: 0 });
                     } else if (skillName === '환상술') {
-                        debuffEffects.push({ type: 'debuff', state: '환상술:받는 치명타 피해 증가', duration: 5, ampPct: 0, cdrPct: 0, critDmgPct: 20, dotHitCoeff: 0, extraBurstCoeff: 0 });
+                        // 실측 7타(+0.50s ~ +1.85s) 타격마다 5초 갱신 → 총 6.35초 유지
+                        debuffEffects.push({ type: 'debuff', state: '환상술:받는 치명타 피해 증가', duration: 6.35, ampPct: 0, cdrPct: 0, critDmgPct: 20, dotHitCoeff: 0, extraBurstCoeff: 0 });
                     }
                 }
                 const groundHits = GROUND_DOT_SKILLS[skillName] || 0;
@@ -4333,8 +4345,17 @@
 
                     const effDotMult = skillLegendMult * (skillName === '신내림' ? jusulCurseBonusMult : 1.0);
                     debuffEffects.forEach(eff => {
-                        applyDebuffEffectAt(eff, hitTime, hitTime + Number(eff.duration || 5), skillName, effDotMult);
+                        const effDur = (skillName === '공간 결계' && eff.state === '받는 피해 증가') ? 6.95 : Number(eff.duration || 5);
+                        applyDebuffEffectAt(eff, hitTime, hitTime + effDur, skillName, effDotMult);
                     });
+
+                    // 하늘의 심판 6✦: 화상(10초, 초당 공격력 2% 도트) 부여
+                    if (isBt6 && skillName === '하늘의 심판') {
+                        const hasBurnAlready = debuffEffects.some(e => e.state === '화상');
+                        if (!hasBurnAlready) {
+                            applyDebuffEffectAt({ type: 'debuff', state: '화상', duration: 10, ampPct: 0, cdrPct: 0, dotHitCoeff: 2.0, extraBurstCoeff: 0 }, hitTime, hitTime + 10.0, skillName, effDotMult);
+                        }
+                    }
 
                     // 황천의 부름 6✦: 황천의 늪 장판 15회 추가 타격 (1초마다 55.23% · 계열강화×전설무기만 적용)
                     if (isBt6 && skillName === '황천의 부름') {
@@ -4406,7 +4427,8 @@
                     // 시전으로 새로 부여한 주요 버프/디버프도 칩으로 표시 (만료시각 포함, 슈퍼 아머 제외)
                     (sk.effects || []).forEach(eff => {
                         if (eff.state === '슈퍼 아머') return;
-                        const expT = hitTime + Number(eff.duration || 5);
+                        const chipDur = (skillName === '공간 결계' && (eff.state === '받는 피해 감소' || eff.state === '받는 피해 증가')) ? 6.95 : Number(eff.duration || 5);
+                        const expT = hitTime + chipDur;
                         const expStr = `${Math.floor(expT / 60)}:${(expT % 60).toFixed(1).padStart(4, '0')}`;
                         if (eff.type === 'buff') {
                             let valStr = eff.state;
@@ -4439,10 +4461,18 @@
                         } else if (skillName === '일섬') {
                             appliedChips.push({ label: `받는 피해 +20% ~${exp5Str}`, kind: 'debuff' });
                         } else if (skillName === '환상술') {
-                            appliedChips.push({ label: `받는 치명타 피해 +20% ~${exp5Str}`, kind: 'debuff' });
+                            const expHwan = hitTime + 6.35;
+                            const expHwanStr = `${Math.floor(expHwan / 60)}:${(expHwan % 60).toFixed(1).padStart(4, '0')}`;
+                            appliedChips.push({ label: `받는 치명타 피해 +20% ~${expHwanStr}`, kind: 'debuff' });
                         } else if (skillName === '은신' && (!chainMeta || chainMeta.step === 2)) {
                             const exp3 = hitTime + 3.0;
                             appliedChips.push({ label: `확정 치명타 ~${Math.floor(exp3 / 60)}:${(exp3 % 60).toFixed(1).padStart(4, '0')}`, kind: 'buff' });
+                        } else if (skillName === '하늘의 심판') {
+                            const hasBurnOpt = (sk.effects || []).some(e => e.state === '화상');
+                            if (!hasBurnOpt) {
+                                const exp10 = hitTime + 10.0;
+                                appliedChips.push({ label: `화상 ~${Math.floor(exp10 / 60)}:${(exp10 % 60).toFixed(1).padStart(4, '0')}`, kind: 'debuff' });
+                            }
                         }
                     }
                     if (yonsokChojunApplied) {
@@ -4520,6 +4550,7 @@
                     let stepTime = castTime;
                     let totalChainMotion = 0;
                     let firstEffectiveCd = slot.lastEffectiveCd;
+                    let firstCdStartOffset = 0;
                     const step1Mot = (sk.baseMotion !== undefined && sk.baseMotion !== null) ? Number(sk.baseMotion) : Number(sk.motion || 0.3);
                     const stepFollowMot = (sk.chainMotion !== undefined && sk.chainMotion !== null) ? Number(sk.chainMotion) : step1Mot;
                     const cGap = Number(sk.chainGap || 0);
@@ -4545,20 +4576,24 @@
                         const advance = res.motion + gapWait;
                         stepTime += advance;
                         totalChainMotion += advance;
-                        if (step === 1) firstEffectiveCd = res.effectiveCd;
+                        if (step === 1) {
+                            firstEffectiveCd = res.effectiveCd;
+                            firstCdStartOffset = (sk && Number(sk.castTime) > 0) ? Number(sk.castTime) : res.motion;
+                        }
                     }
 
                     slot.lastEffectiveCd = firstEffectiveCd;
                     if (wasFull || slot.nextRechargeAt === null) {
-                        slot.nextRechargeAt = castTime + firstEffectiveCd;
+                        slot.nextRechargeAt = castTime + firstCdStartOffset + firstEffectiveCd;
                     }
                     return { motion: totalChainMotion, effectiveCd: firstEffectiveCd };
                 }
 
                 const { motion, effectiveCd } = executeSkillCast(slot.name, castTime, stackBadge);
+                const cdStartOffset = (sk && Number(sk.castTime) > 0) ? Number(sk.castTime) : motion;
                 slot.lastEffectiveCd = effectiveCd;
                 if (wasFull || slot.nextRechargeAt === null) {
-                    slot.nextRechargeAt = castTime + effectiveCd;
+                    slot.nextRechargeAt = castTime + cdStartOffset + effectiveCd;
                 }
                 return { motion, effectiveCd };
             }
@@ -5018,8 +5053,10 @@
                     const prepW = Math.max(0, c.prepTime * pxPerSec);
                     const actDur = Math.max(0.15, (c.motion - c.prepTime));
                     const actW = Math.max(5, actDur * pxPerSec);
-                    const showCd = (c.chainStep === 0 || c.chainStep === 1) && c.cd > c.motion;
-                    const cdW = showCd ? Math.max(0, Math.min(viewSec - (c.startTime + c.motion), c.cd - c.motion) * pxPerSec) : 0;
+                    const cdStartOffset = (sk && Number(sk.castTime) > 0) ? Number(sk.castTime) : c.motion;
+                    const remCdAfterMotion = Math.max(0, (cdStartOffset + c.cd) - c.motion);
+                    const showCd = (c.chainStep === 0 || c.chainStep === 1) && remCdAfterMotion > 0;
+                    const cdW = showCd ? Math.max(0, Math.min(viewSec - (c.startTime + c.motion), remCdAfterMotion) * pxPerSec) : 0;
                     const dispStepName = (c.chainStep > 1 && c.chainStepName) ? c.chainStepName : sName;
                     const tip = `${dispStepName} · ${fmtMMSS(c.startTime, 1)} · ${c.finalCoeff.toFixed(1)}%`;
                     const prepLabel = (sk.chargeTime > 0 && sk.castTime > 0) ? '캐스팅/차징' : (sk.chargeTime > 0 ? '차징' : (sk.castTime > 0 ? '캐스팅' : '캐스팅/차징'));
